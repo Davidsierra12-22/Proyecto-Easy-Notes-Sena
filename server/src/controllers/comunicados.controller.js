@@ -1,0 +1,189 @@
+const Comunicados = require("../models/Comunicados");
+
+// Obtener todos
+const getAll = async (req, res) => {
+  try {
+    const filtro = req.usuario?.institucionId
+      ? { institucionId: req.usuario.institucionId }
+      : {};
+
+    const data = await Comunicados.find(filtro)
+      .populate("remitenteId", "nombre apellido")
+      .populate("destinatarios.usuarioId", "nombre apellido")
+      .sort({ createdAt: -1 });
+
+    res.json({
+      ok: true,
+      data,
+      message: "Listado obtenido",
+    });
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      message: "Error al listar comunicados",
+      error: error.message,
+    });
+  }
+};
+
+// Obtener por id
+const getById = async (req, res) => {
+  try {
+    const data = await Comunicados.findById(req.params.id)
+      .populate("remitenteId", "nombre apellido")
+      .populate("destinatarios.usuarioId", "nombre apellido");
+
+    if (!data) {
+      return res.status(404).json({
+        ok: false,
+        message: "Comunicado no encontrado",
+      });
+    }
+
+    res.json({
+      ok: true,
+      data,
+    });
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      message: "Error al obtener comunicado",
+      error: error.message,
+    });
+  }
+};
+
+// Crear
+const create = async (req, res) => {
+  try {
+    const body = { ...req.body };
+
+    if (req.usuario?.institucionId) {
+      body.institucionId = req.usuario.institucionId;
+    }
+
+    if (req.usuario?._id) {
+      body.remitenteId = req.usuario._id;
+    }
+
+    const data = await Comunicados.create(body);
+
+    res.status(201).json({
+      ok: true,
+      data,
+      message: "Comunicado creado correctamente",
+    });
+  } catch (error) {
+    res.status(400).json({
+      ok: false,
+      message: "Error al crear comunicado",
+      error: error.message,
+    });
+  }
+};
+
+// Actualizar
+const update = async (req, res) => {
+  try {
+    const data = await Comunicados.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+
+    if (!data) {
+      return res.status(404).json({
+        ok: false,
+        message: "Comunicado no encontrado",
+      });
+    }
+
+    res.json({
+      ok: true,
+      data,
+      message: "Actualizado correctamente",
+    });
+  } catch (error) {
+    res.status(400).json({
+      ok: false,
+      message: "Error al actualizar",
+      error: error.message,
+    });
+  }
+};
+
+// Eliminar
+const remove = async (req, res) => {
+  try {
+    const data = await Comunicados.findByIdAndDelete(req.params.id);
+
+    if (!data) {
+      return res.status(404).json({
+        ok: false,
+        message: "Comunicado no encontrado",
+      });
+    }
+
+    res.json({
+      ok: true,
+      message: "Comunicado eliminado correctamente",
+    });
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      message: "Error al eliminar",
+      error: error.message,
+    });
+  }
+};
+
+// Marcar como leído
+const marcarLeido = async (req, res) => {
+  try {
+    const comunicado = await Comunicados.findById(req.params.id);
+
+    if (!comunicado) {
+      return res.status(404).json({
+        ok: false,
+        message: "Comunicado no encontrado",
+      });
+    }
+
+    const yaLeido = comunicado.leido.some(
+      (item) => item.usuarioId.toString() === req.usuario._id.toString()
+    );
+
+    if (!yaLeido) {
+      comunicado.leido.push({
+        usuarioId: req.usuario._id,
+        fechaLectura: new Date(),
+      });
+
+      await comunicado.save();
+    }
+
+    res.json({
+      ok: true,
+      data: comunicado,
+      message: "Comunicado marcado como leído",
+    });
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      message: "Error al marcar como leído",
+      error: error.message,
+    });
+  }
+};
+
+module.exports = {
+  getAll,
+  getById,
+  create,
+  update,
+  remove,
+  marcarLeido,
+};
