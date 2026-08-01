@@ -1,7 +1,12 @@
 require('dotenv').config();
+const express = require('express');
 const mongoose = require('mongoose');
 
+const app = express();
 const PORT = process.env.PORT || 3000;
+
+app.use(express.json());
+app.use('/api', require('./src/routes/index.routes'));
 
 const startServer = async () => {
   try {
@@ -29,6 +34,10 @@ const startServer = async () => {
     console.log(`\n[INFO] Estadisticas:`);
     console.log(`   Documentos: ${stats.objects}`);
     console.log(`   Tamano: ${(stats.dataSize / 1024).toFixed(1)} KB`);
+
+    app.listen(PORT, () => {
+      console.log(`Servidor corriendo en el puerto ${PORT}`);
+    });
 
     console.log(`\n[OK] Servidor listo en puerto ${PORT}`);
   } catch (error) {
