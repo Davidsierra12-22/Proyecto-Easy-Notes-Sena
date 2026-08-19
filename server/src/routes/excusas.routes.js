@@ -9,64 +9,17 @@ const {
   rechazar,
 } = require("../controllers/excusas.controller");
 
-const {
-  protect,
-  authorize,
-} = require("../middleware/auth");
+const { protect, authorize } = require("../middleware/auth");
+const { PERMISOS } = require("../config/constants");
+const { reglas, validar } = require("../middleware/validar");
 
-// Todas las rutas requieren autenticación
 router.use(protect);
 
-// CRUD
 router.get("/", getAll);
-
-router.get("/:id", getById);
-
-router.post(
-  "/",
-  authorize(
-    "super_admin",
-    "admin",
-    "rector",
-    "coordinador",
-    "docente",
-    "estudiante"
-  ),
-  create
-);
-
-router.put(
-  "/:id",
-  authorize(
-    "super_admin",
-    "admin",
-    "rector",
-    "coordinador"
-  ),
-  update
-);
-
-// Endpoints especiales
-router.put(
-  "/:id/aprobar",
-  authorize(
-    "super_admin",
-    "admin",
-    "rector",
-    "coordinador"
-  ),
-  aprobar
-);
-
-router.put(
-  "/:id/rechazar",
-  authorize(
-    "super_admin",
-    "admin",
-    "rector",
-    "coordinador"
-  ),
-  rechazar
-);
+router.get("/:id", reglas.idMongo, validar, getById);
+router.post("/", authorize(...PERMISOS.AMPLIO), create);
+router.put("/:id", reglas.idMongo, validar, authorize(...PERMISOS.INSTITUCIONAL), update);
+router.put("/:id/aprobar", reglas.idMongo, validar, authorize(...PERMISOS.INSTITUCIONAL), aprobar);
+router.put("/:id/rechazar", reglas.idMongo, validar, authorize(...PERMISOS.INSTITUCIONAL), rechazar);
 
 module.exports = router;

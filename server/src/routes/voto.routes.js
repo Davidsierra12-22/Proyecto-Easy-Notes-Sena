@@ -9,78 +9,17 @@ const {
   getByCandidato,
 } = require("../controllers/voto.controller");
 
-const {
-  protect,
-  authorize,
-} = require("../middleware/auth");
+const { protect, authorize } = require("../middleware/auth");
+const { PERMISOS } = require("../config/constants");
+const { reglas, validar } = require("../middleware/validar");
 
-// Todas las rutas requieren autenticación
 router.use(protect);
 
-// Obtener todos los votos
-router.get(
-  "/",
-  authorize(
-    "super_admin",
-    "admin",
-    "rector",
-    "coordinador"
-  ),
-  getAll
-);
-
-// Obtener voto por ID
-router.get(
-  "/:id",
-  authorize(
-    "super_admin",
-    "admin",
-    "rector",
-    "coordinador"
-  ),
-  getById
-);
-
-// Registrar voto
-router.post(
-  "/",
-  authorize("estudiante"),
-  create
-);
-
-// Eliminar voto
-router.delete(
-  "/:id",
-  authorize(
-    "super_admin",
-    "admin",
-    "rector"
-  ),
-  remove
-);
-
-// Obtener votos por evento
-router.get(
-  "/evento/:eventoId",
-  authorize(
-    "super_admin",
-    "admin",
-    "rector",
-    "coordinador"
-  ),
-  getByEvento
-);
-
-// Obtener votos por candidato
-router.get(
-  "/candidato/:candidatoId",
-  authorize(
-    "super_admin",
-    "admin",
-    "rector",
-    "coordinador"
-  ),
-  getByCandidato
-);
+router.get("/", authorize(...PERMISOS.INSTITUCIONAL), getAll);
+router.get("/:id", reglas.idMongo, validar, authorize(...PERMISOS.INSTITUCIONAL), getById);
+router.post("/", authorize(...PERMISOS.ESTUDIANTE), create);
+router.delete("/:id", reglas.idMongo, validar, authorize(...PERMISOS.DIRECCION), remove);
+router.get("/evento/:eventoId", authorize(...PERMISOS.INSTITUCIONAL), getByEvento);
+router.get("/candidato/:candidatoId", authorize(...PERMISOS.INSTITUCIONAL), getByCandidato);
 
 module.exports = router;

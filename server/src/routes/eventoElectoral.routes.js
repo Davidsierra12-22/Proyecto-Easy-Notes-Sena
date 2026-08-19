@@ -8,53 +8,16 @@ const {
   remove,
 } = require("../controllers/eventoElectoral.controller");
 
-const {
-  protect,
-  authorize,
-} = require("../middleware/auth");
+const { protect, authorize } = require("../middleware/auth");
+const { PERMISOS } = require("../config/constants");
+const { reglas, validar } = require("../middleware/validar");
 
-// Todas las rutas requieren autenticación
 router.use(protect);
 
-// Obtener todos los eventos
 router.get("/", getAll);
-
-// Obtener un evento por ID
-router.get("/:id", getById);
-
-// Crear evento
-router.post(
-  "/",
-  authorize(
-    "super_admin",
-    "admin",
-    "rector",
-    "coordinador"
-  ),
-  create
-);
-
-// Actualizar evento
-router.put(
-  "/:id",
-  authorize(
-    "super_admin",
-    "admin",
-    "rector",
-    "coordinador"
-  ),
-  update
-);
-
-// Eliminar evento
-router.delete(
-  "/:id",
-  authorize(
-    "super_admin",
-    "admin",
-    "rector"
-  ),
-  remove
-);
+router.get("/:id", reglas.idMongo, validar, getById);
+router.post("/", authorize(...PERMISOS.INSTITUCIONAL), create);
+router.put("/:id", reglas.idMongo, validar, authorize(...PERMISOS.INSTITUCIONAL), update);
+router.delete("/:id", reglas.idMongo, validar, authorize(...PERMISOS.DIRECCION), remove);
 
 module.exports = router;

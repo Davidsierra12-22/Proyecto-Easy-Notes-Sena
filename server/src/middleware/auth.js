@@ -1,7 +1,9 @@
 const jwt = require('jsonwebtoken');
 const Usuario = require('../models/Usuario');
+const { MENSAJES } = require('../config/constants');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'easynots_secret_key_2026';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) throw new Error('JWT_SECRET no definido en variables de entorno');
 
 const protect = async (req, res, next) => {
   let token;
@@ -11,7 +13,7 @@ const protect = async (req, res, next) => {
   }
 
   if (!token) {
-    return res.status(401).json({ ok: false, message: 'No autorizado, token requerido' });
+    return res.status(401).json({ ok: false, message: MENSAJES.NO_AUTORIZADO });
   }
 
   try {
@@ -20,7 +22,7 @@ const protect = async (req, res, next) => {
       .select('-credenciales.passwordHash -credenciales.tokenRecuperacion -credenciales.tokenRecuperacionExpira');
 
     if (!usuario) {
-      return res.status(401).json({ ok: false, message: 'Token invalido, usuario no existe' });
+      return res.status(401).json({ ok: false, message: MENSAJES.TOKEN_INVALIDO });
     }
     if (usuario.estado !== 'activo') {
       return res.status(401).json({ ok: false, message: 'Usuario inactivo o bloqueado' });
@@ -29,17 +31,20 @@ const protect = async (req, res, next) => {
     req.usuario = usuario;
     next();
   } catch (error) {
-    return res.status(401).json({ ok: false, message: 'Token invalido', error: error.message });
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ ok: false, message: MENSAJES.TOKEN_EXPIRADO });
+    }
+    return res.status(401).json({ ok: false, message: MENSAJES.TOKEN_INVALIDO, error: error.message });
   }
 };
 
 const authorize = (...roles) => {
   return (req, res, next) => {
     if (!req.usuario) {
-      return res.status(401).json({ ok: false, message: 'No autorizado' });
+      return res.status(401).json({ ok: false, message: MENSAJES.NO_AUTORIZADO });
     }
     if (!roles.includes(req.usuario.tipoPerfil)) {
-      return res.status(403).json({ ok: false, message: 'No tienes permisos para esta accion' });
+      return res.status(403).json({ ok: false, message: MENSAJES.SIN_PERMISOS });
     }
     next();
   };
