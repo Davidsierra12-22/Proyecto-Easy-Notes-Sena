@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'test_secret_key';
+
 let mongoServer;
 
 beforeAll(async () => {

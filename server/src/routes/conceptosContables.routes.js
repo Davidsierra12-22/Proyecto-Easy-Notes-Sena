@@ -8,53 +8,16 @@ const {
   remove,
 } = require("../controllers/conceptosContables.controller");
 
-const {
-  protect,
-  authorize,
-} = require("../middleware/auth");
+const { protect, authorize } = require("../middleware/auth");
+const { PERMISOS } = require("../config/constants");
+const { reglas, validar } = require("../middleware/validar");
 
-// Todas las rutas requieren autenticación
 router.use(protect);
 
-// Obtener todos los conceptos
 router.get("/", getAll);
-
-// Obtener un concepto por ID
-router.get("/:id", getById);
-
-// Crear concepto contable
-router.post(
-  "/",
-  authorize(
-    "super_admin",
-    "admin",
-    "rector",
-    "secretaria"
-  ),
-  create
-);
-
-// Actualizar concepto contable
-router.put(
-  "/:id",
-  authorize(
-    "super_admin",
-    "admin",
-    "rector",
-    "secretaria"
-  ),
-  update
-);
-
-// Eliminar concepto contable
-router.delete(
-  "/:id",
-  authorize(
-    "super_admin",
-    "admin",
-    "rector"
-  ),
-  remove
-);
+router.get("/:id", reglas.idMongo, validar, getById);
+router.post("/", authorize(...PERMISOS.FINANCIERO), create);
+router.put("/:id", reglas.idMongo, validar, authorize(...PERMISOS.FINANCIERO), update);
+router.delete("/:id", reglas.idMongo, validar, authorize(...PERMISOS.DIRECCION), remove);
 
 module.exports = router;

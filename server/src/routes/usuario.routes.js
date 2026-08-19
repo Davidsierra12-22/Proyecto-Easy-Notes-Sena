@@ -2,15 +2,16 @@ const { Router } = require('express');
 const router = Router();
 const controller = require('../controllers/usuario.controller');
 const { protect, authorize } = require('../middleware/auth');
-const { ROLES } = require('../config/constants');
+const { PERMISOS } = require('../config/constants');
+const { reglas, validar } = require('../middleware/validar');
 
-router.get('/', protect, controller.getAll);
-router.get('/buscar/:documento', protect, controller.buscarPorDocumento);
-router.get('/:id/estudiantes', protect, controller.misEstudiantes);
-router.get('/:id/acudientes', protect, controller.misAcudientes);
-router.get('/:id', protect, controller.getById);
-router.post('/', protect, authorize(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.RECTOR, ROLES.COORDINADOR), controller.create);
-router.put('/:id', protect, authorize(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.RECTOR, ROLES.COORDINADOR), controller.update);
-router.delete('/:id', protect, authorize(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.RECTOR), controller.remove);
+router.get('/', protect, authorize(...PERMISOS.DIRECCION), controller.getAll);
+router.get('/buscar/:documento', protect, reglas.idMongo, validar, authorize(...PERMISOS.DIRECCION), controller.buscarPorDocumento);
+router.get('/:id/estudiantes', protect, reglas.idMongo, validar, controller.misEstudiantes);
+router.get('/:id/acudientes', protect, reglas.idMongo, validar, controller.misAcudientes);
+router.get('/:id', protect, reglas.idMongo, validar, controller.getById);
+router.post('/', protect, authorize(...PERMISOS.INSTITUCIONAL), controller.create);
+router.put('/:id', protect, reglas.idMongo, validar, authorize(...PERMISOS.INSTITUCIONAL), controller.update);
+router.delete('/:id', protect, reglas.idMongo, validar, authorize(...PERMISOS.DIRECCION), controller.remove);
 
 module.exports = router;
