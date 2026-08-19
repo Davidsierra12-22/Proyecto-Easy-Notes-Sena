@@ -17,4 +17,13 @@ router.put('/password', protect, [
   body('passwordNueva').isLength({ min: 6 }).withMessage('Password nueva minimo 6 caracteres')
 ], validar, controller.cambiarPassword);
 
+router.post('/recuperar-password', [
+  reglas.documento
+], validar, controller.recuperarPassword);
+
+router.put('/restablecer-password', [
+  body('token').notEmpty().withMessage('Token requerido'),
+  body('nuevaPassword').isLength({ min: 6 }).withMessage('Password minimo 6 caracteres')
+], validar, controller.restablecerPassword);
+
 module.exports = router;
