@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const Usuario = require('../models/Usuario');
+const Bitacora = require('../models/Bitacora');
 const { generarToken } = require('../middleware/auth');
 
 const login = async (req, res) => {
@@ -24,6 +25,18 @@ const login = async (req, res) => {
 
     user.credenciales.ultimoLogin = new Date();
     await user.save();
+
+    Bitacora.create({
+      institucionId: user.institucionId,
+      usuarioId: user._id,
+      accion: 'login',
+      coleccion: 'Usuarios',
+      registroId: user._id,
+      detalle: `Inicio de sesion exitoso`,
+      direccionIp: req.ip,
+      metodo: 'POST',
+      ruta: req.originalUrl
+    }).catch(() => {});
 
     const token = generarToken(user._id);
 
@@ -77,6 +90,18 @@ const cambiarPassword = async (req, res) => {
     user.credenciales.passwordHash = await Usuario.hashPassword(passwordNueva);
     user.credenciales.debeCambiarPassword = false;
     await user.save();
+
+    Bitacora.create({
+      institucionId: req.usuario.institucionId,
+      usuarioId: req.usuario._id,
+      accion: 'cambio_password',
+      coleccion: 'Usuarios',
+      registroId: req.usuario._id,
+      detalle: 'Cambio de contraseña',
+      direccionIp: req.ip,
+      metodo: 'PUT',
+      ruta: req.originalUrl
+    }).catch(() => {});
 
     res.json({ ok: true, message: 'Contraseña actualizada correctamente' });
   } catch (error) {
