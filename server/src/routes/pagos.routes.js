@@ -10,66 +10,19 @@ const {
   getByEstudiante,
 } = require("../controllers/pagos.controller");
 
-const {
-  protect,
-  authorize,
-} = require("../middleware/auth");
+const { protect, authorize } = require("../middleware/auth");
+const { PERMISOS } = require("../config/constants");
+const { reglas, validar } = require("../middleware/validar");
+const { registrarAccion } = require("../middleware/auditoria");
 
-// Todas las rutas requieren autenticación
 router.use(protect);
 
-// CRUD
-router.get("/", getAll);
-
-router.get("/:id", getById);
-
-router.post(
-  "/",
-  authorize(
-    "super_admin",
-    "admin",
-    "rector",
-    "secretaria"
-  ),
-  create
-);
-
-router.put(
-  "/:id",
-  authorize(
-    "super_admin",
-    "admin",
-    "rector",
-    "secretaria"
-  ),
-  update
-);
-
-router.delete(
-  "/:id",
-  authorize(
-    "super_admin",
-    "admin",
-    "rector"
-  ),
-  remove
-);
-
-// Endpoints especiales
-router.put(
-  "/:id/registrar-pago",
-  authorize(
-    "super_admin",
-    "admin",
-    "rector",
-    "secretaria"
-  ),
-  registrarPago
-);
-
-router.get(
-  "/estudiante/:id",
-  getByEstudiante
-);
+router.get("/", authorize(...PERMISOS.FINANCIERO), getAll);
+router.get("/:id", reglas.idMongo, validar, authorize(...PERMISOS.FINANCIERO), getById);
+router.post("/", authorize(...PERMISOS.FINANCIERO), registrarAccion('crear_pago', 'Pagos'), create);
+router.put("/:id", reglas.idMongo, validar, authorize(...PERMISOS.FINANCIERO), registrarAccion('editar_pago', 'Pagos'), update);
+router.delete("/:id", reglas.idMongo, validar, authorize(...PERMISOS.DIRECCION), registrarAccion('eliminar_pago', 'Pagos'), remove);
+router.put("/:id/registrar-pago", reglas.idMongo, validar, authorize(...PERMISOS.FINANCIERO), registrarAccion('registrar_pago', 'Pagos'), registrarPago);
+router.get("/estudiante/:id", reglas.idMongo, validar, authorize(...PERMISOS.FINANCIERO), getByEstudiante);
 
 module.exports = router;

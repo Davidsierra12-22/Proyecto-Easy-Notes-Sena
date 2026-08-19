@@ -9,54 +9,17 @@ const {
   marcarLeido,
 } = require("../controllers/comunicados.controller");
 
-const {
-  protect,
-  authorize,
-} = require("../middleware/auth");
+const { protect, authorize } = require("../middleware/auth");
+const { PERMISOS } = require("../config/constants");
+const { reglas, validar } = require("../middleware/validar");
 
-// Todas las rutas requieren autenticación
 router.use(protect);
 
-// CRUD
 router.get("/", getAll);
-
-router.get("/:id", getById);
-
-router.post(
-  "/",
-  authorize(
-    "super_admin",
-    "admin",
-    "rector",
-    "coordinador",
-    "docente"
-  ),
-  create
-);
-
-router.put(
-  "/:id",
-  authorize(
-    "super_admin",
-    "admin",
-    "rector",
-    "coordinador",
-    "docente"
-  ),
-  update
-);
-
-router.delete(
-  "/:id",
-  authorize(
-    "super_admin",
-    "admin",
-    "rector"
-  ),
-  remove
-);
-
-// Endpoint especial
-router.put("/:id/leer", marcarLeido);
+router.get("/:id", reglas.idMongo, validar, getById);
+router.post("/", authorize(...PERMISOS.INSTITUCIONAL, ...PERMISOS.DOCENTE), create);
+router.put("/:id", reglas.idMongo, validar, authorize(...PERMISOS.INSTITUCIONAL, ...PERMISOS.DOCENTE), update);
+router.delete("/:id", reglas.idMongo, validar, authorize(...PERMISOS.DIRECCION), remove);
+router.put("/:id/leer", reglas.idMongo, validar, marcarLeido);
 
 module.exports = router;

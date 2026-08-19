@@ -12,81 +12,20 @@ const {
   cerrar,
 } = require("../controllers/elecciones.controller");
 
-const {
-  protect,
-  authorize,
-} = require("../middleware/auth");
+const { protect, authorize } = require("../middleware/auth");
+const { PERMISOS } = require("../config/constants");
+const { reglas, validar } = require("../middleware/validar");
 
-// Todas las rutas requieren autenticación
 router.use(protect);
 
-// CRUD
 router.get("/", getAll);
-
-router.get("/:id", getById);
-
-router.post(
-  "/",
-  authorize(
-    "super_admin",
-    "admin",
-    "rector",
-    "coordinador"
-  ),
-  create
-);
-
-router.put(
-  "/:id",
-  authorize(
-    "super_admin",
-    "admin",
-    "rector",
-    "coordinador"
-  ),
-  update
-);
-
-router.delete(
-  "/:id",
-  authorize(
-    "super_admin",
-    "admin",
-    "rector"
-  ),
-  remove
-);
-
-// Endpoints especiales
-router.post(
-  "/:id/votar",
-  authorize("estudiante"),
-  votar
-);
-
-router.get(
-  "/:id/resultados",
-  resultados
-);
-
-router.put(
-  "/:id/abrir",
-  authorize(
-    "super_admin",
-    "admin",
-    "rector"
-  ),
-  abrir
-);
-
-router.put(
-  "/:id/cerrar",
-  authorize(
-    "super_admin",
-    "admin",
-    "rector"
-  ),
-  cerrar
-);
+router.get("/:id", reglas.idMongo, validar, getById);
+router.post("/", authorize(...PERMISOS.INSTITUCIONAL), create);
+router.put("/:id", reglas.idMongo, validar, authorize(...PERMISOS.INSTITUCIONAL), update);
+router.delete("/:id", reglas.idMongo, validar, authorize(...PERMISOS.DIRECCION), remove);
+router.post("/:id/votar", reglas.idMongo, validar, authorize(...PERMISOS.ESTUDIANTE), votar);
+router.get("/:id/resultados", reglas.idMongo, validar, resultados);
+router.put("/:id/abrir", reglas.idMongo, validar, authorize(...PERMISOS.DIRECCION), abrir);
+router.put("/:id/cerrar", reglas.idMongo, validar, authorize(...PERMISOS.DIRECCION), cerrar);
 
 module.exports = router;

@@ -1,4 +1,6 @@
+const crypto = require('crypto');
 const Usuario = require('../models/Usuario');
+const Bitacora = require('../models/Bitacora');
 const { generarToken } = require('../middleware/auth');
 
 const login = async (req, res) => {
@@ -23,6 +25,18 @@ const login = async (req, res) => {
 
     user.credenciales.ultimoLogin = new Date();
     await user.save();
+
+    Bitacora.create({
+      institucionId: user.institucionId,
+      usuarioId: user._id,
+      accion: 'login',
+      coleccion: 'Usuarios',
+      registroId: user._id,
+      detalle: `Inicio de sesion exitoso`,
+      direccionIp: req.ip,
+      metodo: 'POST',
+      ruta: req.originalUrl
+    }).catch(() => {});
 
     const token = generarToken(user._id);
 
@@ -77,10 +91,83 @@ const cambiarPassword = async (req, res) => {
     user.credenciales.debeCambiarPassword = false;
     await user.save();
 
+    Bitacora.create({
+      institucionId: req.usuario.institucionId,
+      usuarioId: req.usuario._id,
+      accion: 'cambio_password',
+      coleccion: 'Usuarios',
+      registroId: req.usuario._id,
+      detalle: 'Cambio de contraseña',
+      direccionIp: req.ip,
+      metodo: 'PUT',
+      ruta: req.originalUrl
+    }).catch(() => {});
+
     res.json({ ok: true, message: 'Contraseña actualizada correctamente' });
   } catch (error) {
     res.status(500).json({ ok: false, message: 'Error al cambiar contraseña', error: error.message });
   }
 };
 
-module.exports = { login, me, cambiarPassword };
+const recuperarPassword = async (req, res) => {
+  try {
+    const { documento } = req.body;
+    if (!documento) {
+      return res.status(400).json({ ok: false, message: 'El documento es requerido' });
+    }
+
+    const user = await Usuario.findOne({ documento });
+    if (!user) {
+      return res.json({ ok: true, message: 'Si el documento existe, recibira un link de recuperacion' });
+    }
+    if (user.estado !== 'activo') {
+      return res.json({ ok: true, message: 'Si el documento existe, recibira un link de recuperacion' });
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    user.credenciales.tokenRecuperacion = token;
+    user.credenciales.tokenRecuperacionExpira = new Date(Date.now() + 60 * 60 * 1000);
+    await user.save();
+
+    res.json({
+      ok: true,
+      message: 'Si el documento existe, recibira un link de recuperacion',
+      data: { token, expiraEn: '1 hora' }
+    });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: 'Error al procesar recuperacion', error: error.message });
+  }
+};
+
+const restablecerPassword = async (req, res) => {
+  try {
+    const { token, nuevaPassword } = req.body;
+    if (!token || !nuevaPassword) {
+      return res.status(400).json({ ok: false, message: 'Token y nuevaPassword son requeridos' });
+    }
+    if (nuevaPassword.length < 6) {
+      return res.status(400).json({ ok: false, message: 'La nueva contraseña debe tener al menos 6 caracteres' });
+    }
+
+    const user = await Usuario.findOne({
+      'credenciales.tokenRecuperacion': token,
+      'credenciales.tokenRecuperacionExpira': { $gt: new Date() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ ok: false, message: 'Token invalido o expirado' });
+    }
+
+    user.credenciales.passwordHash = await Usuario.hashPassword(nuevaPassword);
+    user.credenciales.tokenRecuperacion = undefined;
+    user.credenciales.tokenRecuperacionExpira = undefined;
+    user.credenciales.debeCambiarPassword = false;
+    await user.save();
+
+    res.json({ ok: true, message: 'Contraseña restablecida correctamente' });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: 'Error al restablecer contraseña', error: error.message });
+  }
+};
+
+module.exports = { login, me, cambiarPassword, recuperarPassword, restablecerPassword };
