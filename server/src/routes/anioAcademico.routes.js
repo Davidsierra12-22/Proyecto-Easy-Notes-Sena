@@ -18,5 +18,7 @@ router.delete('/:id', reglas.idMongo, validar, deleteLimiter, authorize(...PERMI
 router.put('/:id/activar', reglas.idMongo, validar, authorize(...PERMISOS.INSTITUCIONAL), registrarAccion('activar_año_academico', 'AniosAcademicos'), controller.activar);
 router.put('/:id/cerrar', reglas.idMongo, validar, authorize(...PERMISOS.INSTITUCIONAL), registrarAccion('cerrar_año_academico', 'AniosAcademicos'), controller.cerrar);
 router.put('/:id/cerrar-migracion', reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.DIRECCION), registrarAccion('cerrar_migrar_año_academico', 'AniosAcademicos'), controller.cerrarConMigracion);
+router.put('/:id/reabrir-periodo', reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.SOLO_ADMIN), registrarAccion('reabrir_periodo_temporal', 'AniosAcademicos'), controller.reabrirPeriodo);
+router.put('/:id/cerrar-reapertura', reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.SOLO_ADMIN), registrarAccion('cerrar_reapertura_temporal', 'AniosAcademicos'), controller.cerrarReapertura);
 
 module.exports = router;

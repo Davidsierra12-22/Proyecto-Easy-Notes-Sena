@@ -55,7 +55,8 @@ const ESTADOS_ANIO = {
 
 const ESTADOS_PERIODO = {
   ABIERTO: 'abierto',
-  CERRADO: 'cerrado'
+  CERRADO: 'cerrado',
+  ABIERTO_TEMPORAL: 'abierto_temporal'
 };
 
 module.exports = {

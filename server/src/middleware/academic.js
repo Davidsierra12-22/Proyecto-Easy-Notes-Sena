@@ -26,13 +26,14 @@ const forzarCambioPassword = (req, res, next) => {
 /**
  * RN-CRO-03 y RN-CRO-04: Middleware para bloquear edición en período cerrado
  * Verifica si el período está cerrado antes de permitir crear/modificar actividades o notas
+ * RN-CRO-04: Si el período está en reapertura temporal, permite pero verifica expiración
  */
 const verificarPeriodoAbierto = async (req, res, next) => {
   try {
     const { anioAcademicoId, periodo } = req.body || req.params;
 
     if (!anioAcademicoId || !periodo) {
-      return next(); // Si no hay info de período, permitir (el controller validará)
+      return next();
     }
 
     const anio = await AnioAcademico.findById(anioAcademicoId);
@@ -40,13 +41,12 @@ const verificarPeriodoAbierto = async (req, res, next) => {
       return next();
     }
 
-    // Buscar el período en el cronograma
     const periodoData = anio.cronograma?.periodos?.find(
       p => p.numero === parseInt(periodo)
     );
 
     if (!periodoData) {
-      return next(); // Si no existe el período en el cronograma, permitir
+      return next();
     }
 
     // RN-CRO-03: Si el período está cerrado, bloquear
@@ -57,6 +57,30 @@ const verificarPeriodoAbierto = async (req, res, next) => {
         periodo: parseInt(periodo),
         estado: 'cerrado'
       });
+    }
+
+    // RN-CRO-04: Si está en reapertura temporal, verificar expiración
+    if (periodoData.estado === 'abierto_temporal') {
+      const ahora = new Date();
+      const expiracion = periodoData.reaperturaTemporal?.fechaExpiracion;
+
+      if (expiracion && ahora > new Date(expiracion)) {
+        // La reapertura expiró — cerrar automáticamente
+        periodoData.estado = 'cerrado';
+        periodoData.reaperturaTemporal.activa = false;
+        await anio.save();
+
+        return res.status(403).json({
+          ok: false,
+          message: `La reapertura temporal del período ${periodo} ha expirado.`,
+          periodo: parseInt(periodo),
+          estado: 'cerrado',
+          expirado: true
+        });
+      }
+
+      // La reapertura sigue activa — permitir con advertencia
+      res.set('X-Reapertura-Expira', expiracion?.toISOString());
     }
 
     next();
