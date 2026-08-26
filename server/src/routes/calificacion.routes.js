@@ -16,5 +16,7 @@ router.get('/:id', protect, reglas.idMongo, validar, controller.getById);
 router.post('/', protect, verificarPeriodoAbierto, writeLimiter, authorize(...PERMISOS.DOCENTE), registrarAccion('crear_calificacion', 'Calificaciones'), controller.create);
 router.put('/:id', protect, reglas.idMongo, validar, verificarPeriodoAbierto, writeLimiter, authorize(...PERMISOS.DOCENTE), registrarAccion('editar_calificacion', 'Calificaciones'), controller.update);
 router.delete('/:id', protect, reglas.idMongo, validar, deleteLimiter, authorize(...PERMISOS.INSTITUCIONAL), registrarAccion('eliminar_calificacion', 'Calificaciones'), controller.remove);
+router.post('/recuperacion', protect, writeLimiter, authorize(...PERMISOS.DOCENTE), controller.calcularRecuperacion);
+router.post('/habilitacion', protect, writeLimiter, authorize(...PERMISOS.INSTITUCIONAL), controller.calcularHabilitacion);
 
 module.exports = router;

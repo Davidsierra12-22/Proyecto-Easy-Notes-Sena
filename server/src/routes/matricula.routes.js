@@ -15,5 +15,6 @@ router.put('/:id', protect, reglas.idMongo, validar, writeLimiter, authorize(...
 router.delete('/:id', protect, reglas.idMongo, validar, deleteLimiter, authorize(...PERMISOS.DIRECCION), registrarAccion('eliminar_matricula', 'Matriculas'), controller.remove);
 router.put('/:id/retirar', protect, reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.DIRECCION), registrarAccion('retirar_matricula', 'Matriculas'), controller.retirar);
 router.put('/:id/promover', protect, reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.INSTITUCIONAL), registrarAccion('promover_matricula', 'Matriculas'), controller.promover);
+router.post('/evaluar-promocion', protect, writeLimiter, authorize(...PERMISOS.ACADEMICO), controller.evaluarPromocion);
 
 module.exports = router;

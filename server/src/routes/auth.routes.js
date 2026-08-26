@@ -5,14 +5,13 @@ const controller = require('../controllers/auth.controller');
 const { protect } = require('../middleware/auth');
 const { validar, reglas } = require('../middleware/validar');
 const { loginLimiter, passwordRecoveryLimiter } = require('../middleware/security');
-const { forzarCambioPassword } = require('../middleware/academic');
 
 router.post('/login', loginLimiter, [
   reglas.usuario,
   reglas.password
 ], validar, controller.login);
 
-router.get('/me', protect, forzarCambioPassword, controller.me);
+router.get('/me', protect, controller.me);
 
 router.put('/password', protect, [
   body('passwordActual').notEmpty().withMessage('Password actual requerido'),

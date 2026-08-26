@@ -1,4 +1,5 @@
 const Matricula = require('../models/Matricula');
+const PromocionService = require('../services/promocionService');
 
 const getAll = async (req, res) => {
   try {
@@ -77,25 +78,109 @@ const retirar = async (req, res) => {
 
 const promover = async (req, res) => {
   try {
-    const data = await Matricula.findById(req.params.id);
-    if (!data) return res.status(404).json({ ok: false, message: 'Matricula no encontrada' });
+    const matricula = await Matricula.findById(req.params.id);
+    if (!matricula) return res.status(404).json({ ok: false, message: 'Matricula no encontrada' });
 
-    const promovido = req.body.promovido === true;
-    if (promovido) {
-      data.estado = 'graduado';
+    const { promovido, observaciones } = req.body;
+
+    // Evaluar promoción usando el service si se solicita
+    if (promovido === true) {
+      try {
+        const evaluacion = await PromocionService.evaluarPromocion({
+          estudianteId: matricula.estudianteId,
+          grupoId: matricula.grupoId,
+          anioAcademicoId: matricula.anioAcademicoId,
+          institucionId: matricula.institucionId
+        });
+
+        if (!evaluacion.promovido) {
+          return res.status(400).json({
+            ok: false,
+            message: `El estudiante no cumple los requisitos de promoción. Áreas perdidas: ${evaluacion.areasPerdidas}/${evaluacion.umbral}`,
+            data: evaluacion
+          });
+        }
+
+        const resultado = await PromocionService.promoverEstudiante({
+          estudianteId: matricula.estudianteId,
+          grupoActualId: matricula.grupoId,
+          anioAcademicoId: matricula.anioAcademicoId,
+          institucionId: matricula.institucionId
+        });
+
+        return res.json({
+          ok: true,
+          data: resultado,
+          message: 'Estudiante promovido correctamente'
+        });
+      } catch (e) {
+        // Si falla el service (ej: no hay grupo disponible), usar lógica simple
+        matricula.estado = 'graduado';
+        matricula.promovido = true;
+        matricula.observaciones = observaciones || matricula.observaciones;
+        await matricula.save();
+        return res.json({ ok: true, data: matricula, message: 'Estudiante promovido' });
+      }
     } else {
-      data.estado = 'trasladada';
+      // Repitente: asignar al mismo grado
+      try {
+        const resultado = await PromocionService.asignarGrupoRepitente({
+          estudianteId: matricula.estudianteId,
+          grupoActualId: matricula.grupoId,
+          anioAcademicoId: matricula.anioAcademicoId,
+          institucionId: matricula.institucionId
+        });
+
+        matricula.promovido = false;
+        matricula.observaciones = observaciones || `Repite grado - Asignado a grupo ${resultado.grupoNuevo}`;
+        await matricula.save();
+
+        return res.json({
+          ok: true,
+          data: { matricula, ...resultado },
+          message: 'Estudiante no promovido - repite grado'
+        });
+      } catch (e) {
+        matricula.promovido = false;
+        matricula.observaciones = observaciones || matricula.observaciones;
+        await matricula.save();
+        return res.json({ ok: true, data: matricula, message: 'Estudiante no promovido' });
+      }
     }
-    data.promovido = promovido;
-    data.observaciones = req.body.observaciones || data.observaciones;
-    await data.save();
-    res.json({
-      ok: true,
-      data,
-      message: promovido ? 'Estudiante promovido' : 'Estudiante no promovido'
-    });
   } catch (error) {
     res.status(400).json({ ok: false, message: 'Error al promover', error: error.message });
+  }
+};
+
+const evaluarPromocion = async (req, res) => {
+  try {
+    const { estudianteId, anioAcademicoId } = req.body;
+    if (!estudianteId || !anioAcademicoId) {
+      return res.status(400).json({ ok: false, message: 'estudianteId y anioAcademicoId son requeridos' });
+    }
+
+    // Buscar la matrícula activa del estudiante
+    const matricula = await Matricula.findOne({
+      estudianteId,
+      anioAcademicoId,
+      institucionId: req.usuario.institucionId,
+      estado: 'activa'
+    });
+
+    if (!matricula) {
+      return res.status(404).json({ ok: false, message: 'No se encontró matrícula activa' });
+    }
+
+    const evaluacion = await PromocionService.evaluarPromocion({
+      estudianteId,
+      grupoId: matricula.grupoId,
+      anioAcademicoId,
+      institucionId: req.usuario.institucionId
+    });
+
+    res.json({ ok: true, data: evaluacion, message: 'Evaluación de promoción' });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: 'Error al evaluar promoción', error: error.message });
   }
 };
 
@@ -117,4 +202,4 @@ const getByGrupo = async (req, res) => {
   }
 };
 
-module.exports = { getAll, getById, create, update, remove, retirar, promover, getByGrupo };
+module.exports = { getAll, getById, create, update, remove, retirar, promover, evaluarPromocion, getByGrupo };

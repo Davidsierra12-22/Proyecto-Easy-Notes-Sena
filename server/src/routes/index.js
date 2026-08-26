@@ -18,6 +18,7 @@ router.use('/matriculas', require('./matricula.routes'));
 router.use('/indicadores', require('./indicador.routes'));
 router.use('/actividades', require('./actividad.routes'));
 router.use('/calificaciones', require('./calificacion.routes'));
+router.use('/boletines', require('./boletines.routes'));
 
 // Santiago - Modulo Academico
 router.use('/anios-academicos', require('./anioAcademico.routes'));

@@ -28,6 +28,23 @@ const protect = async (req, res, next) => {
       return res.status(401).json({ ok: false, message: 'Usuario inactivo o bloqueado' });
     }
 
+    // RN-AUTH-02B: Forzar cambio de contraseña en primer login
+    // Excepción: permitir login y cambio de contraseña
+    if (usuario.credenciales && usuario.credenciales.debeCambiarPassword) {
+      const ruta = req.originalUrl;
+      const esLogin = ruta === '/api/auth/login';
+      const esCambioPassword = req.method === 'PUT' && ruta === '/api/auth/password';
+      const esMe = ruta === '/api/auth/me';
+
+      if (!esLogin && !esCambioPassword && !esMe) {
+        return res.status(403).json({
+          ok: false,
+          message: 'Debes cambiar tu contraseña antes de continuar',
+          debeCambiarPassword: true
+        });
+      }
+    }
+
     req.usuario = usuario;
     next();
   } catch (error) {

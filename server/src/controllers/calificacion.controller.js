@@ -1,4 +1,5 @@
 const Calificacion = require('../models/Calificacion');
+const CalificacionService = require('../services/calificacionService');
 
 const getAll = async (req, res) => {
   try {
@@ -119,6 +120,22 @@ const guardarNotas = async (req, res) => {
       actualizadas.push(registro);
     }
 
+    // Recalcular nota final para cada estudiante usando el service
+    for (const reg of actualizadas) {
+      try {
+        await CalificacionService.calcularNotaPeriodo({
+          estudianteId: reg.estudianteId,
+          asignaturaId,
+          grupoId,
+          anioAcademicoId,
+          periodo: parseInt(periodo, 10),
+          institucionId
+        });
+      } catch (e) {
+        // Si falla el cálculo, la nota se queda con el valor manual
+      }
+    }
+
     res.json({
       ok: true,
       data: { actualizadas: actualizadas.length, errores },
@@ -126,6 +143,40 @@ const guardarNotas = async (req, res) => {
     });
   } catch (error) {
     res.status(400).json({ ok: false, message: 'Error al guardar notas', error: error.message });
+  }
+};
+
+const calcularRecuperacion = async (req, res) => {
+  try {
+    const { calificacionId, notaRecuperacion } = req.body;
+    if (!calificacionId || notaRecuperacion == null) {
+      return res.status(400).json({ ok: false, message: 'calificacionId y notaRecuperacion son requeridos' });
+    }
+    const resultado = await CalificacionService.aplicarRecuperacion({
+      calificacionId,
+      notaRecuperacion,
+      institucionId: req.usuario.institucionId
+    });
+    res.json({ ok: true, data: resultado, message: 'Recuperación aplicada' });
+  } catch (error) {
+    res.status(400).json({ ok: false, message: error.message });
+  }
+};
+
+const calcularHabilitacion = async (req, res) => {
+  try {
+    const { calificacionId, notaHabilitacion } = req.body;
+    if (!calificacionId || notaHabilitacion == null) {
+      return res.status(400).json({ ok: false, message: 'calificacionId y notaHabilitacion son requeridos' });
+    }
+    const resultado = await CalificacionService.aplicarHabilitacion({
+      calificacionId,
+      notaHabilitacion,
+      institucionId: req.usuario.institucionId
+    });
+    res.json({ ok: true, data: resultado, message: 'Habilitación aplicada' });
+  } catch (error) {
+    res.status(400).json({ ok: false, message: error.message });
   }
 };
 
@@ -173,7 +224,8 @@ const getBoletin = async (req, res) => {
         agrupado[clave] = {
           asignatura: cal.asignaturaId,
           periodos: [],
-          notaDefinitiva: null
+          notaDefinitiva: null,
+          logro: null
         };
       }
       agrupado[clave].periodos.push({
@@ -194,7 +246,9 @@ const getBoletin = async (req, res) => {
         })
         .filter(n => n != null);
       if (notas.length) {
-        materia.notaDefinitiva = notas.reduce((a, b) => a + b, 0) / notas.length;
+        const definitiva = notas.reduce((a, b) => a + b, 0) / notas.length;
+        materia.notaDefinitiva = Math.round(definitiva * 10) / 10;
+        materia.logro = CalificacionService.generarLogro(materia.notaDefinitiva);
       }
       return materia;
     });
@@ -207,5 +261,6 @@ const getBoletin = async (req, res) => {
 
 module.exports = {
   getAll, getById, create, update, remove,
-  guardarNotas, getByGrupoAsignaturaPeriodo, getBoletin
+  guardarNotas, calcularRecuperacion, calcularHabilitacion,
+  getByGrupoAsignaturaPeriodo, getBoletin
 };
