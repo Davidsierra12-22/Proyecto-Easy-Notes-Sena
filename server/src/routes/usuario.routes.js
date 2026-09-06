@@ -8,7 +8,7 @@ const { registrarAccion } = require('../middleware/auditoria');
 const { writeLimiter, deleteLimiter } = require('../middleware/security');
 
 router.get('/', protect, authorize(...PERMISOS.DIRECCION), controller.getAll);
-router.get('/buscar/:documento', protect, reglas.idMongo, validar, authorize(...PERMISOS.DIRECCION), controller.buscarPorDocumento);
+router.get('/buscar/:documento', protect, reglas.documentoParam, validar, authorize(...PERMISOS.DIRECCION), controller.buscarPorDocumento);
 router.get('/:id/estudiantes', protect, reglas.idMongo, validar, controller.misEstudiantes);
 router.get('/:id/acudientes', protect, reglas.idMongo, validar, controller.misAcudientes);
 router.get('/:id', protect, reglas.idMongo, validar, controller.getById);

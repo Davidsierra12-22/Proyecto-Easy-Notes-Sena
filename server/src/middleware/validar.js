@@ -15,6 +15,7 @@ const validar = (req, res, next) => {
 
 const reglas = {
   documento: body('documento').trim().isLength({ min: 5, max: 15 }).withMessage('Documento: 5-15 caracteres'),
+  documentoParam: param('documento').trim().isLength({ min: 5, max: 15 }).withMessage('Documento: 5-15 caracteres'),
   email: body('email').optional().isEmail().withMessage('Email invalido'),
   idMongo: param('id').isMongoId().withMessage('ID invalido'),
   pagina: query('page').optional().isInt({ min: 1 }).withMessage('Pagina debe ser entero positivo'),

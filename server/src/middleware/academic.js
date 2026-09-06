@@ -90,6 +90,67 @@ const verificarPeriodoAbierto = async (req, res, next) => {
 };
 
 /**
+ * RN-CRO-02: Middleware para verificar que estemos dentro de la ventana de recuperación
+ * Verifica que la fecha actual esté entre recuperacion.inicio y recuperacion.fin del período
+ */
+const verificarVentanaRecuperacion = async (req, res, next) => {
+  try {
+    const { anioAcademicoId, periodo } = req.body || req.params;
+
+    if (!anioAcademicoId || !periodo) {
+      return next();
+    }
+
+    const anio = await AnioAcademico.findById(anioAcademicoId);
+    if (!anio) {
+      return next();
+    }
+
+    const periodoData = anio.cronograma?.periodos?.find(
+      p => p.numero === parseInt(periodo)
+    );
+
+    if (!periodoData) {
+      return next();
+    }
+
+    // Si no hay ventana de recuperación configurada, permitir (backwards compatible)
+    if (!periodoData.recuperacion?.inicio || !periodoData.recuperacion?.fin) {
+      return next();
+    }
+
+    const ahora = new Date();
+    const inicio = new Date(periodoData.recuperacion.inicio);
+    const fin = new Date(periodoData.recuperacion.fin);
+    fin.setHours(23, 59, 59, 999);
+
+    if (ahora < inicio) {
+      return res.status(403).json({
+        ok: false,
+        message: `La ventana de recuperación del período ${periodo} aún no inicia. Fecha de inicio: ${inicio.toLocaleDateString('es-CO')}`,
+        periodo: parseInt(periodo),
+        recuperacionInicio: inicio,
+        recuperacionFin: fin
+      });
+    }
+
+    if (ahora > fin) {
+      return res.status(403).json({
+        ok: false,
+        message: `La ventana de recuperación del período ${periodo} ha expirado. Fecha límite: ${fin.toLocaleDateString('es-CO')}`,
+        periodo: parseInt(periodo),
+        recuperacionInicio: inicio,
+        recuperacionFin: fin
+      });
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Middleware para verificar que el año académico esté activo
  * Bloquea operaciones si el año no está en estado 'activo'
  */
@@ -123,5 +184,6 @@ const verificarAnioActivo = async (req, res, next) => {
 module.exports = {
   forzarCambioPassword,
   verificarPeriodoAbierto,
+  verificarVentanaRecuperacion,
   verificarAnioActivo
 };

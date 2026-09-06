@@ -193,19 +193,35 @@ class PromocionService {
 
     let estudiantesCopiados = 0;
     let matriculasCreadas = 0;
+    let promovidos = 0;
+    let repitentes = 0;
 
     for (const matricula of matriculasOrigen) {
       // RN-PRO-05: Copiar datos básicos del estudiante
       const estudiante = matricula.estudianteId;
-
-      // Buscar grupo del siguiente grado en el año destino
       const gradoActual = matricula.grupoId?.grado || 1;
-      const siguienteGrado = gradoActual + 1;
+
+      // Evaluar promoción del estudiante en el año origen
+      let promovio = true;
+      try {
+        const evaluacion = await this.evaluarPromocion({
+          estudianteId: estudiante._id,
+          grupoId: matricula.grupoId,
+          anioAcademicoId: anioOrigenId,
+          institucionId
+        });
+        promovio = evaluacion.promovido;
+      } catch (err) {
+        promovio = true;
+      }
+
+      // PY-002-1: Promovidos -> grupo del siguiente grado. PY-002-2: Repitentes -> grupo del mismo grado
+      const gradoDestino = promovio ? gradoActual + 1 : gradoActual;
 
       const grupoDestino = await Grupo.findOne({
         institucionId,
         anioAcademicoId: anioDestinoId,
-        grado: siguienteGrado
+        grado: gradoDestino
       });
 
       if (!grupoDestino) {
@@ -226,7 +242,8 @@ class PromocionService {
             institucionId,
             grupoId: grupoDestino._id,
             tipoMatricula: 'renovacion',
-            estado: 'activa'
+            estado: 'activa',
+            promovido: promovio
           }
         },
         { upsert: true, new: true }
@@ -235,12 +252,16 @@ class PromocionService {
       if (nuevaMatricula) {
         matriculasCreadas++;
         estudiantesCopiados++;
+        if (promovio) promovidos++;
+        else repitentes++;
       }
     }
 
     return {
       estudiantesCopiados,
-      matriculasCreadas
+      matriculasCreadas,
+      promovidos,
+      repitentes
     };
   }
 }

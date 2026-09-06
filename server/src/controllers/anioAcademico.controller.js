@@ -1,7 +1,5 @@
 const Model = require('../models/AnioAcademico');
 const PromocionService = require('../services/promocionService');
-const Bitacora = require('../models/Bitacora');
-
 const getAll = async (req, res) => {
     try {
         const filter = req.usuario?.institucionId ? { institucionId: req.usuario.institucionId } : {};
@@ -174,19 +172,6 @@ const reabrirPeriodo = async (req, res) => {
 
         await anio.save();
 
-        // Bitácora de auditoría (RN-BIT-01)
-        Bitacora.create({
-            institucionId: req.usuario.institucionId,
-            usuarioId: req.usuario._id,
-            accion: 'reabrir_periodo_temporal',
-            coleccion: 'AniosAcademicos',
-            registroId: anio._id,
-            detalle: `Período ${periodo} reabierto temporalmente por ${duracionMinutos} min. Motivo: ${motivo || 'No especificado'}`,
-            direccionIp: req.ip,
-            metodo: 'PUT',
-            ruta: req.originalUrl
-        }).catch(() => {});
-
         res.json({
             ok: true,
             data: {
@@ -239,18 +224,6 @@ const cerrarReapertura = async (req, res) => {
         periodoData.reaperturaTemporal = { activa: false };
 
         await anio.save();
-
-        Bitacora.create({
-            institucionId: req.usuario.institucionId,
-            usuarioId: req.usuario._id,
-            accion: 'cerrar_reapertura_temporal',
-            coleccion: 'AniosAcademicos',
-            registroId: anio._id,
-            detalle: `Reapertura temporal del período ${periodo} cerrada`,
-            direccionIp: req.ip,
-            metodo: 'PUT',
-            ruta: req.originalUrl
-        }).catch(() => {});
 
         res.json({
             ok: true,

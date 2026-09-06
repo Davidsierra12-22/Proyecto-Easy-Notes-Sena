@@ -4,11 +4,13 @@ const controller = require('../controllers/sede.controller');
 const { protect, authorize } = require('../middleware/auth');
 const { PERMISOS } = require('../config/constants');
 const { reglas, validar } = require('../middleware/validar');
+const { registrarAccion } = require('../middleware/auditoria');
+const { writeLimiter, deleteLimiter } = require('../middleware/security');
 
 router.get('/', protect, controller.getAll);
 router.get('/:id', protect, reglas.idMongo, validar, controller.getById);
-router.post('/', protect, authorize(...PERMISOS.INSTITUCIONAL), controller.create);
-router.put('/:id', protect, reglas.idMongo, validar, authorize(...PERMISOS.INSTITUCIONAL), controller.update);
-router.delete('/:id', protect, reglas.idMongo, validar, authorize(...PERMISOS.DIRECCION), controller.remove);
+router.post('/', protect, writeLimiter, authorize(...PERMISOS.INSTITUCIONAL), registrarAccion('crear_sede', 'Sedes'), controller.create);
+router.put('/:id', protect, reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.INSTITUCIONAL), registrarAccion('editar_sede', 'Sedes'), controller.update);
+router.delete('/:id', protect, reglas.idMongo, validar, deleteLimiter, authorize(...PERMISOS.DIRECCION), registrarAccion('eliminar_sede', 'Sedes'), controller.remove);
 
 module.exports = router;

@@ -42,6 +42,9 @@ const matriculaSchema = new mongoose.Schema({
     type: Boolean,
     default: null
   },
+  fechaCambioGrupo: {
+    type: Date
+  },
   observaciones: {
     type: String
   }

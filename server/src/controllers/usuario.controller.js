@@ -63,14 +63,26 @@ const create = async (req, res) => {
 
 const update = async (req, res) => {
   try {
+    const objetivo = await Usuario.findById(req.params.id);
+    if (!objetivo) return res.status(404).json({ ok: false, message: 'No encontrado' });
+    if (objetivo.tipoPerfil === ROLES.SUPER_ADMIN && req.usuario.tipoPerfil !== ROLES.SUPER_ADMIN) {
+      return res.status(403).json({ ok: false, message: 'No puedes gestionar un Super Admin' });
+    }
     const body = { ...req.body };
+    if (objetivo._id.toString() === req.usuario._id.toString()) {
+      const cambiaRol = body?.tipoPerfil && body.tipoPerfil !== objetivo.tipoPerfil;
+      const cambiaEstado = body?.estado && body.estado !== objetivo.estado;
+      if (cambiaRol || cambiaEstado) {
+        return res.status(403).json({ ok: false, message: 'No puedes cambiar tu propio rol o estado' });
+      }
+    }
+
     if (body.credenciales?.password) {
       body.credenciales = {
-        ...body.credenciales,
+        usuario: objetivo.credenciales.usuario,
         passwordHash: await Usuario.hashPassword(body.credenciales.password),
         debeCambiarPassword: true
       };
-      delete body.credenciales.password;
     }
 
     const data = await Usuario.findByIdAndUpdate(req.params.id, body, { new: true, runValidators: true })
@@ -84,6 +96,14 @@ const update = async (req, res) => {
 
 const remove = async (req, res) => {
   try {
+    const objetivo = await Usuario.findById(req.params.id);
+    if (!objetivo) return res.status(404).json({ ok: false, message: 'No encontrado' });
+    if (objetivo.tipoPerfil === ROLES.SUPER_ADMIN && req.usuario.tipoPerfil !== ROLES.SUPER_ADMIN) {
+      return res.status(403).json({ ok: false, message: 'No puedes gestionar un Super Admin' });
+    }
+    if (objetivo._id.toString() === req.usuario._id.toString()) {
+      return res.status(403).json({ ok: false, message: 'No puedes eliminar tu propio usuario' });
+    }
     const data = await Usuario.findByIdAndDelete(req.params.id);
     if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
     res.json({ ok: true, message: 'Eliminado correctamente' });

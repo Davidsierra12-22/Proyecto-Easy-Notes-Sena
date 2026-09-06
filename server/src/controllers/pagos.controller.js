@@ -8,7 +8,7 @@ const getAll = async (req, res) => {
       : {};
 
     const data = await Pagos.find(filtro)
-      .populate("estudianteId", "nombre apellido documento")
+      .populate("estudianteId", "nombres apellidos documento")
       .populate("conceptoId", "nombre valor")
       .sort({ createdAt: -1 });
 
@@ -30,7 +30,7 @@ const getAll = async (req, res) => {
 const getById = async (req, res) => {
   try {
     const data = await Pagos.findById(req.params.id)
-      .populate("estudianteId", "nombre apellido documento")
+      .populate("estudianteId", "nombres apellidos documento")
       .populate("conceptoId", "nombre valor");
 
     if (!data) {

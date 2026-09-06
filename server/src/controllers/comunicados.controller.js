@@ -8,8 +8,8 @@ const getAll = async (req, res) => {
       : {};
 
     const data = await Comunicados.find(filtro)
-      .populate("remitenteId", "nombre apellido")
-      .populate("destinatarios.usuarioId", "nombre apellido")
+      .populate("remitenteId", "nombres apellidos")
+      .populate("destinatarios.usuarioId", "nombres apellidos")
       .sort({ createdAt: -1 });
 
     res.json({
@@ -30,8 +30,8 @@ const getAll = async (req, res) => {
 const getById = async (req, res) => {
   try {
     const data = await Comunicados.findById(req.params.id)
-      .populate("remitenteId", "nombre apellido")
-      .populate("destinatarios.usuarioId", "nombre apellido");
+      .populate("remitenteId", "nombres apellidos")
+      .populate("destinatarios.usuarioId", "nombres apellidos");
 
     if (!data) {
       return res.status(404).json({

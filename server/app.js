@@ -4,6 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
+const path = require('path');
 const {
   sanitizeInput,
   preventHpp,
@@ -54,6 +55,9 @@ app.get('/api/health', (req, res) => {
     modelos: mongoose.modelNames().length
   });
 });
+
+// 9. Archivos estáticos (uploads)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use('/api', require('./src/routes/index'));
 

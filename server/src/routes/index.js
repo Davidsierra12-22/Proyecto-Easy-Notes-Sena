@@ -7,6 +7,7 @@ router.use('/bitacora', require('./bitacora.routes'));
 
 // Sneider - Modulo Institucional
 router.use('/instituciones', require('./institucion.routes'));
+router.use('/upload', require('./upload.routes'));
 router.use('/sedes', require('./sede.routes'));
 router.use('/nucleos', require('./direccionNucleo.routes'));
 router.use('/solicitudes-registro', require('./solicitudRegistro.routes'));

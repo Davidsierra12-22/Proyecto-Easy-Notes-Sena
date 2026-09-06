@@ -1,5 +1,8 @@
 const Matricula = require('../models/Matricula');
 const PromocionService = require('../services/promocionService');
+const Calificacion = require('../models/Calificacion');
+const Grupo = require('../models/Grupo');
+const Comunicados = require('../models/Comunicados');
 
 const getAll = async (req, res) => {
   try {
@@ -202,4 +205,97 @@ const getByGrupo = async (req, res) => {
   }
 };
 
-module.exports = { getAll, getById, create, update, remove, retirar, promover, evaluarPromocion, getByGrupo };
+// MT-002: Cambio de grupo (individual o masivo). Mantiene notas y notifica al nuevo director de grupo
+const cambioGrupo = async (req, res) => {
+  try {
+    const { ids, grupoId, fechaCambio, observaciones } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ ok: false, message: 'Debes indicar al menos una matrícula' });
+    }
+    if (!grupoId) {
+      return res.status(400).json({ ok: false, message: 'Grupo destino es requerido' });
+    }
+
+    const grupoDestino = await Grupo.findOne({ _id: grupoId, institucionId: req.usuario.institucionId });
+    if (!grupoDestino) {
+      return res.status(404).json({ ok: false, message: 'Grupo destino no encontrado' });
+    }
+
+    const matriculas = await Matricula.find({
+      _id: { $in: ids },
+      institucionId: req.usuario.institucionId,
+      estado: 'activa'
+    }).populate('estudianteId', 'nombres apellidos');
+
+    if (matriculas.length === 0) {
+      return res.status(404).json({ ok: false, message: 'Matrículas activas no encontradas' });
+    }
+
+    const fecha = fechaCambio ? new Date(fechaCambio) : new Date();
+    const movidos = [];
+
+    for (const mat of matriculas) {
+      const anterior = mat.grupoId;
+      mat.grupoId = grupoDestino._id;
+      mat.fechaCambioGrupo = fecha;
+      mat.observaciones = observaciones
+        ? `${mat.observaciones ? mat.observaciones + ' · ' : ''}Cambio de grupo: ${anterior} -> ${grupoDestino.nombre} (${fecha.toISOString().slice(0, 10)})${observaciones ? ' · ' + observaciones : ''}`
+        : `Cambio de grupo: ${anterior} -> ${grupoDestino.nombre} (${fecha.toISOString().slice(0, 10)})`;
+      await mat.save();
+
+      // MT-002-2: Las calificaciones del estudiante se mantienen asociadas al nuevo grupo
+      await Calificacion.updateMany(
+        { estudianteId: mat.estudianteId, anioAcademicoId: mat.anioAcademicoId, institucionId: mat.institucionId },
+        { $set: { grupoId: grupoDestino._id } }
+      );
+
+      movidos.push({
+        matriculaId: mat._id,
+        estudiante: mat.estudianteId ? `${mat.estudianteId.nombres} ${mat.estudianteId.apellidos}` : mat.estudianteId
+      });
+    }
+
+    // MT-002-3: Notificar al director del nuevo grupo
+    let notificacion = null;
+    if (grupoDestino.docenteDirectorId) {
+      notificacion = await Comunicados.create({
+        institucionId: req.usuario.institucionId,
+        remitenteId: req.usuario._id,
+        destinatarios: [{ usuarioId: grupoDestino.docenteDirectorId, rol: 'docente' }],
+        asunto: 'Cambio de grupo',
+        mensaje: `Se le notifica el ingreso de ${movidos.length} estudiante(s) al grupo ${grupoDestino.nombre}: ${movidos.map(m => m.estudiante).join(', ')}.`,
+        prioridad: 'normal'
+      });
+    }
+
+    res.json({
+      ok: true,
+      data: { movidos, grupoDestino: grupoDestino.nombre, notificados: Boolean(notificacion) },
+      message: `${movidos.length} matrícula(s) cambiada(s) al grupo ${grupoDestino.nombre}`
+    });
+  } catch (error) {
+    res.status(400).json({ ok: false, message: 'Error al cambiar de grupo', error: error.message });
+  }
+};
+
+// PY-002: Ejecutar cierre de año académico (migrar datos al nuevo año)
+const cerrarAnio = async (req, res) => {
+  try {
+    const { anioOrigenId, anioDestinoId } = req.body;
+    if (!anioOrigenId || !anioDestinoId) {
+      return res.status(400).json({ ok: false, message: 'anioOrigenId y anioDestinoId son requeridos' });
+    }
+
+    const resultado = await PromocionService.cerrarAnio({
+      anioOrigenId,
+      anioDestinoId,
+      institucionId: req.usuario.institucionId
+    });
+
+    res.json({ ok: true, data: resultado, message: 'Cierre de año ejecutado' });
+  } catch (error) {
+    res.status(400).json({ ok: false, message: 'Error al cerrar año', error: error.message });
+  }
+};
+
+module.exports = { getAll, getById, create, update, remove, retirar, promover, evaluarPromocion, getByGrupo, cambioGrupo, cerrarAnio };

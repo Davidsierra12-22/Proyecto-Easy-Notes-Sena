@@ -1,7 +1,9 @@
 const crypto = require('crypto');
 const Usuario = require('../models/Usuario');
+const Institucion = require('../models/Institucion');
 const Bitacora = require('../models/Bitacora');
 const { generarToken } = require('../middleware/auth');
+const { enviarRecuperacion, configurado: smtpConfigurado } = require('../services/mailService');
 
 const login = async (req, res) => {
   try {
@@ -10,16 +12,23 @@ const login = async (req, res) => {
       return res.status(400).json({ ok: false, message: 'Usuario y contraseña son requeridos' });
     }
 
-    const user = await Usuario.findOne({ 'credenciales.usuario': usuario });
+    const criterio = { $or: [
+      { 'credenciales.usuario': usuario },
+      { documento: usuario }
+    ] };
+    const user = await Usuario.findOne(criterio);
     if (!user) {
+      Bitacora.create({ accion: 'login_fallido', coleccion: 'Usuarios', detalle: `Usuario no encontrado: ${usuario}`, direccionIp: req.ip, metodo: 'POST', ruta: req.originalUrl }).catch(() => {});
       return res.status(401).json({ ok: false, message: 'Credenciales invalidas' });
     }
     if (user.estado !== 'activo') {
+      Bitacora.create({ institucionId: user.institucionId, usuarioId: user._id, accion: 'login_fallido', coleccion: 'Usuarios', registroId: user._id, detalle: `Usuario inactivo/bloqueado: ${usuario}`, direccionIp: req.ip, metodo: 'POST', ruta: req.originalUrl }).catch(() => {});
       return res.status(401).json({ ok: false, message: 'Usuario inactivo o bloqueado' });
     }
 
     const esValida = await user.comparePassword(password);
     if (!esValida) {
+      Bitacora.create({ institucionId: user.institucionId, usuarioId: user._id, accion: 'login_fallido', coleccion: 'Usuarios', registroId: user._id, detalle: `Contrasena incorrecta: ${usuario}`, direccionIp: req.ip, metodo: 'POST', ruta: req.originalUrl }).catch(() => {});
       return res.status(401).json({ ok: false, message: 'Credenciales invalidas' });
     }
 
@@ -117,11 +126,24 @@ const recuperarPassword = async (req, res) => {
     }
 
     const user = await Usuario.findOne({ documento });
-    if (!user) {
-      return res.json({ ok: true, message: 'Si el documento existe, recibira un link de recuperacion' });
+    const respuestaGenerica = { ok: true, message: 'Si el documento existe y tiene un correo registrado, recibira un link de recuperacion' };
+
+    if (!user || user.estado !== 'activo') {
+      return res.json(respuestaGenerica);
     }
-    if (user.estado !== 'activo') {
-      return res.json({ ok: true, message: 'Si el documento existe, recibira un link de recuperacion' });
+    if (!user.email) {
+      Bitacora.create({
+        institucionId: user.institucionId,
+        usuarioId: user._id,
+        accion: 'recuperar_password_sin_email',
+        coleccion: 'Usuarios',
+        registroId: user._id,
+        detalle: 'Usuario solicitó recuperación pero no tiene email registrado',
+        direccionIp: req.ip,
+        metodo: 'POST',
+        ruta: req.originalUrl
+      }).catch(() => {});
+      return res.json(respuestaGenerica);
     }
 
     const token = crypto.randomBytes(32).toString('hex');
@@ -129,11 +151,53 @@ const recuperarPassword = async (req, res) => {
     user.credenciales.tokenRecuperacionExpira = new Date(Date.now() + 60 * 60 * 1000);
     await user.save();
 
-    res.json({
-      ok: true,
-      message: 'Si el documento existe, recibira un link de recuperacion',
-      data: { token, expiraEn: '1 hora' }
-    });
+    const enlace = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/restablecer-password?token=${token}`;
+    let institucion = 'EasyNotes';
+    try {
+      const inst = await Institucion.findById(user.institucionId).select('nombre');
+      if (inst) institucion = inst.nombre;
+    } catch (_) { /* sin nombre institucional */ }
+
+    try {
+      await enviarRecuperacion({
+        to: user.email,
+        nombre: user.nombreCompleto || `${user.nombres} ${user.apellidos}`,
+        enlace,
+        expira: '1 hora',
+        institucion
+      });
+      Bitacora.create({
+        institucionId: user.institucionId,
+        usuarioId: user._id,
+        accion: 'recuperar_password',
+        coleccion: 'Usuarios',
+        registroId: user._id,
+        detalle: `Link de recuperación enviado a ${user.email}`,
+        direccionIp: req.ip,
+        metodo: 'POST',
+        ruta: req.originalUrl
+      }).catch(() => {});
+    } catch (error) {
+      console.error(`[mail] No se pudo enviar el correo a ${user.email}:`, error.message);
+      if (!smtpConfigurado) {
+        console.log(`[mail] LINK DE RECUPERACIÓN (modo desarrollo): ${enlace}`);
+      }
+      Bitacora.create({
+        institucionId: user.institucionId,
+        usuarioId: user._id,
+        accion: 'recuperar_password_envio_fallido',
+        coleccion: 'Usuarios',
+        registroId: user._id,
+        detalle: error.codigo === 'RESEND_NO_CONFIGURADO'
+          ? 'Resend no configurado, enlace logueado en consola'
+          : `Fallo al enviar correo a ${user.email}: ${error.message}`,
+        direccionIp: req.ip,
+        metodo: 'POST',
+        ruta: req.originalUrl
+      }).catch(() => {});
+    }
+
+    res.json(respuestaGenerica);
   } catch (error) {
     res.status(500).json({ ok: false, message: 'Error al procesar recuperacion', error: error.message });
   }
@@ -155,6 +219,7 @@ const restablecerPassword = async (req, res) => {
     });
 
     if (!user) {
+      Bitacora.create({ accion: 'restablecer_password_fallido', coleccion: 'Usuarios', detalle: 'Token invalido o expirado', direccionIp: req.ip, metodo: 'PUT', ruta: req.originalUrl }).catch(() => {});
       return res.status(400).json({ ok: false, message: 'Token invalido o expirado' });
     }
 
@@ -163,6 +228,18 @@ const restablecerPassword = async (req, res) => {
     user.credenciales.tokenRecuperacionExpira = undefined;
     user.credenciales.debeCambiarPassword = false;
     await user.save();
+
+    Bitacora.create({
+      institucionId: user.institucionId,
+      usuarioId: user._id,
+      accion: 'restablecer_password_exitoso',
+      coleccion: 'Usuarios',
+      registroId: user._id,
+      detalle: 'Contrasena restablecida via token de recuperacion',
+      direccionIp: req.ip,
+      metodo: 'PUT',
+      ruta: req.originalUrl
+    }).catch(() => {});
 
     res.json({ ok: true, message: 'Contraseña restablecida correctamente' });
   } catch (error) {

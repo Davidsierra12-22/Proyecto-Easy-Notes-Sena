@@ -33,6 +33,7 @@
     "mongoose": "^8.0.3",
     "multer": "^2.1.1",
     "puppeteer": "^25.1.0",
+    "resend": "^6.26.0",
     "xlsx": "^0.18.5",
     "xss-clean": "^0.1.4"
   },

@@ -62,7 +62,7 @@ const actividadSchema = new mongoose.Schema({
   },
   estado: {
     type: String,
-    enum: ['activo', 'cerrado', 'eliminado'],
+    enum: ['activo', 'inactivo', 'cerrado', 'eliminado'],
     default: 'activo'
   }
 }, {
