@@ -1,4 +1,5 @@
 const Comunicados = require("../models/Comunicados");
+const { paginarQuery } = require("../utils/paginacion");
 
 // Obtener todos
 const getAll = async (req, res) => {
@@ -7,10 +8,25 @@ const getAll = async (req, res) => {
       ? { institucionId: req.usuario.institucionId }
       : {};
 
-    const data = await Comunicados.find(filtro)
-      .populate("remitenteId", "nombre apellido")
-      .populate("destinatarios.usuarioId", "nombre apellido")
+    const pg = paginarQuery(req);
+    const query = Comunicados.find(filtro)
+      .populate("remitenteId", "nombres apellidos")
+      .populate("destinatarios.usuarioId", "nombres apellidos")
       .sort({ createdAt: -1 });
+
+    if (pg) {
+      const [data, total] = await Promise.all([
+        query.skip(pg.skip).limit(pg.limite),
+        Comunicados.countDocuments(filtro)
+      ]);
+      return res.json({
+        ok: true,
+        data,
+        paginacion: { pagina: pg.pagina, limite: pg.limite, total, totalPaginas: Math.ceil(total / pg.limite) },
+      });
+    }
+
+    const data = await query;
 
     res.json({
       ok: true,
@@ -30,8 +46,8 @@ const getAll = async (req, res) => {
 const getById = async (req, res) => {
   try {
     const data = await Comunicados.findById(req.params.id)
-      .populate("remitenteId", "nombre apellido")
-      .populate("destinatarios.usuarioId", "nombre apellido");
+      .populate("remitenteId", "nombres apellidos")
+      .populate("destinatarios.usuarioId", "nombres apellidos");
 
     if (!data) {
       return res.status(404).json({

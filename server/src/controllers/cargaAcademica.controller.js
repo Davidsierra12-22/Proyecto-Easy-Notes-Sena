@@ -1,8 +1,13 @@
 const Model = require('../models/CargaAcademica');
+const Grupo = require('../models/Grupo');
 
 const getAll = async (req, res) => {
     try {
         const filter = req.usuario?.institucionId ? { institucionId: req.usuario.institucionId } : {};
+        if (req.query.sedeId) {
+            const gruposSede = await Grupo.find({ institucionId: req.usuario.institucionId, sedeId: req.query.sedeId }).select('_id');
+            filter.grupoId = { $in: gruposSede.map(g => g._id) };
+        }
         const data = await Model.find(filter);
         res.json({ ok: true, data, message: 'Listado obtenido' });
     } catch (error) {
@@ -54,7 +59,9 @@ const remove = async (req, res) => {
 // --- Funciones Específicas ---
 const getByDocente = async (req, res) => {
     try {
-        const data = await Model.find({ docenteId: req.params.docenteId });
+        const data = await Model.find({ docenteId: req.params.docenteId })
+            .populate('grupoId', 'nombre grado jornada')
+            .populate('asignaturaId', 'nombre abreviatura');
         res.json({ ok: true, data, message: 'Carga académica del docente obtenida' });
     } catch (error) {
         res.status(500).json({ ok: false, message: 'Error al obtener', error: error.message });

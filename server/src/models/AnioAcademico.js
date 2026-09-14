@@ -34,6 +34,22 @@ const periodoSchema = new mongoose.Schema({
   recuperacion: {
     inicio: Date,
     fin: Date
+  },
+  reaperturaTemporal: {
+    activa: {
+      type: Boolean,
+      default: false
+    },
+    fechaApertura: Date,
+    fechaExpiracion: Date,
+    adminId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Usuario'
+    },
+    motivo: {
+      type: String,
+      trim: true
+    }
   }
 }, { _id: true });
 

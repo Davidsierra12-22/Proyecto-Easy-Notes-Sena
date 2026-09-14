@@ -6,6 +6,11 @@ const asignaturaSchema = new mongoose.Schema({
     ref: 'Institucion',
     required: true
   },
+  sedeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Sede',
+    default: null
+  },
   areaId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Area'
@@ -40,7 +45,7 @@ const asignaturaSchema = new mongoose.Schema({
   timestamps: true
 });
 
-asignaturaSchema.index({ institucionId: 1, areaId: 1, nombre: 1 }, { unique: true });
+asignaturaSchema.index({ institucionId: 1, sedeId: 1, areaId: 1, nombre: 1 }, { unique: true });
 asignaturaSchema.index({ institucionId: 1, orden: 1 });
 
 module.exports = mongoose.model('Asignatura', asignaturaSchema);

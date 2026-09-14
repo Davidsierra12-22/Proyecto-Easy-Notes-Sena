@@ -6,6 +6,11 @@ const areaSchema = new mongoose.Schema({
     ref: 'Institucion',
     required: true
   },
+  sedeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Sede',
+    default: null
+  },
   nombre: {
     type: String,
     required: true,
@@ -36,7 +41,7 @@ const areaSchema = new mongoose.Schema({
   timestamps: true
 });
 
-areaSchema.index({ institucionId: 1, nombre: 1 }, { unique: true });
+areaSchema.index({ institucionId: 1, sedeId: 1, nombre: 1 }, { unique: true });
 areaSchema.index({ institucionId: 1, orden: 1 });
 
 module.exports = mongoose.model('Area', areaSchema);

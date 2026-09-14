@@ -10,6 +10,7 @@ const registrarAccion = (accion, coleccion) => {
       if (body && body.ok !== false && req.usuario) {
         const log = {
           institucionId: req.usuario.institucionId,
+          nucleoId: req.usuario.nucleoId,
           usuarioId: req.usuario._id,
           accion,
           coleccion,

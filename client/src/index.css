@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary-50: #e3f2fd;
+  --color-primary-100: #bbdefb;
+  --color-primary-200: #90caf9;
+  --color-primary-300: #64b5f6;
+  --color-primary-400: #42a5f5;
+  --color-primary-500: #2196f3;
+  --color-primary-600: #1e88e5;
+  --color-primary-700: #1976d2;
+  --color-primary-800: #1565c0;
+  --color-primary-900: #0d47a1;
+}
+
+html {
+  font-size: 18px;
+}
+
+body {
+  @apply bg-gray-50 text-gray-900 antialiased;
+}
+
+@media print {
+  body {
+    background: #fff !important;
+  }
+
+  body *:not(.print-area):not(.print-area *) {
+    visibility: hidden !important;
+    height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .print-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .print-area-single {
+    display: flex !important;
+    justify-content: center !important;
+  }
+
+  .print-area-single .carnet-imprimir {
+    width: 100% !important;
+    max-width: 90mm !important;
+    box-shadow: none !important;
+  }
+
+  .print-area-multiple {
+    display: grid !important;
+    gap: 4mm !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .print-area-multiple .carnet-imprimir {
+    width: 100% !important;
+    max-width: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+  }
+
+  @page {
+    size: auto;
+    margin: 6mm;
+  }
+}

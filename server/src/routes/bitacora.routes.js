@@ -8,5 +8,6 @@ const { reglas, validar } = require('../middleware/validar');
 router.get('/', protect, authorize(...PERMISOS.INSTITUCIONAL), controller.getAll);
 router.get('/usuario/:usuarioId', protect, reglas.idMongo, validar, authorize(...PERMISOS.INSTITUCIONAL), controller.getByUsuario);
 router.get('/:id', protect, reglas.idMongo, validar, authorize(...PERMISOS.INSTITUCIONAL), controller.getById);
+router.delete('/limpiar', protect, authorize(...PERMISOS.SOLO_ADMIN), controller.limpiar);
 
 module.exports = router;

@@ -1,4 +1,5 @@
 const Sede = require('../models/Sede');
+const { paginarQuery } = require('../utils/paginacion');
 
 const getAll = async (req, res) => {
   try {
@@ -7,9 +8,20 @@ const getAll = async (req, res) => {
     if (req.query.institucionId) filter.institucionId = req.query.institucionId;
     if (req.query.estado) filter.estado = req.query.estado;
 
-    const data = await Sede.find(filter)
+    const pg = paginarQuery(req);
+    let query = Sede.find(filter)
       .populate('institucionId', 'nombre nit')
       .sort({ nombre: 1 });
+
+    if (pg) {
+      const [data, total] = await Promise.all([
+        query.skip(pg.skip).limit(pg.limite),
+        Sede.countDocuments(filter)
+      ]);
+      return res.json({ ok: true, data, message: 'Listado obtenido', paginacion: { pagina: pg.pagina, limite: pg.limite, total, totalPaginas: Math.ceil(total / pg.limite) } });
+    }
+
+    const data = await query;
     res.json({ ok: true, data, message: 'Listado obtenido' });
   } catch (error) {
     res.status(500).json({ ok: false, message: 'Error al listar', error: error.message });

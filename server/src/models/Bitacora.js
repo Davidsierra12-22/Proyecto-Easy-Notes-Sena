@@ -3,8 +3,11 @@ const mongoose = require('mongoose');
 const bitacoraSchema = new mongoose.Schema({
   institucionId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Institucion',
-    required: true
+    ref: 'Institucion'
+  },
+  nucleoId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'DireccionNucleo'
   },
   usuarioId: {
     type: mongoose.Schema.Types.ObjectId,
