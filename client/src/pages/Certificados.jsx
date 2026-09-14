@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Printer, RefreshCw, School, ScrollText, Award } from 'lucide-react'
+import { Download, Printer, RefreshCw, School, ScrollText, Award } from 'lucide-react'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
 
@@ -9,28 +9,24 @@ export default function Certificados() {
 
   const [anios, setAnios] = useState([])
   const [estudiantes, setEstudiantes] = useState([])
-  const [matriculas, setMatriculas] = useState([])
   const [institucion, setInstitucion] = useState(null)
   const [filtros, setFiltros] = useState({})
   const [facultad, setFacultad] = useState({ estilo: 'certificado' }) // certificado | constancia
+  const [doc, setDoc] = useState(null)
   const [estudianteSel, setEstudianteSel] = useState(null)
-  const [grupoSel, setGrupoSel] = useState(null)
-  const [boletin, setBoletin] = useState([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   const cargarDependencias = async () => {
     setError('')
     try {
-      const [resAnio, resEst, resMat, resInst] = await Promise.all([
+      const [resAnio, resEst, resInst] = await Promise.all([
         api.get('/anios-academicos'),
         api.get('/usuarios?tipoPerfil=estudiante'),
-        api.get('/matriculas'),
         api.get('/instituciones')
       ])
       setAnios(resAnio.data.data)
       setEstudiantes(resEst.data.data)
-      setMatriculas(resMat.data.data)
       setInstitucion(resInst.data.data.find(i => i._id === usuario?.institucionId) || null)
       const activo = resAnio.data.data.find(a => a.estado === 'activo')
       setFiltros(prev => ({ ...prev, anioAcademicoId: activo?._id || '' }))
@@ -45,37 +41,32 @@ export default function Certificados() {
     if (!filtros.anioAcademicoId) { setError('Selecciona el año académico'); return }
     setLoading(true)
     setError('')
-    setEstudianteSel(null)
-    setBoletin([])
+    setDoc(null)
     try {
       const est = estudiantes.find(s => s._id === estudianteId)
-      if (!est) throw new Error('Estudiante no encontrado')
-      const mat = matriculas.find(mm =>
-        (mm.estudianteId?._id || mm.estudianteId) === estudianteId &&
-        ((mm.anioAcademicoId?._id || mm.anioAcademicoId) === filtros.anioAcademicoId)
-      )
-      setGrupoSel(mat?.grupoId || null)
-      const r = await api.get(`/calificaciones/estudiante/${estudianteId}/anio/${filtros.anioAcademicoId}`)
-      setBoletin(r.data.data)
-      setEstudianteSel(est)
+      const r = await api.get(`/certificados/${estudianteId}/anio/${filtros.anioAcademicoId}`)
+      setDoc(r.data.data)
+      setEstudianteSel(est || null)
     } catch (e) {
-      setError(e.response?.data?.message || e.message || 'Error al generar certificado')
+      setError(e.response?.data?.message || 'Error al generar certificado')
     } finally {
       setLoading(false)
     }
   }
 
-  const promedio = () => {
-    const notas = boletin.map(m => m.notaDefinitiva).filter(n => n != null)
-    if (!notas.length) return null
-    return Math.round((notas.reduce((a, b) => a + b, 0) / notas.length) * 10) / 10
+  const descargarPdf = async () => {
+    try {
+      const r = await api.get(`/certificados/${filtros.estudianteId}/anio/${filtros.anioAcademicoId}/pdf`, { responseType: 'blob' })
+      const blobUrl = URL.createObjectURL(new Blob([r.data], { type: 'application/pdf' }))
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = 'certificado-estudio.pdf'
+      a.click()
+      URL.revokeObjectURL(blobUrl)
+    } catch (e) {
+      setError(e.response?.data?.message || 'Error al descargar PDF')
+    }
   }
-
-  const prom = promedio()
-  const cuadroHonor = prom != null && prom >= 4.5
-  const dane = institucion?.dane?.codigo
-  const nombreEst = estudianteSel ? `${estudianteSel.nombres} ${estudianteSel.apellidos}` : ''
-  const grado = grupoSel?.grado
 
   if (esEstudiante) {
     return (
@@ -84,6 +75,8 @@ export default function Certificados() {
       </div>
     )
   }
+
+  const bodFalse = (val) => val == null || val === false
 
   return (
     <div className="space-y-4">
@@ -133,7 +126,7 @@ export default function Certificados() {
             className={`px-4 py-1.5 rounded-full text-sm font-medium ${facultad.estilo === 'constancia' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
             Constancia
           </button>
-          {cuadroHonor && (
+          {doc?.promedioGeneral >= 4.5 && (
             <span className="inline-flex items-center gap-1 text-amber-600 text-sm font-medium ml-auto">
               <Award className="w-4 h-4" /> Cuadro de Honor
             </span>
@@ -143,57 +136,70 @@ export default function Certificados() {
         {error && <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-3 py-2 mt-3">{error}</div>}
       </div>
 
-      {estudianteSel && (
+      {doc && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="p-4 bg-gradient-to-r from-primary-600 to-primary-700 text-white print:bg-white print:text-black flex items-center justify-between">
             <h2 className="text-lg font-bold flex items-center gap-2">
               <ScrollText className="w-6 h-6 print:hidden" /> {facultad.estilo === 'certificado' ? 'Certificado de estudio' : 'Constancia de estudio'}
             </h2>
-            <button onClick={() => window.print()} className="text-white border border-white/60 rounded-lg px-3 py-1.5 text-sm flex items-center gap-1 print:hidden bg-white/10 hover:bg-white/20">
-              <Printer className="w-4 h-4" /> Imprimir
-            </button>
+            <div className="flex gap-2 print:hidden">
+              <button onClick={descargarPdf} className="text-white border border-white/60 rounded-lg px-3 py-1.5 text-sm flex items-center gap-1 bg-white/10 hover:bg-white/20">
+                <Download className="w-4 h-4" /> Descargar PDF
+              </button>
+              <button onClick={() => window.print()} className="text-white border border-white/60 rounded-lg px-3 py-1.5 text-sm flex items-center gap-1 bg-white/10 hover:bg-white/20">
+                <Printer className="w-4 h-4" /> Imprimir
+              </button>
+            </div>
           </div>
 
           <div className="p-6 lg:p-10">
             <div className="max-w-2xl mx-auto border-2 border-gray-200 rounded-lg p-6 lg:p-10 bg-white">
               <div className="text-center border-b border-gray-300 pb-6 mb-6">
-                <div className="w-12 h-12 bg-primary-600 text-white rounded-full mx-auto mb-3 flex items-center justify-center print:hidden">
-                  <School className="w-6 h-6" />
-                </div>
-                <h2 className="text-xl font-bold text-gray-900">{institucion?.nombre || 'Institución Educativa'}</h2>
+                {institucion?.logo ? (
+                  <img src={institucion.logo} alt="Escudo" className="w-14 h-14 object-contain mx-auto mb-3" />
+                ) : (
+                  <div className="w-14 h-14 bg-primary-600 text-white rounded-full mx-auto mb-3 flex items-center justify-center print:hidden">
+                    <School className="w-6 h-6" />
+                  </div>
+                )}
+                <h2 className="text-xl font-bold text-gray-900">{doc.institucion?.nombre || institucion?.nombre || 'Institución Educativa'}</h2>
                 <p className="text-sm text-gray-500">
-                  Código DANE: {dane || '—'}{institucion?.nit ? ` · NIT ${institucion.nit}` : ''}
+                  {doc.institucion?.dane ? `Código DANE: ${doc.institucion.dane}` : ''}
+                  {doc.institucion?.icfes ? ` · ICFES: ${doc.institucion.icfes}` : ''}
+                  {institucion?.nit ? ` · NIT ${institucion.nit}` : ''}
                 </p>
               </div>
 
-              <p className="text-center text-sm text-gray-600 leading-relaxed">
-                El rector de la institución hace constar que el estudiante
+              <p className="text-center text-sm text-gray-600 leading-relaxed">El rector de la institución hace constar que el estudiante</p>
+              <p className="text-center text-lg font-bold text-gray-900 my-2">
+                {doc.estudiante?.nombres} {doc.estudiante?.apellidos}
               </p>
-              <p className="text-center text-lg font-bold text-gray-900 my-2">{nombreEst}</p>
               <p className="text-center text-sm text-gray-600">
-                identificado con {estudianteSel.tipoDocumento || 'CC'} N° <span className="font-semibold">{estudianteSel.documento}</span>
+                identificado con {doc.estudiante?.tipoDocumento || 'CC'} N°{' '}
+                <span className="font-semibold">{doc.estudiante?.documento}</span>
               </p>
 
               <p className="text-center text-sm text-gray-700 leading-relaxed mt-4">
-                {(facultad.estilo === 'constancia' ? 'Se encuentra matriculado' : 'Cursó y aprobó')} el grado {grado} durante el año lectivo {anios.find(a => a._id === filtros.anioAcademicoId)?.anio || ''}
-                {prom != null && (<> con un rendimiento académico de <span className="font-bold">{prom}</span></>)}.
+                {facultad.estilo === 'constancia' ? 'Se encuentra matriculado' : 'Cursó y aprobó'}{' '}
+                el grado <b>{doc.grado}</b> durante el año lectivo{' '}
+                <b>{anios.find(a => a._id === filtros.anioAcademicoId)?.anio || doc.anio}</b>
+                {doc.promedioGeneral != null && (
+                  <> con un rendimiento académico de <b>{doc.promedioGeneral}</b></>
+                )}.
               </p>
 
-              {facultad.estilo === 'certificado' && boletin.length > 0 && (
+              {facultad.estilo === 'certificado' && !bodFalse(doc.promovido) && (
                 <div className="mt-6">
-                  <p className="text-xs font-semibold text-gray-500 uppercase mb-2 text-center">Valoración final por área</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
-                    {boletin.map(m => (
-                      <p key={m.asignatura?._id || Math.random()} className="flex justify-between text-sm border-b border-gray-100 py-1">
-                        <span className="text-gray-700">{m.asignatura?.nombre || 'Asignatura'}</span>
-                        <span className="font-semibold text-gray-900">{m.notaDefinitiva ?? '—'}</span>
-                      </p>
-                    ))}
+                  <p className="text-xs font-semibold text-gray-500 uppercase mb-2 text-center">Resultado del año escolar</p>
+                  <div className="flex justify-center gap-4 text-sm">
+                    <span>Asignaturas: <b>{doc.asignaturas}</b></span>
+                    <span>Áreas perdidas: <b>{doc.areasPerdidas}</b></span>
+                    <span className="font-semibold text-emerald-700">PROMOVIDO</span>
                   </div>
                 </div>
               )}
 
-              {cuadroHonor && (
+              {doc?.promedioGeneral >= 4.5 && (
                 <p className="mt-4 text-center text-sm font-semibold text-amber-600">Mención de honor por su destacado rendimiento académico (Cuadro de Honor)</p>
               )}
 
@@ -201,7 +207,7 @@ export default function Certificados() {
                 <div className="text-center">
                   <div className="border-t border-gray-400 pt-2">
                     <p className="text-sm font-semibold text-gray-800">Rector</p>
-                    <p className="text-xs text-gray-500">{institucion?.nombre || 'Institución'}</p>
+                    <p className="text-xs text-gray-500">{doc.institucion?.nombre || 'Institución'}</p>
                   </div>
                 </div>
                 <div className="text-center">
@@ -216,9 +222,9 @@ export default function Certificados() {
         </div>
       )}
 
-      {!estudianteSel && !error && (
+      {!doc && !error && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center text-gray-500">
-          Selecciona un estudiante para generar su certificado o constancia (también desde un grupo).
+          Selecciona un estudiante para generar su certificado o constancia.
         </div>
       )}
     </div>

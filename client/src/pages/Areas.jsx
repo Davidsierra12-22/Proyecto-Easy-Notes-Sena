@@ -1,5 +1,6 @@
 import CrudTable from '../components/CrudTable'
 import { useAuth } from '../context/AuthContext'
+import { useSede } from '../context/SedeContext'
 
 const columnas = [
   {
@@ -22,15 +23,30 @@ const campos = [
 
 export default function Areas() {
   const { usuario } = useAuth()
-  const puedeGestionar = ['super_admin', 'admin', 'rector', 'coordinador'].includes(usuario?.tipoPerfil)
+  const { sedes, sedeId } = useSede()
+  const puedeGestionar = ['super_admin', 'admin', 'secretaria'].includes(usuario?.tipoPerfil)
+  const puedeControl = ['super_admin', 'admin'].includes(usuario?.tipoPerfil)
+
+  const cols = [
+    ...columnas,
+    {
+      key: 'sedeId', label: 'Sede',
+      render: (a) => {
+        const s = sedes.find(x => x._id === a.sedeId)
+        return s ? s.nombre : '—'
+      }
+    }
+  ]
 
   return (
     <CrudTable
       titulo="Áreas Académicas"
       baseURL="/areas"
-      columnas={columnas}
+      columnas={cols}
       campos={campos}
+      parametrosForzados={sedeId ? { sedeId } : {}}
       puedeGestionar={puedeGestionar}
+      puedeDesactivar={puedeControl}
     />
   )
 }

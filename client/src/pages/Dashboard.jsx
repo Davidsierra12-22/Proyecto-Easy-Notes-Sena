@@ -1,33 +1,68 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useSede } from '../context/SedeContext'
 import api from '../services/api'
 import {
-  Users, UserPlus, GraduationCap, BookOpen, CreditCard,
+  Users, UserPlus, GraduationCap, BookOpen, CreditCard, School,
   CalendarDays, Calculator, ClipboardList, FilePlus2, Trophy,
-  ScrollText, RefreshCcw, Target, ClipboardCheck, Building, IdCard
+  ScrollText, RefreshCcw, Target, ClipboardCheck, Building, IdCard, MapPin, Stethoscope
 } from 'lucide-react'
 
 export default function Dashboard() {
   const { usuario } = useAuth()
+  const { sedes, sedeId, setSedeId, loading: loadingSedes } = useSede()
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [estudianteInfo, setEstudianteInfo] = useState(null)
+  const [colegios, setColegios] = useState([])
+
+  useEffect(() => {
+    if (usuario?.tipoPerfil !== 'estudiante') return
+    let activo = true
+    api.get('/matriculas').then(r => {
+      const mias = (r.data.data || []).filter(m =>
+        m.estudianteId && String(m.estudianteId._id) === String(usuario._id) && m.estado === 'activa'
+      )
+      const m = mias[0]
+      if (activo) setEstudianteInfo(m ? { grupo: m.grupoId?.nombre, grado: m.grupoId?.grado } : null)
+    }).catch(() => {})
+    return () => { activo = false }
+  }, [usuario?._id, usuario?.tipoPerfil])
 
   useEffect(() => {
     const cargarStats = async () => {
       try {
-        const [matriculas, usuarios, grupos, asignaturas] = await Promise.all([
-          api.get('/matriculas').catch(() => ({ data: { data: [] } })),
-          api.get('/usuarios').catch(() => ({ data: { data: [] } })),
-          api.get('/grupos').catch(() => ({ data: { data: [] } })),
-          api.get('/asignaturas').catch(() => ({ data: { data: [] } }))
-        ])
-        setStats({
-          matriculas: matriculas.data.data.length,
-          usuarios: usuarios.data.data.length,
-          grupos: grupos.data.data.length,
-          asignaturas: asignaturas.data.data.length
-        })
+        if (usuario?.tipoPerfil === 'super_admin') {
+          const [estadisticas, listado] = await Promise.all([
+            api.get('/nucleo/estadisticas').catch(() => ({ data: { data: {} } })),
+            api.get('/nucleo/instituciones').catch(() => ({ data: { data: [] } }))
+          ])
+          const e = estadisticas.data.data || {}
+          setStats({
+            colegios: e.colegios || 0,
+            estudiantes: e.estudiantes || 0,
+            docentes: e.docentes || 0,
+            matriculas: e.matriculasActivas || 0,
+            sedes: e.sedes || 0,
+            grupos: e.grupos || 0
+          })
+          setColegios(listado.data.data || [])
+        } else {
+          const params = sedeId ? { sedeId } : {}
+          const [matriculas, usuarios, grupos, asignaturas] = await Promise.all([
+            api.get('/matriculas', { params }).catch(() => ({ data: { data: [] } })),
+            api.get('/usuarios', { params }).catch(() => ({ data: { data: [] } })),
+            api.get('/grupos', { params }).catch(() => ({ data: { data: [] } })),
+            api.get('/asignaturas', { params }).catch(() => ({ data: { data: [] } }))
+          ])
+          setStats({
+            matriculas: matriculas.data.data.length,
+            usuarios: usuarios.data.data.length,
+            grupos: grupos.data.data.length,
+            asignaturas: asignaturas.data.data.length
+          })
+        }
       } catch {
         setStats(null)
       } finally {
@@ -35,24 +70,103 @@ export default function Dashboard() {
       }
     }
     cargarStats()
-  }, [])
+  }, [sedeId, usuario?.tipoPerfil])
 
   const rol = usuario?.tipoPerfil
+  const requiereSede = ['admin', 'rector', 'coordinador', 'secretaria'].includes(rol)
 
-  const cards = [
-    { label: 'Matrículas Activas', value: stats?.matriculas, icon: UserPlus, color: 'bg-emerald-500' },
-    { label: 'Usuarios', value: stats?.usuarios, icon: Users, color: 'bg-primary-500' },
-    { label: 'Grupos', value: stats?.grupos, icon: GraduationCap, color: 'bg-cyan-600' },
-    { label: 'Asignaturas', value: stats?.asignaturas, icon: BookOpen, color: 'bg-amber-500' }
+  const rolEstudiante = rol === 'estudiante'
+  const rolAcudiente = rol === 'acudiente'
+
+  if (requiereSede && !sedeId) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+          <div className="flex items-center gap-4">
+            {usuario?.institucion?.logo && (
+              <img src={usuario.institucion.logo} alt="Logo" className="h-14 object-contain" />
+            )}
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">
+                {usuario?.institucion?.nombre || 'Sistema de Gestión Académica EasyNotes'}
+              </h1>
+              <p className="text-gray-600 mt-1">Panel de administración de tu institución.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h2 className="text-lg font-semibold text-gray-900">Selecciona una sede</h2>
+          <p className="text-sm text-gray-500 mt-1 mb-6">
+            Elige la sede con la que vas a trabajar para acceder a todas las funciones.
+          </p>
+
+          {loadingSedes ? (
+            <div className="flex justify-center py-8">
+              <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : sedes.length === 0 ? (
+            <p className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-4 py-4">
+              No hay sedes creadas todavía.{' '}
+              <Link to="/sedes" className="text-primary-600 font-medium">Crear una sede</Link>
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {sedes.map(s => (
+                <button
+                  key={s._id}
+                  onClick={() => setSedeId(s._id)}
+                  className="bg-white rounded-xl border border-gray-200 hover:border-primary-400 hover:shadow-md transition-all p-5 flex flex-col items-start text-left"
+                >
+                  <div className="w-11 h-11 rounded-lg bg-primary-50 flex items-center justify-center mb-3">
+                    <Building className="w-5 h-5 text-primary-600" />
+                  </div>
+                  <span className="text-sm font-semibold text-gray-900 break-words">{s.nombre}</span>
+                  {s.direccion && (
+                    <span className="mt-1 text-xs text-gray-500 inline-flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5" /> {s.direccion}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  const cards = rol === 'super_admin'
+    ? [
+        { label: 'Colegios', value: stats?.colegios, icon: School, color: 'bg-primary-500' },
+        { label: 'Estudiantes', value: stats?.estudiantes, icon: Users, color: 'bg-cyan-600' },
+        { label: 'Docentes', value: stats?.docentes, icon: BookOpen, color: 'bg-amber-500' },
+        { label: 'Matrículas Activas', value: stats?.matriculas, icon: UserPlus, color: 'bg-emerald-500' }
+      ]
+    : [
+        { label: 'Matrículas Activas', value: stats?.matriculas, icon: UserPlus, color: 'bg-emerald-500' },
+        { label: 'Usuarios', value: stats?.usuarios, icon: Users, color: 'bg-primary-500' },
+        { label: 'Grupos', value: stats?.grupos, icon: GraduationCap, color: 'bg-cyan-600' },
+        { label: 'Asignaturas', value: stats?.asignaturas, icon: BookOpen, color: 'bg-amber-500' }
+      ]
+
+  const estudianteCards = [
+    { label: 'Grupo', detalle: estudianteInfo ? `${estudianteInfo.grupo} · Grado ${estudianteInfo.grado}` : 'Sin matrícula', icon: GraduationCap, color: 'bg-cyan-600', to: '/horario' },
+    { label: 'Mis Notas', detalle: 'Ver calificaciones', icon: Calculator, color: 'bg-primary-500', to: '/mis-notas' },
+    { label: 'Boletines', detalle: 'Consultar boletín', icon: ScrollText, color: 'bg-emerald-500', to: '/boletines' },
+    { label: 'Mis Excusas', detalle: 'Registrar inasistencia', icon: Stethoscope, color: 'bg-amber-500', to: '/mis-excusas' }
   ]
 
   const accesosRapidos = [
-    { label: 'Usuarios', icon: Users, to: '/usuarios', visible: ['super_admin', 'admin', 'rector'] },
-    { label: 'Áreas', icon: BookOpen, to: '/areas', visible: ['super_admin', 'admin', 'rector', 'coordinador'] },
-    { label: 'Asignaturas', icon: BookOpen, to: '/asignaturas', visible: ['super_admin', 'admin', 'rector', 'coordinador'] },
-    { label: 'Grupos', icon: GraduationCap, to: '/grupos', visible: ['super_admin', 'admin', 'rector', 'coordinador'] },
-    { label: 'Sedes', icon: Building, to: '/sedes', visible: ['super_admin', 'admin', 'rector', 'coordinador'] },
-    { label: 'Años Académicos', icon: CalendarDays, to: '/anios-academicos', visible: ['super_admin', 'admin', 'rector', 'coordinador'] },
+    { label: 'Colegios del Núcleo', icon: School, to: '/instituciones', visible: ['super_admin'] },
+    { label: 'Núcleos', icon: Building, to: '/nucleos', visible: ['super_admin'] },
+    { label: 'Estadísticas', icon: Calculator, to: '/estadisticas', visible: ['super_admin'] },
+    { label: 'Usuarios', icon: Users, to: '/usuarios', visible: ['admin', 'rector'] },
+    { label: 'Sedes', icon: Building, to: '/sedes', visible: ['admin', 'rector', 'coordinador'] },
+    { label: 'Años Académicos', icon: CalendarDays, to: '/anios-academicos', visible: ['admin', 'rector', 'coordinador'] },
+    { label: 'Áreas', icon: BookOpen, to: '/areas', visible: ['admin', 'rector', 'coordinador'] },
+    { label: 'Asignaturas', icon: BookOpen, to: '/asignaturas', visible: ['admin', 'rector', 'coordinador'] },
+    { label: 'Grupos', icon: GraduationCap, to: '/grupos', visible: ['admin', 'rector', 'coordinador'] },
     { label: 'Matrículas', icon: ClipboardList, to: '/matriculas', visible: ['admin', 'rector', 'coordinador', 'secretaria'] },
     { label: 'Prematrículas', icon: FilePlus2, to: '/prematriculas', visible: ['admin', 'rector', 'secretaria'] },
     { label: 'Calificaciones', icon: Calculator, to: '/calificaciones', visible: ['admin', 'rector', 'coordinador', 'docente'] },
@@ -68,13 +182,23 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-        <h1 className="text-xl font-bold text-gray-900">
-          ¡Bienvenido, {usuario?.nombreCompleto || usuario?.nombres}!
-        </h1>
-        <p className="text-gray-600 mt-1">
-          Sistema de Gestión Académica EasyNotes. Aquí puedes administrar toda la
-          información académica de tu institución.
-        </p>
+        <div className="flex items-center gap-4">
+          {usuario?.institucion?.logo && (
+            <img src={usuario.institucion.logo} alt="Logo" className="h-14 object-contain" />
+          )}
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">
+              {usuario?.institucion?.nombre || 'Sistema de Gestión Académica EasyNotes'}
+            </h1>
+            <p className="text-gray-600 mt-1">
+              {usuario?.institucion
+                ? 'Panel de administración de tu institución.'
+                : usuario?.tipoPerfil === 'super_admin'
+                ? 'Dirección de Núcleo — supervisión de los colegios del núcleo.'
+                : 'Sistema de gestión académica.'}
+            </p>
+          </div>
+        </div>
       </div>
 
       {rol && ['admin', 'rector', 'coordinador', 'secretaria', 'super_admin'].includes(rol) ? (
@@ -112,13 +236,83 @@ export default function Dashboard() {
               ))}
             </div>
           </div>
+
+          {rol === 'super_admin' && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Colegios del Núcleo</h2>
+                <Link to="/instituciones" className="text-sm font-medium text-primary-600 hover:text-primary-700">
+                  Gestionar colegios
+                </Link>
+              </div>
+              {loading ? (
+                <div className="flex justify-center py-8">
+                  <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : colegios.length === 0 ? (
+                <p className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-4 py-4">
+                  Aún no hay colegios registrados.{' '}
+                  <Link to="/instituciones" className="text-primary-600 font-medium">Crear el primer colegio</Link>
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead>
+                      <tr>
+                        {['Colegio', 'Estudiantes', 'Docentes', 'Matrículas Activas', 'Grupos', 'Sedes'].map(h => (
+                          <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {colegios.map(c => (
+                        <tr key={c._id}>
+                          <td className="px-4 py-3">
+                            <p className="text-sm font-medium text-gray-900">{c.nombre}</p>
+                            <p className="text-xs text-gray-500">NIT {c.nit} · {c.nucleoId?.nombre || 'Sin núcleo'}</p>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{c.estudiantes}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{c.docentes}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{c.matriculasActivas}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{c.grupos}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{c.sedes}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
         </>
+      ) : rolEstudiante ? (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {estudianteCards.map((card) => (
+              <Link key={card.label} to={card.to} className="bg-white rounded-xl shadow-sm p-5 border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all">
+                <div className={`w-12 h-12 ${card.color} rounded-xl flex items-center justify-center mb-3`}>
+                  <card.icon className="w-6 h-6 text-white" />
+                </div>
+                <p className="text-sm text-gray-500">{card.label}</p>
+                <p className="text-sm font-semibold text-gray-900 mt-0.5">
+                  {card.nombre || card.detalle}
+                </p>
+              </Link>
+            ))}
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Tu espacio</h2>
+            <p className="text-gray-600">
+              Consulta tus notas, boletines, horario y excusas desde cualquiera de los accesos.
+            </p>
+          </div>
+        </div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Tu espacio</h2>
           <p className="text-gray-600">
             {rol === 'docente' && 'Consulta tus clases, calificaciones y actividades académicas.'}
-            {rol === 'estudiante' && 'Consulta tus notas, boletines, horario y excusas.'}
             {rol === 'acudiente' && 'Sigue el rendimiento académico de tus hijos y gestiona pagos.'}
           </p>
         </div>

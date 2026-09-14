@@ -15,7 +15,7 @@ const estadoBadge = (estado) => {
 
 export default function Prematriculas() {
   const { usuario } = useAuth()
-  const puedeAprobar = ['super_admin', 'admin', 'rector'].includes(usuario?.tipoPerfil)
+  const puedeAprobar = ['super_admin', 'admin'].includes(usuario?.tipoPerfil)
 
   const [datos, setDatos] = useState([])
   const [loading, setLoading] = useState(true)

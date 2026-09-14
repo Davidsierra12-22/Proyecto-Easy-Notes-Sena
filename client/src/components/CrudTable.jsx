@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Search, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Search, RefreshCw, ArrowLeft } from 'lucide-react'
 import api from '../services/api'
+import PaginationBar from './PaginationBar'
+
+const LIMITE = 50
 
 /**
  * Componente base reutilizable para CRUD de entidades
@@ -10,6 +14,7 @@ import api from '../services/api'
  * - columnas: [{ key, label, render? }]
  * - campos: definición de formulario [{ name, label, type, required?, options?, colSpan? }]
  * - rolesPermitidos: roles que pueden crear/editar/eliminar
+ * - filtros: [{ name, label, options }] selectores de filtro (ej: Colegio, Rol)
  */
 export default function CrudTable({
   titulo,
@@ -17,6 +22,11 @@ export default function CrudTable({
   columnas,
   campos,
   puedeGestionar = true,
+  puedeDesactivar = true,
+  filtros,
+  filtroInicial,
+  refreshKey,
+  parametrosForzados,
   onAfterSave,
   renderAcciones,
   transformDatos
@@ -24,20 +34,31 @@ export default function CrudTable({
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
   const [busqueda, setBusqueda] = useState('')
+  const [filtrosValores, setFiltrosValores] = useState(filtroInicial || {})
   const [modal, setModal] = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState({})
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [pagina, setPagina] = useState(1)
+  const [paginacion, setPaginacion] = useState(null)
+  const navigate = useNavigate()
 
-  useEffect(() => { cargar() }, [])
+  const claveFuerza = JSON.stringify(parametrosForzados || {})
+  useEffect(() => { cargar({}, 1) }, [refreshKey, claveFuerza])
 
-  const cargar = async () => {
+  const cargar = async (override = {}, pg = pagina) => {
     setLoading(true)
     try {
-      const params = busqueda ? { q: busqueda } : {}
+      const params = { page: pg, limit: LIMITE }
+      if (busqueda) params.q = busqueda
+      Object.entries({ ...parametrosForzados, ...filtrosValores, ...override }).forEach(([k, v]) => {
+        if (v) params[k] = v
+      })
       const res = await api.get(baseURL, { params })
       setData(transformDatos ? transformDatos(res.data.data) : res.data.data)
+      setPaginacion(res.data.paginacion || null)
+      setPagina(pg)
     } catch (e) {
       setError(e.response?.data?.message || 'Error al cargar datos')
     } finally {
@@ -45,8 +66,16 @@ export default function CrudTable({
     }
   }
 
+  const aplicarFiltro = (name, valor) => {
+    const nuevo = { ...filtrosValores, [name]: valor }
+    setFiltrosValores(nuevo)
+    cargar(nuevo, 1)
+  }
+
   const valorInicial = (campo, val) => {
+    if (campo.type === 'multiSelect') return Array.isArray(val) ? val : (campo.default || [])
     if (val === undefined || val === null) return ''
+    if (campo.type === 'select' && typeof val === 'object' && val._id) return val._id
     if (campo.type === 'date') return String(val).slice(0, 10)
     return val
   }
@@ -75,10 +104,11 @@ export default function CrudTable({
     setError('')
     try {
       let creado = null
+      const payload = { ...parametrosForzados, ...form }
       if (editing) {
-        await api.put(`${baseURL}/${editing._id}`, form)
+        await api.put(`${baseURL}/${editing._id}`, payload)
       } else {
-        const res = await api.post(baseURL, form)
+        const res = await api.post(baseURL, payload)
         creado = res.data.data
       }
       setModal(false)
@@ -104,20 +134,42 @@ export default function CrudTable({
     <div className="space-y-4">
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 lg:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-          <h1 className="text-xl font-bold text-gray-900">{titulo}</h1>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate(-1)}
+              title="Volver"
+              className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <h1 className="text-xl font-bold text-gray-900">{titulo}</h1>
+          </div>
+          <div className="flex items-center gap-2">
+            {filtros && filtros.map(f => (
+              <select
+                key={f.name}
+                value={filtrosValores[f.name] || ''}
+                onChange={(e) => aplicarFiltro(f.name, e.target.value)}
+                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-700"
+              >
+                <option value="">{f.label}: Todos</option>
+                {f.options.map(op => (
+                  <option key={op.value} value={op.value}>{op.label}</option>
+                ))}
+              </select>
+            ))}
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && cargar()}
+                onKeyDown={(e) => e.key === 'Enter' && cargar({}, 1)}
                 placeholder="Buscar..."
                 className="pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 w-48 sm:w-64"
               />
             </div>
             <button
-              onClick={() => { setBusqueda(''); setTimeout(cargar, 0) }}
+              onClick={() => { setBusqueda(''); setFiltrosValores({}); setTimeout(() => cargar({}, 1), 0) }}
               className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100"
               title="Refrescar"
             >
@@ -189,6 +241,7 @@ export default function CrudTable({
                             item.estado === 'activo' ? 'text-amber-600 hover:text-amber-800' : 'text-emerald-600 hover:text-emerald-800'
                           }`}
                           disabled={item._protegido}
+                          style={puedeDesactivar ? undefined : { display: 'none' }}
                         >
                           {item.estado === 'activo' ? 'Desactivar' : 'Activar'}
                         </button>
@@ -200,6 +253,16 @@ export default function CrudTable({
             </tbody>
           </table>
         </div>
+
+        {paginacion && (
+          <PaginationBar
+            pagina={paginacion.pagina}
+            total={paginacion.total}
+            limite={paginacion.limite}
+            totalPaginas={paginacion.totalPaginas}
+            onCambio={(p) => cargar({}, p)}
+          />
+        )}
       </div>
 
       {modal && (
@@ -219,7 +282,33 @@ export default function CrudTable({
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       {campo.label} {campo.required && <span className="text-red-500">*</span>}
                     </label>
-                    {campo.type === 'select' ? (
+                    {campo.type === 'multiSelect' ? (
+                      <>
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                          {campo.options?.map(op => (
+                            <label key={op.value} className="flex items-center gap-2 text-sm text-gray-700">
+                              <input
+                                type="checkbox"
+                                checked={(form[campo.name] || []).includes(op.value)}
+                                onChange={(e) => {
+                                  const actual = form[campo.name] || []
+                                  if (e.target.checked && campo.max && actual.length >= campo.max) return
+                                  const nuevo = e.target.checked
+                                    ? [...actual, op.value]
+                                    : actual.filter(v => v !== op.value)
+                                  setForm({ ...form, [campo.name]: nuevo })
+                                }}
+                                className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                              />
+                              {op.label}
+                            </label>
+                          ))}
+                        </div>
+                        {campo.hint && (
+                          <p className="text-xs text-gray-400 mt-1.5">{campo.hint}</p>
+                        )}
+                      </>
+                    ) : campo.type === 'select' ? (
                       <select
                         value={form[campo.name] || ''}
                         onChange={(e) => setForm({ ...form, [campo.name]: e.target.value })}

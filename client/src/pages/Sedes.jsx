@@ -1,10 +1,17 @@
 import CrudTable from '../components/CrudTable'
 import { useAuth } from '../context/AuthContext'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import api from '../services/api'
 
 const columnas = [
   {
     key: 'nombre', label: 'Sede',
     render: (s) => <span className="font-medium text-gray-900">{s.nombre}</span>
+  },
+  {
+    key: 'institucionId', label: 'Colegio',
+    render: (s) => s.institucionId?.nombre || '—'
   },
   { key: 'abreviatura', label: 'Abreviatura', render: (s) => s.abreviatura || '—' },
   { key: 'direccion', label: 'Dirección', render: (s) => s.direccion || '—' },
@@ -19,7 +26,7 @@ const columnas = [
   }
 ]
 
-const campos = [
+const camposBase = [
   { name: 'nombre', label: 'Nombre de la Sede', required: true },
   { name: 'abreviatura', label: 'Abreviatura' },
   { name: 'direccion', label: 'Dirección' },
@@ -35,7 +42,28 @@ const campos = [
 
 export default function Sedes() {
   const { usuario } = useAuth()
-  const puedeGestionar = ['super_admin', 'admin', 'rector', 'coordinador'].includes(usuario?.tipoPerfil)
+  const [instituciones, setInstituciones] = useState([])
+  const [searchParams] = useSearchParams()
+  const institucionIdParam = searchParams.get('institucionId')
+  const esSuperAdmin = usuario?.tipoPerfil === 'super_admin'
+  const puedeGestionar = ['super_admin', 'admin', 'secretaria'].includes(usuario?.tipoPerfil)
+
+  useEffect(() => {
+    api.get('/instituciones').then(r => {
+      setInstituciones(r.data.data.map(i => ({ value: i._id, label: i.nombre })))
+    }).catch(() => {})
+  }, [])
+
+  const filtroInicial = institucionIdParam ? { institucionId: institucionIdParam } : undefined
+
+  const campos = esSuperAdmin
+    ? [
+        { name: 'institucionId', label: 'Colegio', type: 'select', options: instituciones, required: true, colSpan: 2 },
+        ...camposBase
+      ]
+    : camposBase
+
+  const filtros = esSuperAdmin ? [{ name: 'institucionId', label: 'Colegio', options: instituciones }] : undefined
 
   return (
     <CrudTable
@@ -43,7 +71,10 @@ export default function Sedes() {
       baseURL="/sedes"
       columnas={columnas}
       campos={campos}
+      filtros={filtros}
+      filtroInicial={filtroInicial}
       puedeGestionar={puedeGestionar}
+      puedeDesactivar={['super_admin', 'admin'].includes(usuario?.tipoPerfil)}
     />
   )
 }

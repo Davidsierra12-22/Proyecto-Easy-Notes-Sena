@@ -1,32 +1,46 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
-import Login from './pages/Login'
-import CambiarPassword from './pages/CambiarPassword'
-import Dashboard from './pages/Dashboard'
 import Layout from './components/Layout'
-import Usuarios from './pages/Usuarios'
-import Areas from './pages/Areas'
-import Asignaturas from './pages/Asignaturas'
-import Grupos from './pages/Grupos'
-import AniosAcademicos from './pages/AniosAcademicos'
-import Matriculas from './pages/Matriculas'
-import Calificaciones from './pages/Calificaciones'
-import Boletines from './pages/Boletines'
-import ConceptosContables from './pages/ConceptosContables'
-import Pagos from './pages/Pagos'
-import Bitacora from './pages/Bitacora'
-import Comunicados from './pages/Comunicados'
-import Recuperaciones from './pages/Recuperaciones'
-import Indicadores from './pages/Indicadores'
-import Actividades from './pages/Actividades'
-import Sedes from './pages/Sedes'
-import Carnets from './pages/Carnets'
-import Prematriculas from './pages/Prematriculas'
-import PrematriculaOnline from './pages/PrematriculaOnline'
-import Promocion from './pages/Promocion'
-import Certificados from './pages/Certificados'
-import RecuperarPassword from './pages/RecuperarPassword'
-import RestablecerPassword from './pages/RestablecerPassword'
+
+const Login = lazy(() => import('./pages/Login'))
+const CambiarPassword = lazy(() => import('./pages/CambiarPassword'))
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const Usuarios = lazy(() => import('./pages/Usuarios'))
+const Areas = lazy(() => import('./pages/Areas'))
+const Asignaturas = lazy(() => import('./pages/Asignaturas'))
+const Grupos = lazy(() => import('./pages/Grupos'))
+const CargaAcademica = lazy(() => import('./pages/CargaAcademica'))
+const AniosAcademicos = lazy(() => import('./pages/AniosAcademicos'))
+const Matriculas = lazy(() => import('./pages/Matriculas'))
+const Calificaciones = lazy(() => import('./pages/Calificaciones'))
+const Boletines = lazy(() => import('./pages/Boletines'))
+const ConceptosContables = lazy(() => import('./pages/ConceptosContables'))
+const Pagos = lazy(() => import('./pages/Pagos'))
+const Cartera = lazy(() => import('./pages/Cartera'))
+const Bitacora = lazy(() => import('./pages/Bitacora'))
+const Comunicados = lazy(() => import('./pages/Comunicados'))
+const Recuperaciones = lazy(() => import('./pages/Recuperaciones'))
+const Indicadores = lazy(() => import('./pages/Indicadores'))
+const Actividades = lazy(() => import('./pages/Actividades'))
+const MisClases = lazy(() => import('./pages/MisClases'))
+const MisNotas = lazy(() => import('./pages/MisNotas'))
+const Horario = lazy(() => import('./pages/Horario'))
+const MisExcusas = lazy(() => import('./pages/MisExcusas'))
+const Sedes = lazy(() => import('./pages/Sedes'))
+const Carnets = lazy(() => import('./pages/Carnets'))
+const Prematriculas = lazy(() => import('./pages/Prematriculas'))
+const PrematriculaOnline = lazy(() => import('./pages/PrematriculaOnline'))
+const Promocion = lazy(() => import('./pages/Promocion'))
+const Certificados = lazy(() => import('./pages/Certificados'))
+const Configuracion = lazy(() => import('./pages/Configuracion'))
+const Perfil = lazy(() => import('./pages/Perfil'))
+const RecuperarPassword = lazy(() => import('./pages/RecuperarPassword'))
+const RestablecerPassword = lazy(() => import('./pages/RestablecerPassword'))
+const ElegirPerfil = lazy(() => import('./pages/ElegirPerfil'))
+const Instituciones = lazy(() => import('./pages/Instituciones'))
+const Nucleos = lazy(() => import('./pages/Nucleos'))
+const EstadisticasNucleo = lazy(() => import('./pages/EstadisticasNucleo'))
 
 function RutaProtegida({ children }) {
   const { token, debeCambiarPassword } = useAuth()
@@ -39,12 +53,18 @@ export default function App() {
   const { token, debeCambiarPassword } = useAuth()
 
   return (
-    <Routes>
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+      </div>
+    }>
+      <Routes>
       <Route path="/login" element={token && !debeCambiarPassword ? <Navigate to="/" replace /> : <Login />} />
       <Route path="/cambiar-password" element={token ? <CambiarPassword /> : <Navigate to="/login" replace />} />
       <Route path="/prematricula" element={<PrematriculaOnline />} />
       <Route path="/recuperar-password" element={<RecuperarPassword />} />
       <Route path="/restablecer-password" element={<RestablecerPassword />} />
+      <Route path="/elegir-perfil" element={token && !debeCambiarPassword ? <ElegirPerfil /> : <Navigate to="/login" replace />} />
 
       <Route
         path="/"
@@ -55,28 +75,40 @@ export default function App() {
         }
       >
         <Route index element={<Dashboard />} />
+        <Route path="instituciones" element={<Instituciones />} />
+        <Route path="nucleos" element={<Nucleos />} />
+        <Route path="estadisticas" element={<EstadisticasNucleo />} />
         <Route path="usuarios" element={<Usuarios />} />
         <Route path="areas" element={<Areas />} />
         <Route path="asignaturas" element={<Asignaturas />} />
         <Route path="grupos" element={<Grupos />} />
+        <Route path="carga-academica" element={<CargaAcademica />} />
         <Route path="anios-academicos" element={<AniosAcademicos />} />
         <Route path="matriculas" element={<Matriculas />} />
         <Route path="calificaciones" element={<Calificaciones />} />
         <Route path="boletines" element={<Boletines />} />
         <Route path="conceptos-contables" element={<ConceptosContables />} />
         <Route path="pagos" element={<Pagos />} />
+        <Route path="cartera" element={<Cartera />} />
         <Route path="bitacora" element={<Bitacora />} />
         <Route path="comunicados" element={<Comunicados />} />
         <Route path="recuperaciones" element={<Recuperaciones />} />
         <Route path="indicadores" element={<Indicadores />} />
         <Route path="actividades" element={<Actividades />} />
+        <Route path="mis-clases" element={<MisClases />} />
+        <Route path="mis-notas" element={<MisNotas />} />
+        <Route path="horario" element={<Horario />} />
+        <Route path="mis-excusas" element={<MisExcusas />} />
         <Route path="sedes" element={<Sedes />} />
         <Route path="carnets" element={<Carnets />} />
         <Route path="prematriculas" element={<Prematriculas />} />
         <Route path="promocion" element={<Promocion />} />
         <Route path="certificados" element={<Certificados />} />
+        <Route path="configuracion" element={<Configuracion />} />
+        <Route path="perfil" element={<Perfil />} />
         <Route path="*" element={<Dashboard />} />
       </Route>
-    </Routes>
+      </Routes>
+    </Suspense>
   )
 }

@@ -17,6 +17,8 @@ export default function Login() {
       const datos = await login(usuario, password)
       if (datos.debeCambiarPassword) {
         window.location.href = '/cambiar-password'
+      } else if (datos.roles && datos.roles.length > 1) {
+        window.location.href = '/elegir-perfil'
       } else {
         window.location.href = '/'
       }

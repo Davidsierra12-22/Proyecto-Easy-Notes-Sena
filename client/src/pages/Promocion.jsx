@@ -5,8 +5,8 @@ import { useAuth } from '../context/AuthContext'
 
 export default function Promocion() {
   const { usuario } = useAuth()
-  const puedeGestionar = ['super_admin', 'admin', 'rector', 'coordinador'].includes(usuario?.tipoPerfil)
-  const puedeCerrar = ['super_admin', 'admin', 'rector'].includes(usuario?.tipoPerfil)
+  const puedeGestionar = ['super_admin', 'admin', 'secretaria'].includes(usuario?.tipoPerfil)
+  const puedeCerrar = ['super_admin', 'admin'].includes(usuario?.tipoPerfil)
 
   const [anios, setAnios] = useState([])
   const [grupos, setGrupos] = useState([])

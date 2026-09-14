@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Plus, RefreshCw, Search, LogOut, TrendingUp, TrendingDown, UserCheck, ArrowLeftRight } from 'lucide-react'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import { useSede } from '../context/SedeContext'
+import PaginationBar from '../components/PaginationBar'
 
 const estadoBadge = (estado) => {
   const map = {
@@ -22,12 +24,16 @@ const tipoLabel = {
 
 export default function Matriculas() {
   const { usuario } = useAuth()
+  const { sedes, sedeId } = useSede()
   const [datos, setDatos] = useState([])
   const [estudiantes, setEstudiantes] = useState([])
   const [anios, setAnios] = useState([])
   const [grupos, setGrupos] = useState([])
   const [loading, setLoading] = useState(true)
   const [busqueda, setBusqueda] = useState('')
+  const [filtroGrupo, setFiltroGrupo] = useState('')
+  const [pagina, setPagina] = useState(1)
+  const [paginacion, setPaginacion] = useState(null)
   const [modal, setModal] = useState(false)
   const [form, setForm] = useState({ tipoMatricula: 'nueva' })
   const [error, setError] = useState('')
@@ -37,7 +43,10 @@ export default function Matriculas() {
   const [formGrupo, setFormGrupo] = useState({})
   const [soloMatricula, setSoloMatricula] = useState(null)
 
-  const puedeGestionar = ['super_admin', 'admin', 'rector', 'coordinador', 'secretaria'].includes(usuario?.tipoPerfil)
+  const puedeGestionar = ['super_admin', 'admin', 'secretaria'].includes(usuario?.tipoPerfil)
+
+  const grupoIdDe = (m) => (typeof m.grupoId === 'object' && m.grupoId) ? m.grupoId._id : m.grupoId
+  const visibles = datos
 
   const toggleSelect = (id) => {
     setSeleccion(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
@@ -74,13 +83,17 @@ export default function Matriculas() {
     }
   }
 
-  const cargarMatriculas = async () => {
+  const cargarMatriculas = async (page = pagina) => {
     setLoading(true)
     try {
-      const params = {}
+      const params = { page, limit: 50 }
       if (busqueda) params.estado = busqueda
+      if (sedeId) params.sedeId = sedeId
+      if (filtroGrupo) params.grupoId = filtroGrupo
       const r = await api.get('/matriculas', { params })
       setDatos(r.data.data)
+      setPaginacion(r.data.paginacion || null)
+      setPagina(page)
     } catch (e) {
       setError(e.response?.data?.message || 'Error al cargar')
     } finally {
@@ -104,9 +117,9 @@ export default function Matriculas() {
   }
 
   useEffect(() => {
-    cargarMatriculas()
+    cargarMatriculas(1)
     cargarDependencias()
-  }, [])
+  }, [sedeId])
 
   const crear = async (e) => {
     e.preventDefault()
@@ -173,6 +186,13 @@ export default function Matriculas() {
     return typeof g === 'string' ? g : `${g.nombre} (Grado ${g.grado})`
   }
 
+  const sedeLabel = (m) => {
+    const g = typeof m.grupoId === 'object' ? m.grupoId : grupos.find(x => x._id === m.grupoId)
+    if (!g) return '—'
+    const s = sedes.find(x => x._id === g.sedeId)
+    return s?.nombre || '—'
+  }
+
   return (
     <div className="space-y-4">
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 lg:p-6">
@@ -186,18 +206,27 @@ export default function Matriculas() {
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <select
                 value={busqueda}
-                onChange={(e) => { setBusqueda(e.target.value); setTimeout(cargarMatriculas, 0) }}
+                onChange={(e) => { setBusqueda(e.target.value); setTimeout(() => cargarMatriculas(1), 0) }}
                 className="pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
               >
-                <option value="">Todos los estados</option>
+<option value="">Todos los estados</option>
                 <option value="activa">Activas</option>
                 <option value="retirada">Retiradas</option>
                 <option value="graduado">Graduados</option>
               </select>
             </div>
-            <button onClick={cargarMatriculas} className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100">
-              <RefreshCw className="w-4 h-4" />
-            </button>
+            <div className="relative">
+              <select
+                value={filtroGrupo}
+                onChange={(e) => { setFiltroGrupo(e.target.value); setTimeout(() => cargarMatriculas(1), 0) }}
+                className="pl-3 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="">Todos los grupos</option>
+                {grupos.map(g => (
+                  <option key={g._id} value={g._id}>{g.nombre}{g.jornada ? ` · ${g.jornada}` : ''} (Grado {g.grado})</option>
+                ))}
+              </select>
+            </div>
             {puedeGestionar && seleccion.length > 0 && (
               <button onClick={() => abrirCambio()}
                 className="bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium px-4 py-2 rounded-lg flex items-center gap-2">
@@ -227,6 +256,7 @@ export default function Matriculas() {
                   }} />}</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Estudiante</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Documento</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Sede</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Grupo</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Tipo</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Estado</th>
@@ -236,19 +266,22 @@ export default function Matriculas() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
-                <tr><td colSpan="8" className="px-4 py-8 text-center">
+                <tr><td colSpan="9" className="px-4 py-8 text-center">
                   <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto" />
                 </td></tr>
               ) : datos.length === 0 ? (
-                <tr><td colSpan="8" className="px-4 py-8 text-center text-gray-500">No hay matrículas registradas</td></tr>
+                <tr><td colSpan="9" className="px-4 py-8 text-center text-gray-500">No hay matrículas registradas</td></tr>
+              ) : visibles.length === 0 ? (
+                <tr><td colSpan="9" className="px-4 py-8 text-center text-gray-500">No hay estudiantes para el grupo seleccionado</td></tr>
               ) : (
-                datos.map(m => (
+                visibles.map(m => (
                   <tr key={m._id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">{m.estado === 'activa' && puedeGestionar && (
                       <input type="checkbox" className="accent-primary-600" checked={seleccion.includes(m._id)} onChange={() => toggleSelect(m._id)} />
                     )}</td>
                     <td className="px-4 py-3 text-sm font-medium text-gray-900">{estudianteLabel(m)}</td>
                     <td className="px-4 py-3 text-sm text-gray-700">{m.estudianteId?.documento || '—'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700">{sedeLabel(m)}</td>
                     <td className="px-4 py-3 text-sm text-gray-700">{grupoLabel(m)}</td>
                     <td className="px-4 py-3 text-sm text-gray-700">{tipoLabel[m.tipoMatricula] || m.tipoMatricula}</td>
                     <td className="px-4 py-3">{estadoBadge(m.estado)}</td>
@@ -287,6 +320,16 @@ export default function Matriculas() {
             </tbody>
           </table>
         </div>
+
+        {paginacion && (
+          <PaginationBar
+            pagina={paginacion.pagina}
+            total={paginacion.total}
+            limite={paginacion.limite}
+            totalPaginas={paginacion.totalPaginas}
+            onCambio={(p) => cargarMatriculas(p)}
+          />
+        )}
       </div>
 
       {modal && (

@@ -46,7 +46,7 @@ const campos = [
 
 export default function ConceptosContables() {
   const { usuario } = useAuth()
-  const puedeGestionar = ['super_admin', 'admin', 'rector', 'secretaria'].includes(usuario?.tipoPerfil)
+  const puedeGestionar = ['super_admin', 'admin', 'secretaria'].includes(usuario?.tipoPerfil)
 
   return (
     <CrudTable
@@ -55,6 +55,7 @@ export default function ConceptosContables() {
       columnas={columnas}
       campos={campos}
       puedeGestionar={puedeGestionar}
+      puedeDesactivar={['super_admin', 'admin'].includes(usuario?.tipoPerfil)}
     />
   )
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Plus, RefreshCw, Send, MailOpen, Mail, AlertCircle } from 'lucide-react'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import PaginationBar from '../components/PaginationBar'
 
 const ROLES_DESTINO = [
   { value: 'estudiante', label: 'Estudiantes' },
@@ -25,12 +26,16 @@ export default function Comunicados() {
   const [form, setForm] = useState({ destinatarios: [{ rol: 'estudiante' }], prioridad: 'normal' })
   const [saving, setSaving] = useState(false)
   const [detalle, setDetalle] = useState(null)
+  const [pagina, setPagina] = useState(1)
+  const [paginacion, setPaginacion] = useState(null)
 
-  const cargar = async () => {
+  const cargar = async (page = pagina) => {
     setLoading(true)
     try {
-      const r = await api.get('/comunicados')
+      const r = await api.get('/comunicados', { params: { page, limit: 50 } })
       setEnviados(r.data.data)
+      setPaginacion(r.data.paginacion || null)
+      setPagina(page)
     } catch (e) {
       setError(e.response?.data?.message || 'Error al cargar comunicados')
     } finally {
@@ -155,6 +160,16 @@ export default function Comunicados() {
             ))
           )}
         </div>
+
+        {paginacion && (
+          <PaginationBar
+            pagina={paginacion.pagina}
+            total={paginacion.total}
+            limite={paginacion.limite}
+            totalPaginas={paginacion.totalPaginas}
+            onCambio={(p) => cargar(p)}
+          />
+        )}
       </div>
 
       {modal && (

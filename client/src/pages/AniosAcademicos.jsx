@@ -21,7 +21,7 @@ export default function AniosAcademicos() {
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
-  const puedeGestionar = ['super_admin', 'admin', 'rector', 'coordinador', 'secretaria'].includes(usuario?.tipoPerfil)
+  const puedeGestionar = ['super_admin', 'admin', 'secretaria'].includes(usuario?.tipoPerfil)
 
   const cargar = async () => {
     setLoading(true)

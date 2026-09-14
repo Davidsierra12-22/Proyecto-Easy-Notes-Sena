@@ -2,17 +2,20 @@ import { useEffect, useState } from 'react'
 import CrudTable from '../components/CrudTable'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import { useSede } from '../context/SedeContext'
 
 export default function Asignaturas() {
   const { usuario } = useAuth()
+  const { sedes, sedeId } = useSede()
   const [areas, setAreas] = useState([])
-  const puedeGestionar = ['super_admin', 'admin', 'rector', 'coordinador'].includes(usuario?.tipoPerfil)
+  const puedeGestionar = ['super_admin', 'admin', 'secretaria'].includes(usuario?.tipoPerfil)
+  const puedeControl = ['super_admin', 'admin'].includes(usuario?.tipoPerfil)
 
   useEffect(() => {
-    api.get('/areas').then(r => {
+    api.get('/areas', { params: sedeId ? { sedeId } : {} }).then(r => {
       setAreas(r.data.data.map(a => ({ value: a._id, label: a.nombre })))
     }).catch(() => {})
-  }, [])
+  }, [sedeId])
 
   const columnas = [
     { key: 'nombre', label: 'Asignatura', render: (a) => <span className="font-medium text-gray-900">{a.nombre}</span> },
@@ -25,7 +28,14 @@ export default function Asignaturas() {
     },
     { key: 'abreviatura', label: 'Abreviatura', render: (a) => a.abreviatura || '—' },
     { key: 'intensidadHoraria', label: 'Int. Horaria', render: (a) => (a.intensidadHoraria ?? 4) + ' h' },
-    { key: 'orden', label: 'Orden', render: (a) => a.orden ?? '—' }
+    { key: 'orden', label: 'Orden', render: (a) => a.orden ?? '—' },
+    {
+      key: 'sedeId', label: 'Sede',
+      render: (a) => {
+        const s = sedes.find(x => x._id === a.sedeId)
+        return s ? s.nombre : '—'
+      }
+    }
   ]
 
   const campos = [
@@ -43,7 +53,9 @@ export default function Asignaturas() {
       baseURL="/asignaturas"
       columnas={columnas}
       campos={campos}
+      parametrosForzados={sedeId ? { sedeId } : {}}
       puedeGestionar={puedeGestionar}
+      puedeDesactivar={puedeControl}
     />
   )
 }

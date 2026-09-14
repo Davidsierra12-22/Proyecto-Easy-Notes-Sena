@@ -6,7 +6,9 @@ const AuthContext = createContext()
 export const AuthProvider = ({ children }) => {
   const [usuario, setUsuario] = useState(() => {
     const stored = localStorage.getItem('usuario')
-    return stored ? JSON.parse(stored) : null
+    if (!stored) return null
+    const parsed = JSON.parse(stored)
+    return parsed._id ? parsed : { ...parsed, _id: parsed.id }
   })
   const [token, setToken] = useState(() => localStorage.getItem('token'))
   const [loading, setLoading] = useState(false)
@@ -19,14 +21,15 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await api.post('/auth/login', { usuario, password })
       const { token: nuevoToken, usuario: datosUsuario } = res.data.data
+      const usuarioConId = datosUsuario._id ? datosUsuario : { ...datosUsuario, _id: datosUsuario.id }
       localStorage.setItem('token', nuevoToken)
-      localStorage.setItem('usuario', JSON.stringify(datosUsuario))
+      localStorage.setItem('usuario', JSON.stringify(usuarioConId))
       setToken(nuevoToken)
-      setUsuario(datosUsuario)
+      setUsuario(usuarioConId)
       if (datosUsuario.debeCambiarPassword) {
         setDebeCambiarPassword(true)
       }
-      return datosUsuario
+      return usuarioConId
     } catch (err) {
       setError(err.response?.data?.message || 'Error al iniciar sesión')
       throw err
@@ -62,8 +65,37 @@ export const AuthProvider = ({ children }) => {
     setDebeCambiarPassword(false)
   }
 
+  const cambiarPerfil = async (perfil) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await api.post('/auth/cambiar-perfil', { perfil })
+      const { token: nuevoToken, usuario: datosUsuario } = res.data.data
+      const usuarioConId = datosUsuario._id ? datosUsuario : { ...datosUsuario, _id: datosUsuario.id }
+      localStorage.setItem('token', nuevoToken)
+      localStorage.setItem('usuario', JSON.stringify(usuarioConId))
+      setToken(nuevoToken)
+      setUsuario(usuarioConId)
+      return usuarioConId
+    } catch (err) {
+      setError(err.response?.data?.message || 'Error al cambiar de perfil')
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const actualizarUsuario = (parcial) => {
+    if (!usuario) return
+    const actualizado = { ...usuario, ...parcial }
+    localStorage.setItem('usuario', JSON.stringify(actualizado))
+    setUsuario(actualizado)
+  }
+
+  const usuarioNormalizado = usuario ? (usuario._id ? usuario : { ...usuario, _id: usuario.id }) : null
+
   const value = {
-    usuario,
+    usuario: usuarioNormalizado,
     token,
     loading,
     error,
@@ -71,6 +103,8 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     cambiarPassword,
+    cambiarPerfil,
+    actualizarUsuario,
     setError
   }
 
