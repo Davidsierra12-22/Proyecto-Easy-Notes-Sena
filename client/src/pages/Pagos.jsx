@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Plus, RefreshCw, Search, HandCoins, Printer } from 'lucide-react'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import PaginationBar from '../components/PaginationBar'
 
 const estadoBadge = (estado) => {
   const map = {
@@ -23,7 +24,7 @@ const METODOS = [
 
 export default function Pagos() {
   const { usuario } = useAuth()
-  const puedeGestionar = ['super_admin', 'admin', 'rector', 'secretaria'].includes(usuario?.tipoPerfil)
+  const puedeGestionar = ['super_admin', 'admin', 'secretaria'].includes(usuario?.tipoPerfil)
 
   const [datos, setDatos] = useState([])
   const [conceptos, setConceptos] = useState([])
@@ -37,12 +38,18 @@ export default function Pagos() {
   const [form, setForm] = useState({})
   const [registrando, setRegistrando] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [pagina, setPagina] = useState(1)
+  const [paginacion, setPaginacion] = useState(null)
 
-  const cargar = async () => {
+  const cargar = async (page = pagina) => {
     setLoading(true)
     try {
-      const r = await api.get('/pagos', { params: filtroEstado ? { estado: filtroEstado } : {} })
+      const params = { page, limit: 50 }
+      if (filtroEstado) params.estado = filtroEstado
+      const r = await api.get('/pagos', { params })
       setDatos(r.data.data)
+      setPaginacion(r.data.paginacion || null)
+      setPagina(page)
     } catch (e) {
       setError(e.response?.data?.message || 'Error al cargar pagos')
     } finally {
@@ -138,7 +145,7 @@ export default function Pagos() {
           <div className="flex items-center gap-2">
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <select value={filtroEstado} onChange={(e) => { setFiltroEstado(e.target.value); setTimeout(cargar, 0) }}
+              <select value={filtroEstado} onChange={(e) => { setFiltroEstado(e.target.value); setTimeout(() => cargar(1), 0) }}
                 className="pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 w-44">
                 <option value="">Todos los estados</option>
                 <option value="pendiente">Pendientes</option>
@@ -198,9 +205,8 @@ export default function Pagos() {
                 </td></tr>
               ) : datos.length === 0 ? (
                 <tr><td colSpan="8" className="px-4 py-8 text-center text-gray-500">No hay pagos registrados</td></tr>
-              ) : (
-                datos.map(p => (
-                  <tr key={p._id} className="hover:bg-gray-50">
+              ) : datos.map((p) => (
+                    <tr key={p._id}>
                     <td className="px-4 py-3 text-sm font-medium text-gray-900">
                       {p.estudianteId ? `${p.estudianteId.nombres || p.estudianteId.nombre || ''} ${p.estudianteId.apellidos || p.estudianteId.apellido || ''}` : '—'}
                     </td>
@@ -220,11 +226,20 @@ export default function Pagos() {
                       {p.estado === 'pagado' && <span className="text-sm text-emerald-600">Pagado</span>}
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
+                ))}
+              </tbody>
           </table>
         </div>
+
+        {paginacion && (
+          <PaginationBar
+            pagina={paginacion.pagina}
+            total={paginacion.total}
+            limite={paginacion.limite}
+            totalPaginas={paginacion.totalPaginas}
+            onCambio={(p) => cargar(p)}
+          />
+        )}
       </div>
 
       {modal && (
