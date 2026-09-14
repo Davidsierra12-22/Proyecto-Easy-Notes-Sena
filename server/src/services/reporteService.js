@@ -1,6 +1,7 @@
 const Calificacion = require('../models/Calificacion');
 const Indicador = require('../models/Indicador');
 const AnioAcademico = require('../models/AnioAcademico');
+const Institucion = require('../models/Institucion');
 const CalificacionService = require('./calificacionService');
 const PromocionService = require('./promocionService');
 
@@ -11,10 +12,22 @@ const PromocionService = require('./promocionService');
 class ReporteService {
 
   /**
+   * Obtiene la escala de desempeños (niveles) configurada en la institución
+   * @param {String} institucionId
+   * @returns {Array|null} niveles [{orden, valor, rangoMin, rangoMax}]
+   */
+  static async obtenerNiveles(institucionId) {
+    if (!institucionId) return null;
+    const inst = await Institucion.findById(institucionId).lean();
+    return inst?.configuracion?.niveles || null;
+  }
+
+  /**
    * RN-BOL-01: Generar boletín acumulativo
    * Muestra notas de todos los periodos cursados y promedio
    */
   static async generarBoletinAcumulativo({ estudianteId, anioAcademicoId, institucionId }) {
+    const nivelesEscala = await this.obtenerNiveles(institucionId);
     const calificaciones = await Calificacion.find({
       estudianteId,
       anioAcademicoId,
@@ -57,7 +70,7 @@ class ReporteService {
 
       // RN-BOL-06: Generar logro cualitativo
       if (notaVigente != null) {
-        const logro = CalificacionService.generarLogro(notaVigente);
+        const logro = CalificacionService.generarLogro(notaVigente, nivelesEscala);
         porAsignatura[key].logros.push({
           periodo: cal.periodo,
           logro
@@ -80,7 +93,7 @@ class ReporteService {
         asignatura: materia.asignatura,
         periodos: materia.periodos,
         promedioAnual,
-        logroFinal: CalificacionService.generarLogro(promedioAnual),
+        logroFinal: CalificacionService.generarLogro(promedioAnual, nivelesEscala),
         logros: materia.logros
       };
     });
@@ -106,6 +119,7 @@ class ReporteService {
    * Resumen de notas finales del periodo actual sin detalles
    */
   static async generarBoletinCorto({ estudianteId, anioAcademicoId, institucionId, periodo }) {
+    const nivelesEscala = await this.obtenerNiveles(institucionId);
     const calificaciones = await Calificacion.find({
       estudianteId,
       anioAcademicoId,
@@ -126,7 +140,7 @@ class ReporteService {
         nota: cal.nota,
         notaVigente,
         recuperada: tieneRecuperacion,
-        logro: CalificacionService.generarLogro(notaVigente || 0),
+        logro: CalificacionService.generarLogro(notaVigente || 0, nivelesEscala),
         observacion: cal.observacion
       };
     });
@@ -153,6 +167,7 @@ class ReporteService {
    * Incluye el detalle de indicadores y observaciones
    */
   static async generarBoletinDescriptivo({ estudianteId, anioAcademicoId, institucionId, periodo }) {
+    const nivelesEscala = await this.obtenerNiveles(institucionId);
     const calificaciones = await Calificacion.find({
       estudianteId,
       anioAcademicoId,
@@ -184,7 +199,7 @@ class ReporteService {
         nota: cal.nota,
         notaVigente,
         recuperada: tieneRecuperacion,
-        logro: CalificacionService.generarLogro(notaVigente || 0),
+        logro: CalificacionService.generarLogro(notaVigente || 0, nivelesEscala),
         observacion: cal.observacion,
         // RN-BOL-03: Solo en boletín descriptivo se muestran indicadores
         indicadores: cal.indicadores?.map(ind => ({

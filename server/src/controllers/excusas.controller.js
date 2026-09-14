@@ -7,8 +7,12 @@ const getAll = async (req, res) => {
       ? { institucionId: req.usuario.institucionId }
       : {};
 
+    if (req.usuario?.tipoPerfil === 'estudiante') {
+      filtro.estudianteId = req.usuario._id;
+    }
+
     const data = await Excusas.find(filtro)
-      .populate("estudianteId", "nombre apellido")
+      .populate("estudianteId", "nombres apellidos documento")
       .populate("aprobadoPor", "nombre apellido")
       .sort({ createdAt: -1 });
 
@@ -60,6 +64,10 @@ const create = async (req, res) => {
 
     if (req.usuario?.institucionId) {
       body.institucionId = req.usuario.institucionId;
+    }
+
+    if (req.usuario?.tipoPerfil === 'estudiante') {
+      body.estudianteId = req.usuario._id;
     }
 
     const data = await Excusas.create(body);

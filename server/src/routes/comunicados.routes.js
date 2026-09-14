@@ -10,8 +10,8 @@ router.use(protect);
 
 router.get("/", getAll);
 router.get("/:id", reglas.idMongo, validar, getById);
-router.post("/", writeLimiter, authorize(...PERMISOS.INSTITUCIONAL, ...PERMISOS.DOCENTE), registrarAccion('crear_comunicado', 'Comunicados'), create);
-router.put("/:id", reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.INSTITUCIONAL, ...PERMISOS.DOCENTE), registrarAccion('editar_comunicado', 'Comunicados'), update);
+router.post("/", writeLimiter, authorize(...PERMISOS.GESTION, ...PERMISOS.DOCENTE), registrarAccion('crear_comunicado', 'Comunicados'), create);
+router.put("/:id", reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.GESTION, ...PERMISOS.DOCENTE), registrarAccion('editar_comunicado', 'Comunicados'), update);
 router.delete("/:id", reglas.idMongo, validar, deleteLimiter, authorize(...PERMISOS.DIRECCION), registrarAccion('eliminar_comunicado', 'Comunicados'), remove);
 router.put("/:id/leer", reglas.idMongo, validar, registrarAccion('marcar_leido_comunicado', 'Comunicados'), marcarLeido);
 

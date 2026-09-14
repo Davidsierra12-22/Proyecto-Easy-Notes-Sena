@@ -1,8 +1,73 @@
 const Institucion = require('../models/Institucion');
+const Usuario = require('../models/Usuario');
 const path = require('path');
 const fs = require('fs');
+const { PERMISOS } = require('../config/constants');
 
 const UPLOAD_DIR = path.join(__dirname, '..', '..', 'uploads', 'logos');
+const FOTO_DIR = path.join(__dirname, '..', '..', 'uploads', 'fotos');
+
+const puedeGestionarFoto = (req) =>
+  PERMISOS.DIRECCION.includes(req.usuario?.tipoPerfil) ||
+  (req.usuario && req.params.id && req.usuario._id.toString() === req.params.id);
+
+const subirFotoUsuario = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ ok: false, message: 'No se envió ningún archivo' });
+    }
+    if (!puedeGestionarFoto(req)) {
+      return res.status(403).json({ ok: false, message: 'No tienes permisos para esta acción' });
+    }
+
+    const usuario = await Usuario.findById(req.params.id);
+    if (!usuario) {
+      return res.status(404).json({ ok: false, message: 'Usuario no encontrado' });
+    }
+
+    if (usuario.foto?.startsWith('/uploads/fotos/')) {
+      const anterior = path.join(FOTO_DIR, path.basename(usuario.foto));
+      if (fs.existsSync(anterior)) {
+        fs.unlinkSync(anterior);
+      }
+    }
+
+    const rutaRelativa = `/uploads/fotos/${req.file.filename}`;
+    usuario.foto = rutaRelativa;
+    await usuario.save();
+
+    res.json({ ok: true, data: { foto: rutaRelativa }, message: 'Foto actualizada correctamente' });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: 'Error al subir foto', error: error.message });
+  }
+};
+
+const quitarFotoUsuario = async (req, res) => {
+  try {
+    if (!puedeGestionarFoto(req)) {
+      return res.status(403).json({ ok: false, message: 'No tienes permisos para esta acción' });
+    }
+
+    const usuario = await Usuario.findById(req.params.id);
+    if (!usuario) {
+      return res.status(404).json({ ok: false, message: 'Usuario no encontrado' });
+    }
+
+    if (usuario.foto?.startsWith('/uploads/fotos/')) {
+      const anterior = path.join(FOTO_DIR, path.basename(usuario.foto));
+      if (fs.existsSync(anterior)) {
+        fs.unlinkSync(anterior);
+      }
+    }
+
+    usuario.foto = null;
+    await usuario.save();
+
+    res.json({ ok: true, message: 'Foto eliminada correctamente' });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: 'Error al quitar foto', error: error.message });
+  }
+};
 
 const subirLogo = async (req, res) => {
   try {
@@ -80,4 +145,4 @@ const subirFirmaRector = async (req, res) => {
   }
 };
 
-module.exports = { subirLogo, subirFirmaRector };
+module.exports = { subirLogo, subirFirmaRector, subirFotoUsuario, quitarFotoUsuario };

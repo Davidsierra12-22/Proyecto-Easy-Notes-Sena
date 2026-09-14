@@ -8,6 +8,7 @@ const {
   remove,
   registrarPago,
   getByEstudiante,
+  getCartera,
 } = require("../controllers/pagos.controller");
 
 const { protect, authorize } = require("../middleware/auth");
@@ -19,6 +20,7 @@ const { writeLimiter, deleteLimiter } = require("../middleware/security");
 router.use(protect);
 
 router.get("/", authorize(...PERMISOS.FINANCIERO), getAll);
+router.get("/cartera", authorize(...PERMISOS.FINANCIERO), getCartera);
 router.get("/:id", reglas.idMongo, validar, authorize(...PERMISOS.FINANCIERO), getById);
 router.post("/", writeLimiter, authorize(...PERMISOS.FINANCIERO), registrarAccion('crear_pago', 'Pagos'), create);
 router.put("/:id", reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.FINANCIERO), registrarAccion('editar_pago', 'Pagos'), update);

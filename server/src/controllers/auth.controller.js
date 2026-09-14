@@ -5,6 +5,30 @@ const Bitacora = require('../models/Bitacora');
 const { generarToken } = require('../middleware/auth');
 const { enviarRecuperacion, configurado: smtpConfigurado } = require('../services/mailService');
 
+const construirUsuario = (user, tipoPerfil) => ({
+  id: user._id,
+  nombres: user.nombres,
+  apellidos: user.apellidos,
+  nombreCompleto: user.nombreCompleto,
+  documento: user.documento,
+  email: user.email,
+  telefono: user.telefono,
+  celular: user.celular,
+  tipoPerfil: tipoPerfil || user.tipoPerfil,
+  roles: user.roles && user.roles.length ? user.roles : [user.tipoPerfil],
+  institucionId: user.institucionId?._id || user.institucionId,
+  institucion: user.institucionId
+    ? {
+        id: user.institucionId._id || user.institucionId,
+        nombre: user.institucionId.nombre,
+        logo: user.institucionId.logo
+      }
+    : null,
+  nucleoId: user.nucleoId,
+  debeCambiarPassword: user.credenciales.debeCambiarPassword,
+  foto: user.foto
+});
+
 const login = async (req, res) => {
   try {
     const { usuario, password } = req.body;
@@ -16,7 +40,7 @@ const login = async (req, res) => {
       { 'credenciales.usuario': usuario },
       { documento: usuario }
     ] };
-    const user = await Usuario.findOne(criterio);
+    const user = await Usuario.findOne(criterio).populate('institucionId', 'nombre logo');
     if (!user) {
       Bitacora.create({ accion: 'login_fallido', coleccion: 'Usuarios', detalle: `Usuario no encontrado: ${usuario}`, direccionIp: req.ip, metodo: 'POST', ruta: req.originalUrl }).catch(() => {});
       return res.status(401).json({ ok: false, message: 'Credenciales invalidas' });
@@ -51,24 +75,45 @@ const login = async (req, res) => {
 
     const data = {
       token,
-      usuario: {
-        id: user._id,
-        nombres: user.nombres,
-        apellidos: user.apellidos,
-        nombreCompleto: user.nombreCompleto,
-        documento: user.documento,
-        email: user.email,
-        tipoPerfil: user.tipoPerfil,
-        institucionId: user.institucionId,
-        nucleoId: user.nucleoId,
-        debeCambiarPassword: user.credenciales.debeCambiarPassword,
-        foto: user.foto
-      }
+      usuario: construirUsuario(user)
     };
 
     res.json({ ok: true, data, message: 'Login exitoso' });
   } catch (error) {
     res.status(500).json({ ok: false, message: 'Error al iniciar sesion', error: error.message });
+  }
+};
+
+const cambiarPerfil = async (req, res) => {
+  try {
+    const { perfil } = req.body;
+    if (!perfil) {
+      return res.status(400).json({ ok: false, message: 'Selecciona un perfil' });
+    }
+
+    const user = await Usuario.findById(req.usuario._id).populate('institucionId', 'nombre logo');
+    const perfiles = user.roles && user.roles.length ? user.roles : [user.tipoPerfil];
+    if (!perfiles.includes(perfil)) {
+      return res.status(403).json({ ok: false, message: 'El perfil no está asignado a este usuario' });
+    }
+
+    const token = generarToken(user._id, perfil);
+
+    Bitacora.create({
+      institucionId: user.institucionId,
+      usuarioId: user._id,
+      accion: 'cambiar_perfil',
+      coleccion: 'Usuarios',
+      registroId: user._id,
+      detalle: `Cambio de perfil a ${perfil}`,
+      direccionIp: req.ip,
+      metodo: 'POST',
+      ruta: req.originalUrl
+    }).catch(() => {});
+
+    res.json({ ok: true, data: { token, usuario: construirUsuario(user, perfil) }, message: 'Perfil cambiado' });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: 'Error al cambiar perfil', error: error.message });
   }
 };
 
@@ -247,4 +292,4 @@ const restablecerPassword = async (req, res) => {
   }
 };
 
-module.exports = { login, me, cambiarPassword, recuperarPassword, restablecerPassword };
+module.exports = { login, me, cambiarPassword, cambiarPerfil, recuperarPassword, restablecerPassword };

@@ -10,13 +10,13 @@ const { writeLimiter, deleteLimiter } = require('../middleware/security');
 router.get('/', protect, controller.getAll);
 router.get('/grupo/:grupoId', protect, controller.getByGrupo);
 router.get('/:id', protect, reglas.idMongo, validar, controller.getById);
-router.post('/', protect, writeLimiter, authorize(...PERMISOS.ACADEMICO), registrarAccion('crear_matricula', 'Matriculas'), controller.create);
-router.put('/:id', protect, reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.ACADEMICO), registrarAccion('editar_matricula', 'Matriculas'), controller.update);
+router.post('/', protect, writeLimiter, authorize(...PERMISOS.GESTION), registrarAccion('crear_matricula', 'Matriculas'), controller.create);
+router.put('/:id', protect, reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.GESTION), registrarAccion('editar_matricula', 'Matriculas'), controller.update);
 router.delete('/:id', protect, reglas.idMongo, validar, deleteLimiter, authorize(...PERMISOS.DIRECCION), registrarAccion('eliminar_matricula', 'Matriculas'), controller.remove);
 router.put('/:id/retirar', protect, reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.DIRECCION), registrarAccion('retirar_matricula', 'Matriculas'), controller.retirar);
-router.put('/:id/promover', protect, reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.INSTITUCIONAL), registrarAccion('promover_matricula', 'Matriculas'), controller.promover);
-router.post('/evaluar-promocion', protect, writeLimiter, authorize(...PERMISOS.ACADEMICO), controller.evaluarPromocion);
-router.post('/cambio-grupo', protect, writeLimiter, authorize(...PERMISOS.ACADEMICO), registrarAccion('cambio_grupo', 'Matriculas'), controller.cambioGrupo);
+router.put('/:id/promover', protect, reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.GESTION), registrarAccion('promover_matricula', 'Matriculas'), controller.promover);
+router.post('/evaluar-promocion', protect, writeLimiter, authorize(...PERMISOS.GESTION), controller.evaluarPromocion);
+router.post('/cambio-grupo', protect, writeLimiter, authorize(...PERMISOS.GESTION), registrarAccion('cambio_grupo', 'Matriculas'), controller.cambioGrupo);
 router.post('/cerrar-anio', protect, writeLimiter, authorize(...PERMISOS.DIRECCION), registrarAccion('cerrar_anio', 'Matriculas'), controller.cerrarAnio);
 
 module.exports = router;

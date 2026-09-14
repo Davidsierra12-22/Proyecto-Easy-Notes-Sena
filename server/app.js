@@ -28,6 +28,7 @@ app.use(helmet());
 app.use(rateLimit({
   windowMs: RATE_LIMIT_WINDOW_MS,
   max: RATE_LIMIT_MAX_REQUESTS,
+  skipSuccessfulRequests: true,
   message: { ok: false, message: 'Demasiadas peticiones, intenta mas tarde' }
 }));
 

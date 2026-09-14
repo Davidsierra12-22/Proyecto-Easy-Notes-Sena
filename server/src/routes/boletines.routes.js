@@ -1,11 +1,19 @@
 const { Router } = require('express');
 const router = Router();
 const ReporteService = require('../services/reporteService');
-const { protect, authorize } = require('../middleware/auth');
-const { PERMISOS } = require('../config/constants');
+const { protect, autorizarAccesoEstudiante } = require('../middleware/auth');
+const { reglas, validar } = require('../middleware/validar');
 const { heavyQueryLimiter } = require('../middleware/security');
+const { generarPdf } = require('../controllers/boletinPdf.controller');
 
-router.get('/acumulativo/:estudianteId/anio/:anioAcademicoId', protect, heavyQueryLimiter, async (req, res) => {
+const conAcceso = (handler) => [reglas.estudianteId, reglas.anioAcademicoId, validar, autorizarAccesoEstudiante(), heavyQueryLimiter, handler];
+
+const pdfBoletin = (req, res) => generarPdf(req, res, { tipo: req.params.tipo, periodo: req.params.periodo ? parseInt(req.params.periodo, 10) : undefined });
+
+router.get('/pdf/:tipo/:estudianteId/anio/:anioAcademicoId/periodo/:periodo', protect, reglas.tipoBoletin, reglas.periodo, conAcceso(pdfBoletin));
+router.get('/pdf/:tipo/:estudianteId/anio/:anioAcademicoId', protect, reglas.tipoBoletin, conAcceso(pdfBoletin));
+
+router.get('/acumulativo/:estudianteId/anio/:anioAcademicoId', protect, reglas.estudianteId, reglas.anioAcademicoId, validar, autorizarAccesoEstudiante(), heavyQueryLimiter, async (req, res) => {
   try {
     const data = await ReporteService.generarBoletinAcumulativo({
       estudianteId: req.params.estudianteId,
@@ -18,7 +26,7 @@ router.get('/acumulativo/:estudianteId/anio/:anioAcademicoId', protect, heavyQue
   }
 });
 
-router.get('/corto/:estudianteId/anio/:anioAcademicoId/periodo/:periodo', protect, heavyQueryLimiter, async (req, res) => {
+router.get('/corto/:estudianteId/anio/:anioAcademicoId/periodo/:periodo', protect, reglas.estudianteId, reglas.anioAcademicoId, reglas.periodo, validar, autorizarAccesoEstudiante(), heavyQueryLimiter, async (req, res) => {
   try {
     const data = await ReporteService.generarBoletinCorto({
       estudianteId: req.params.estudianteId,
@@ -32,7 +40,7 @@ router.get('/corto/:estudianteId/anio/:anioAcademicoId/periodo/:periodo', protec
   }
 });
 
-router.get('/descriptivo/:estudianteId/anio/:anioAcademicoId/periodo/:periodo', protect, heavyQueryLimiter, async (req, res) => {
+router.get('/descriptivo/:estudianteId/anio/:anioAcademicoId/periodo/:periodo', protect, reglas.estudianteId, reglas.anioAcademicoId, reglas.periodo, validar, autorizarAccesoEstudiante(), heavyQueryLimiter, async (req, res) => {
   try {
     const data = await ReporteService.generarBoletinDescriptivo({
       estudianteId: req.params.estudianteId,
@@ -46,7 +54,7 @@ router.get('/descriptivo/:estudianteId/anio/:anioAcademicoId/periodo/:periodo', 
   }
 });
 
-router.get('/final/:estudianteId/anio/:anioAcademicoId', protect, heavyQueryLimiter, async (req, res) => {
+router.get('/final/:estudianteId/anio/:anioAcademicoId', protect, reglas.estudianteId, reglas.anioAcademicoId, validar, autorizarAccesoEstudiante(), heavyQueryLimiter, async (req, res) => {
   try {
     const data = await ReporteService.generarBoletinFinal({
       estudianteId: req.params.estudianteId,
@@ -59,7 +67,7 @@ router.get('/final/:estudianteId/anio/:anioAcademicoId', protect, heavyQueryLimi
   }
 });
 
-router.get('/preescolar/:estudianteId/anio/:anioAcademicoId/periodo/:periodo', protect, heavyQueryLimiter, async (req, res) => {
+router.get('/preescolar/:estudianteId/anio/:anioAcademicoId/periodo/:periodo', protect, reglas.estudianteId, reglas.anioAcademicoId, reglas.periodo, validar, autorizarAccesoEstudiante(), heavyQueryLimiter, async (req, res) => {
   try {
     const data = await ReporteService.generarBoletinPreescolar({
       estudianteId: req.params.estudianteId,

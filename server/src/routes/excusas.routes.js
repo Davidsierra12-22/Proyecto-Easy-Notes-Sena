@@ -11,8 +11,8 @@ router.use(protect);
 router.get("/", getAll);
 router.get("/:id", reglas.idMongo, validar, getById);
 router.post("/", writeLimiter, authorize(...PERMISOS.AMPLIO), registrarAccion('crear_exculpa', 'Excusas'), create);
-router.put("/:id", reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.INSTITUCIONAL), registrarAccion('editar_exculpa', 'Excusas'), update);
-router.put("/:id/aprobar", reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.INSTITUCIONAL), registrarAccion('aprobar_exculpa', 'Excusas'), aprobar);
-router.put("/:id/rechazar", reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.INSTITUCIONAL), registrarAccion('rechazar_exculpa', 'Excusas'), rechazar);
+router.put("/:id", reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.GESTION), registrarAccion('editar_exculpa', 'Excusas'), update);
+router.put("/:id/aprobar", reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.GESTION), registrarAccion('aprobar_exculpa', 'Excusas'), aprobar);
+router.put("/:id/rechazar", reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.GESTION), registrarAccion('rechazar_exculpa', 'Excusas'), rechazar);
 
 module.exports = router;

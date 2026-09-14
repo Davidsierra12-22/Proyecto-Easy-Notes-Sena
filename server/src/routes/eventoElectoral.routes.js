@@ -10,8 +10,8 @@ router.use(protect);
 
 router.get("/", getAll);
 router.get("/:id", reglas.idMongo, validar, getById);
-router.post("/", writeLimiter, authorize(...PERMISOS.INSTITUCIONAL), registrarAccion('crear_evento_electoral', 'EventosElectorales'), create);
-router.put("/:id", reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.INSTITUCIONAL), registrarAccion('editar_evento_electoral', 'EventosElectorales'), update);
+router.post("/", writeLimiter, authorize(...PERMISOS.GESTION), registrarAccion('crear_evento_electoral', 'EventosElectorales'), create);
+router.put("/:id", reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.GESTION), registrarAccion('editar_evento_electoral', 'EventosElectorales'), update);
 router.delete("/:id", reglas.idMongo, validar, deleteLimiter, authorize(...PERMISOS.DIRECCION), registrarAccion('eliminar_evento_electoral', 'EventosElectorales'), remove);
 
 module.exports = router;

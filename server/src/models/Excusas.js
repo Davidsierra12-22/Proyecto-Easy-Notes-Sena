@@ -6,6 +6,10 @@ const excusasSchema = new mongoose.Schema({
     ref: 'Institucion',
     required: true
   },
+  estudianteId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Usuario'
+  },
   anioAcademicoId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'AnioAcademico',

@@ -10,8 +10,8 @@ router.use(protect);
 
 router.get("/", getAll);
 router.get("/:id", reglas.idMongo, validar, getById);
-router.post("/", writeLimiter, authorize(...PERMISOS.INSTITUCIONAL), registrarAccion('crear_eleccion', 'Elecciones'), create);
-router.put("/:id", reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.INSTITUCIONAL), registrarAccion('editar_eleccion', 'Elecciones'), update);
+router.post("/", writeLimiter, authorize(...PERMISOS.GESTION), registrarAccion('crear_eleccion', 'Elecciones'), create);
+router.put("/:id", reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.GESTION), registrarAccion('editar_eleccion', 'Elecciones'), update);
 router.delete("/:id", reglas.idMongo, validar, deleteLimiter, authorize(...PERMISOS.DIRECCION), registrarAccion('eliminar_eleccion', 'Elecciones'), remove);
 router.post("/:id/votar", reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.ESTUDIANTE), registrarAccion('votar', 'Votos'), votar);
 router.get("/:id/resultados", reglas.idMongo, validar, resultados);

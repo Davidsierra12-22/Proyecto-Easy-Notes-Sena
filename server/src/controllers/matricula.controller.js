@@ -3,6 +3,7 @@ const PromocionService = require('../services/promocionService');
 const Calificacion = require('../models/Calificacion');
 const Grupo = require('../models/Grupo');
 const Comunicados = require('../models/Comunicados');
+const { paginarQuery } = require('../utils/paginacion');
 
 const getAll = async (req, res) => {
   try {
@@ -10,11 +11,31 @@ const getAll = async (req, res) => {
     if (req.query.estado) filter.estado = req.query.estado;
     if (req.query.anioAcademicoId) filter.anioAcademicoId = req.query.anioAcademicoId;
     if (req.query.grupoId) filter.grupoId = req.query.grupoId;
+    if (req.query.sedeId) {
+      const gruposSede = await Grupo.find({ institucionId: req.usuario.institucionId, sedeId: req.query.sedeId }).select('_id');
+      filter.grupoId = { $in: gruposSede.map(g => g._id) };
+    }
 
-    const data = await Matricula.find(filter)
+    const pg = paginarQuery(req);
+    const query = Matricula.find(filter)
       .populate('estudianteId', 'nombres apellidos documento tipoDocumento')
       .populate('grupoId', 'nombre grado jornada')
       .sort({ createdAt: -1 });
+
+    if (pg) {
+      const [data, total] = await Promise.all([
+        query.skip(pg.skip).limit(pg.limite),
+        Matricula.countDocuments(filter)
+      ]);
+      return res.json({
+        ok: true,
+        data,
+        paginacion: { pagina: pg.pagina, limite: pg.limite, total, totalPaginas: Math.ceil(total / pg.limite) },
+        message: 'Listado obtenido'
+      });
+    }
+
+    const data = await query;
     res.json({ ok: true, data, message: 'Listado obtenido' });
   } catch (error) {
     res.status(500).json({ ok: false, message: 'Error al listar', error: error.message });

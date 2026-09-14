@@ -5,11 +5,16 @@ const controller = require('../controllers/auth.controller');
 const { protect } = require('../middleware/auth');
 const { validar, reglas } = require('../middleware/validar');
 const { loginLimiter, passwordRecoveryLimiter } = require('../middleware/security');
+const { registrarAccion } = require('../middleware/auditoria');
 
 router.post('/login', loginLimiter, [
   reglas.usuario,
   reglas.password
 ], validar, controller.login);
+
+router.post('/cambiar-perfil', protect, [
+  body('perfil').notEmpty().withMessage('Perfil requerido')
+], validar, registrarAccion('cambiar_perfil', 'Usuarios'), controller.cambiarPerfil);
 
 router.get('/me', protect, controller.me);
 

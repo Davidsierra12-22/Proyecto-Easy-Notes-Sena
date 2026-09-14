@@ -239,13 +239,23 @@ class CalificacionService {
   /**
    * RN-BOL-06: Generar logro cualitativo según nota
    * @param {Number} nota
-   * @returns {String} - Descripción del logro
+   * @param {Array} niveles - [{orden, valor, rangoMin, rangoMax}] desde configuracion.niveles
+   * @returns {String} - Nombre del nivel de desempeño
    */
-  static generarLogro(nota) {
-    if (nota >= 4.6) return 'Desempeño Superior';
-    if (nota >= 4.0) return 'Desempeño Alto';
-    if (nota >= 3.0) return 'Desempeño Básico';
-    return 'Desempeño Bajo';
+  static generarLogro(nota, niveles) {
+    const escala = Array.isArray(niveles) && niveles.length
+      ? niveles
+      : [
+        { orden: 1, valor: 'Desempeño Superior', rangoMin: 4.6, rangoMax: 5.0 },
+        { orden: 2, valor: 'Desempeño Alto', rangoMin: 4.0, rangoMax: 4.5 },
+        { orden: 3, valor: 'Desempeño Básico', rangoMin: 3.0, rangoMax: 3.9 },
+        { orden: 4, valor: 'Desempeño Bajo', rangoMin: 1.0, rangoMax: 2.9 }
+      ]
+    const ordenados = escala
+      .filter(n => n.rangoMin != null && n.rangoMax != null && n.valor)
+      .sort((a, b) => (b.rangoMin ?? 0) - (a.rangoMin ?? 0))
+    const nivel = ordenados.find(n => nota >= n.rangoMin && nota <= n.rangoMax)
+    return nivel ? nivel.valor : 'Desempeño sin definir'
   }
 }
 

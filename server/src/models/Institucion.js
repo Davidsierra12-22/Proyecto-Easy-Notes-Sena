@@ -68,6 +68,10 @@ const institucionSchema = new mongoose.Schema({
       valor: String,
       rangoMin: Number,
       rangoMax: Number
+    }],
+    grados: [{
+      numero: Number,
+      nombre: String
     }]
   },
   tipo: {

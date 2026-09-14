@@ -10,10 +10,10 @@ router.use(protect);
 
 router.get("/", getAll);
 router.get("/:id", reglas.idMongo, validar, getById);
-router.post("/", writeLimiter, authorize(...PERMISOS.INSTITUCIONAL, ...PERMISOS.DOCENTE), registrarAccion('crear_observador', 'Observador'), create);
-router.put("/:id", reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.INSTITUCIONAL, ...PERMISOS.DOCENTE), registrarAccion('editar_observador', 'Observador'), update);
+router.post("/", writeLimiter, authorize(...PERMISOS.GESTION, ...PERMISOS.DOCENTE), registrarAccion('crear_observador', 'Observador'), create);
+router.put("/:id", reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.GESTION, ...PERMISOS.DOCENTE), registrarAccion('editar_observador', 'Observador'), update);
 router.delete("/:id", reglas.idMongo, validar, deleteLimiter, authorize(...PERMISOS.DIRECCION), registrarAccion('eliminar_observador', 'Observador'), remove);
-router.post("/:id/seguimiento", reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.INSTITUCIONAL, ...PERMISOS.DOCENTE), registrarAccion('agregar_seguimiento_observador', 'Observador'), agregarSeguimiento);
+router.post("/:id/seguimiento", reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.GESTION, ...PERMISOS.DOCENTE), registrarAccion('agregar_seguimiento_observador', 'Observador'), agregarSeguimiento);
 router.get("/estudiante/:id", reglas.idMongo, validar, authorize(...PERMISOS.INSTITUCIONAL), getByEstudiante);
 
 module.exports = router;

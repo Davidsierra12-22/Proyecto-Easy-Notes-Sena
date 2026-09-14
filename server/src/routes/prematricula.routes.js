@@ -14,8 +14,8 @@ router.get('/estado/:documento', controller.consultarEstadoPublico);
 
 router.get('/', protect, controller.getAll);
 router.get('/:id', protect, reglas.idMongo, validar, controller.getById);
-router.post('/', protect, writeLimiter, authorize(...PERMISOS.ACADEMICO), registrarAccion('crear_prematricula', 'Prematriculas'), controller.create);
-router.put('/:id', protect, reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.ACADEMICO), registrarAccion('editar_prematricula', 'Prematriculas'), controller.update);
+router.post('/', protect, writeLimiter, authorize(...PERMISOS.GESTION), registrarAccion('crear_prematricula', 'Prematriculas'), controller.create);
+router.put('/:id', protect, reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.GESTION), registrarAccion('editar_prematricula', 'Prematriculas'), controller.update);
 router.delete('/:id', protect, reglas.idMongo, validar, deleteLimiter, authorize(...PERMISOS.DIRECCION), registrarAccion('eliminar_prematricula', 'Prematriculas'), controller.remove);
 router.put('/:id/aprobar', protect, reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.DIRECCION), registrarAccion('aprobar_prematricula', 'Prematriculas'), controller.aprobar);
 router.put('/:id/rechazar', protect, reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.DIRECCION), registrarAccion('rechazar_prematricula', 'Prematriculas'), controller.rechazar);

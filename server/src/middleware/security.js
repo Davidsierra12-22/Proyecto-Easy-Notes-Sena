@@ -55,7 +55,11 @@ const validateContentType = (req, res, next) => {
     const contentLength = parseInt(req.headers['content-length'] || '0');
     if (contentLength === 0) return next();
     const contentType = req.headers['content-type'];
-    if (!contentType || (!contentType.includes('application/json') && !contentType.includes('application/x-www-form-urlencoded'))) {
+    if (!contentType || (
+      !contentType.includes('application/json') &&
+      !contentType.includes('application/x-www-form-urlencoded') &&
+      !contentType.includes('multipart/form-data')
+    )) {
       return res.status(415).json({
         ok: false,
         message: 'Content-Type no soportado. Usa application/json'
@@ -71,7 +75,7 @@ const detectSuspiciousPatterns = (req, res, next) => {
     /\.\.\//,           // path traversal
     /<script/i,         // XSS
     /javascript:/i,     // javascript protocol
-    /on\w+\s*=/i,       // event handlers
+    /on\w+\s*=\s*(?:javascript:|alert\s*\(|confirm\s*\(|prompt\s*\(|eval\s*\(|function\s*\()/i, // event handlers con código
     /union.*select/i,   // SQL injection
     /eval\s*\(/i,       // eval injection
     /document\.cookie/i // cookie stealing

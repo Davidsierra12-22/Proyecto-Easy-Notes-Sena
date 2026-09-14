@@ -9,8 +9,8 @@ const { writeLimiter, deleteLimiter } = require('../middleware/security');
 
 router.get('/', protect, controller.getAll);
 router.get('/:id', protect, reglas.idMongo, validar, controller.getById);
-router.post('/', protect, writeLimiter, authorize(...PERMISOS.SOLO_ADMIN), registrarAccion('crear_direccion_nucleo', 'DireccionesNucleo'), controller.create);
-router.put('/:id', protect, reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.SOLO_ADMIN), registrarAccion('editar_direccion_nucleo', 'DireccionesNucleo'), controller.update);
-router.delete('/:id', protect, reglas.idMongo, validar, deleteLimiter, authorize(...PERMISOS.SOLO_ADMIN), registrarAccion('eliminar_direccion_nucleo', 'DireccionesNucleo'), controller.remove);
+router.post('/', protect, writeLimiter, authorize(...PERMISOS.NUCLEO), registrarAccion('crear_direccion_nucleo', 'DireccionesNucleo'), controller.create);
+router.put('/:id', protect, reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.NUCLEO), registrarAccion('editar_direccion_nucleo', 'DireccionesNucleo'), controller.update);
+router.delete('/:id', protect, reglas.idMongo, validar, deleteLimiter, authorize(...PERMISOS.NUCLEO), registrarAccion('eliminar_direccion_nucleo', 'DireccionesNucleo'), controller.remove);
 
 module.exports = router;

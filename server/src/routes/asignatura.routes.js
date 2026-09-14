@@ -12,8 +12,8 @@ router.use(protect);
 router.get('/', controller.getAll);
 router.get('/area/:areaId', controller.getByArea);
 router.get('/:id', reglas.idMongo, validar, controller.getById);
-router.post('/', writeLimiter, authorize(...PERMISOS.ACADEMICO), registrarAccion('crear_asignatura', 'Asignaturas'), controller.create);
-router.put('/:id', reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.ACADEMICO), registrarAccion('editar_asignatura', 'Asignaturas'), controller.update);
+router.post('/', writeLimiter, authorize(...PERMISOS.GESTION), registrarAccion('crear_asignatura', 'Asignaturas'), controller.create);
+router.put('/:id', reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.GESTION), registrarAccion('editar_asignatura', 'Asignaturas'), controller.update);
 router.delete('/:id', reglas.idMongo, validar, deleteLimiter, authorize(...PERMISOS.DIRECCION), registrarAccion('eliminar_asignatura', 'Asignaturas'), controller.remove);
 
 module.exports = router;

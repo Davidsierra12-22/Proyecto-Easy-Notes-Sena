@@ -1,4 +1,5 @@
 const Pagos = require("../models/Pagos");
+const { paginarQuery } = require("../utils/paginacion");
 
 // Obtener todos
 const getAll = async (req, res) => {
@@ -7,10 +8,25 @@ const getAll = async (req, res) => {
       ? { institucionId: req.usuario.institucionId }
       : {};
 
-    const data = await Pagos.find(filtro)
+    const pg = paginarQuery(req);
+    const query = Pagos.find(filtro)
       .populate("estudianteId", "nombres apellidos documento")
       .populate("conceptoId", "nombre valor")
       .sort({ createdAt: -1 });
+
+    if (pg) {
+      const [data, total] = await Promise.all([
+        query.skip(pg.skip).limit(pg.limite),
+        Pagos.countDocuments(filtro)
+      ]);
+      return res.json({
+        ok: true,
+        data,
+        paginacion: { pagina: pg.pagina, limite: pg.limite, total, totalPaginas: Math.ceil(total / pg.limite) },
+      });
+    }
+
+    const data = await query;
 
     res.json({
       ok: true,
@@ -198,6 +214,71 @@ const getByEstudiante = async (req, res) => {
   }
 };
 
+// Reporte de cartera (RN-CONT-04): deudas pendientes/vencidas por estudiante
+const getCartera = async (req, res) => {
+  try {
+    const filtro = {
+      estado: { $in: ["pendiente", "vencido"] },
+    };
+    if (req.usuario?.institucionId) {
+      filtro.institucionId = req.usuario.institucionId;
+    }
+
+    const pagos = await Pagos.find(filtro)
+      .populate("estudianteId", "nombres apellidos documento")
+      .populate("conceptoId", "nombre valor")
+      .sort({ fechaVencimiento: 1 });
+
+    const porEstudiante = {};
+    for (const p of pagos) {
+      const key = p.estudianteId?._id?.toString() || p.estudianteId?.toString();
+      if (!key || !p.estudianteId) continue;
+
+      const diasMora = p.estado === "vencido" && p.fechaVencimiento
+        ? Math.max(0, Math.floor((Date.now() - new Date(p.fechaVencimiento).getTime()) / 86400000))
+        : 0;
+
+      const item = porEstudiante[key] || (porEstudiante[key] = {
+        estudiante: p.estudianteId,
+        totalDeuda: 0,
+        conceptos: [],
+        diasMora: 0,
+      });
+
+      item.totalDeuda += p.valorFinal ?? p.valor ?? 0;
+      item.diasMora = Math.max(item.diasMora, diasMora);
+      item.conceptos.push({
+        concepto: p.conceptoId?.nombre || "Concepto",
+        valor: p.valorFinal ?? p.valor ?? 0,
+        estado: p.estado,
+        fechaVencimiento: p.fechaVencimiento,
+        pagoId: p._id,
+      });
+    }
+
+    const estudiantes = Object.values(porEstudiante)
+      .sort((a, b) => b.totalDeuda - a.totalDeuda);
+
+    const resumen = {
+      totalCartera: estudiantes.reduce((a, b) => a + b.totalDeuda, 0),
+      estudiantesDeudores: estudiantes.length,
+      enMora: estudiantes.filter((x) => x.diasMora > 0).length,
+    };
+
+    res.json({
+      ok: true,
+      data: { resumen, estudiantes },
+      message: "Cartera obtenida",
+    });
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      message: "Error al obtener cartera",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getAll,
   getById,
@@ -206,4 +287,5 @@ module.exports = {
   remove,
   registrarPago,
   getByEstudiante,
+  getCartera,
 };

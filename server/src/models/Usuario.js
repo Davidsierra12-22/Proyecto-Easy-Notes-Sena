@@ -72,9 +72,18 @@ const usuarioSchema = new mongoose.Schema({
     enum: Object.values(ROLES),
     required: true
   },
+  roles: [{
+    type: String,
+    enum: Object.values(ROLES)
+  }],
   institucionId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Institucion'
+  },
+  sedeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Sede',
+    default: null
   },
   nucleoId: {
     type: mongoose.Schema.Types.ObjectId,

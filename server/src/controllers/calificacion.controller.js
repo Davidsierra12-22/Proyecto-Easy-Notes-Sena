@@ -1,21 +1,44 @@
 const Calificacion = require('../models/Calificacion');
 const CalificacionService = require('../services/calificacionService');
+const Grupo = require('../models/Grupo');
+const Institucion = require('../models/Institucion');
+const { paginarQuery } = require('../utils/paginacion');
 
 const getAll = async (req, res) => {
   try {
     const filter = { institucionId: req.usuario.institucionId };
     if (req.query.anioAcademicoId) filter.anioAcademicoId = req.query.anioAcademicoId;
     if (req.query.grupoId) filter.grupoId = req.query.grupoId;
+    if (req.query.sedeId) {
+      const gruposSede = await Grupo.find({ institucionId: req.usuario.institucionId, sedeId: req.query.sedeId }).select('_id');
+      filter.grupoId = { $in: gruposSede.map(g => g._id) };
+    }
     if (req.query.asignaturaId) filter.asignaturaId = req.query.asignaturaId;
     if (req.query.periodo) filter.periodo = req.query.periodo;
     if (req.query.estudianteId) filter.estudianteId = req.query.estudianteId;
     if (req.usuario.tipoPerfil === 'estudiante') filter.estudianteId = req.usuario._id;
 
-    const data = await Calificacion.find(filter)
+    const pg = paginarQuery(req);
+    const query = Calificacion.find(filter)
       .populate('estudianteId', 'nombres apellidos documento')
       .populate('asignaturaId', 'nombre abreviatura')
       .populate('grupoId', 'nombre grado')
       .sort({ asignaturaId: 1, periodo: 1 });
+
+    if (pg) {
+      const [data, total] = await Promise.all([
+        query.skip(pg.skip).limit(pg.limite),
+        Calificacion.countDocuments(filter)
+      ]);
+      return res.json({
+        ok: true,
+        data,
+        paginacion: { pagina: pg.pagina, limite: pg.limite, total, totalPaginas: Math.ceil(total / pg.limite) },
+        message: 'Listado obtenido'
+      });
+    }
+
+    const data = await query;
     res.json({ ok: true, data, message: 'Listado obtenido' });
   } catch (error) {
     res.status(500).json({ ok: false, message: 'Error al listar', error: error.message });
@@ -212,6 +235,12 @@ const getBoletin = async (req, res) => {
 
     if (req.usuario.tipoPerfil === 'estudiante') filter.estudianteId = req.usuario._id;
 
+    const nivelesEscala = await Institucion.findById(req.usuario.institucionId)
+      .select('configuracion.niveles')
+      .lean()
+      .then(i => i?.configuracion?.niveles || null)
+      .catch(() => null);
+
     const data = await Calificacion.find(filter)
       .populate('asignaturaId', 'nombre abreviatura areaId')
       .populate('grupoId', 'nombre grado')
@@ -248,7 +277,7 @@ const getBoletin = async (req, res) => {
       if (notas.length) {
         const definitiva = notas.reduce((a, b) => a + b, 0) / notas.length;
         materia.notaDefinitiva = Math.round(definitiva * 10) / 10;
-        materia.logro = CalificacionService.generarLogro(materia.notaDefinitiva);
+        materia.logro = CalificacionService.generarLogro(materia.notaDefinitiva, nivelesEscala);
       }
       return materia;
     });

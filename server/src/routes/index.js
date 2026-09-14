@@ -10,6 +10,7 @@ router.use('/instituciones', require('./institucion.routes'));
 router.use('/upload', require('./upload.routes'));
 router.use('/sedes', require('./sede.routes'));
 router.use('/nucleos', require('./direccionNucleo.routes'));
+router.use('/nucleo', require('./nucleo.routes'));
 router.use('/solicitudes-registro', require('./solicitudRegistro.routes'));
 router.use('/catalogos', require('./catalogo.routes'));
 
@@ -20,6 +21,7 @@ router.use('/indicadores', require('./indicador.routes'));
 router.use('/actividades', require('./actividad.routes'));
 router.use('/calificaciones', require('./calificacion.routes'));
 router.use('/boletines', require('./boletines.routes'));
+router.use('/certificados', require('./certificados.routes'));
 
 // Santiago - Modulo Academico
 router.use('/anios-academicos', require('./anioAcademico.routes'));
