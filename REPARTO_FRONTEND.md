@@ -116,7 +116,7 @@ Para mantener el historial uniforme:
 | 2 | Sneyder | sneyderdavier@gmail.com | Confirmada |
 | 3 | Yorman | yormangogo@gmail.com | Confirmada |
 | 4 | (nombre por confirmar) | avilabarre68@gmail.com | Confirmada |
-| 5 | (pendiente) | (pendiente) | Por definir |
+| 5 | (nombre por confirmar) | daviidsierra1422@gmail.com | Confirmada |
 
 Cada persona configura su identidad en su equipo:
 
