@@ -115,8 +115,8 @@ Para mantener el historial uniforme:
 | 1 | Martin | martineduardozapata0@gmail.com | Confirmada |
 | 2 | Sneyder | sneyderdavier@gmail.com | Confirmada |
 | 3 | Yorman | yormangogo@gmail.com | Confirmada |
-| 4 | (nombre por confirmar) | avilabarre68@gmail.com | Confirmada |
-| 5 | (nombre por confirmar) | daviidsierra1422@gmail.com | Confirmada |
+| 4 | Avila | avilabarre68@gmail.com | Confirmada |
+| 5 | Santiago | daviidsierra1422@gmail.com | Confirmada |
 
 Cada persona configura su identidad en su equipo:
 
