@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { School, Users, GraduationCap, UserPlus, MapPin, Layers, Wallet, Loader2 } from 'lucide-react'
+import { School, Users, GraduationCap, UserPlus, MapPin, Layers, Wallet, Loader2, RefreshCw } from 'lucide-react'
 import api from '../services/api'
 
 const formatoPesos = (v) =>
@@ -36,23 +36,24 @@ export default function EstadisticasNucleo() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    const cargar = async () => {
-      try {
-        const [rResumen, rComparativo] = await Promise.all([
-          api.get('/nucleo/estadisticas'),
-          api.get('/nucleo/comparativo')
-        ])
-        setResumen(rResumen.data.data)
-        setComparativo(rComparativo.data.data || [])
-      } catch (err) {
-        setError(err.response?.data?.message || 'Error al cargar las estadísticas')
-      } finally {
-        setLoading(false)
-      }
+  const cargar = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const [rResumen, rComparativo] = await Promise.all([
+        api.get('/nucleo/estadisticas'),
+        api.get('/nucleo/comparativo')
+      ])
+      setResumen(rResumen.data.data)
+      setComparativo(rComparativo.data.data || [])
+    } catch (err) {
+      setError(err.response?.data?.message || 'Error al cargar las estadísticas')
+    } finally {
+      setLoading(false)
     }
-    cargar()
-  }, [])
+  }
+
+  useEffect(() => { cargar() }, [])
 
   if (loading) {
     return (
@@ -80,8 +81,15 @@ export default function EstadisticasNucleo() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-gray-900">Estadísticas del Núcleo</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Indicadores agregados de todos los colegios del núcleo.</p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Estadísticas del Núcleo</h1>
+            <p className="text-sm text-gray-500 mt-0.5">Indicadores agregados de todos los colegios del núcleo.</p>
+          </div>
+          <button onClick={cargar} aria-label="Recargar estadisticas" title="Recargar estadisticas" className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100">
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -23,7 +23,7 @@ export default function Asignaturas() {
       key: 'areaId', label: 'Área',
       render: (a) => {
         const ar = areas.find(x => x.value === a.areaId)
-        return ar ? ar.label : (a.areaId || '—')
+        return ar?.label || '—'
       }
     },
     { key: 'abreviatura', label: 'Abreviatura', render: (a) => a.abreviatura || '—' },

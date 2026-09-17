@@ -1,12 +1,8 @@
 import { useEffect, useState } from 'react'
-import { RefreshCw, Search, CheckCircle2 } from 'lucide-react'
+import { Search, CheckCircle2 } from 'lucide-react'
 import api from '../services/api'
-import { useAuth } from '../context/AuthContext'
 
 export default function Recuperaciones() {
-  const { usuario } = useAuth()
-  const puedeGestionar = ['super_admin', 'admin', 'rector', 'coordinador', 'docente'].includes(usuario?.tipoPerfil)
-
   const [anios, setAnios] = useState([])
   const [grupos, setGrupos] = useState([])
   const [asignaturas, setAsignaturas] = useState([])
@@ -78,11 +74,6 @@ export default function Recuperaciones() {
       setLoading(false)
     }
   }
-
-  const toggle = (id) => setActivas(prev => {
-    const modelos = { recuperacion: false, habilitacion: false }
-    return { ...prev, [id]: !prev[id] }
-  })
 
   const seleccionarTipo = (id, tipo) => {
     setActivas(prev => ({ ...prev, [id]: true, [`${id}_tipo`]: tipo }))

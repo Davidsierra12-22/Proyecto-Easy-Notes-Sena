@@ -22,12 +22,14 @@ export default function Grupos() {
   const [estModal, setEstModal] = useState(null)
   const [estLista, setEstLista] = useState(null)
   const [estLoading, setEstLoading] = useState(false)
+  const [estError, setEstError] = useState('')
   const puedeGestionar = ['super_admin', 'admin', 'secretaria'].includes(usuario?.tipoPerfil)
   const puedeControl = ['super_admin', 'admin'].includes(usuario?.tipoPerfil)
 
   const verEstudiantes = async (g) => {
     setEstModal(g)
     setEstLista(null)
+    setEstError('')
     setEstLoading(true)
     try {
       const params = {}
@@ -45,7 +47,7 @@ export default function Grupos() {
       setEstLista(list)
     } catch (e) {
       setEstLista([])
-      alert(e.response?.data?.message || 'Error al cargar estudiantes')
+      setEstError(e.response?.data?.message || 'Error al cargar estudiantes')
     } finally {
       setEstLoading(false)
     }
@@ -137,7 +139,7 @@ export default function Grupos() {
               <h2 className="text-lg font-bold text-gray-900">
                 Estudiantes del grado {estModal.grado} · {estModal.nombre}
               </h2>
-              <button onClick={() => setEstModal(null)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setEstModal(null)} aria-label="Cerrar lista de estudiantes" className="text-gray-400 hover:text-gray-600">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -146,6 +148,8 @@ export default function Grupos() {
                 <div className="flex justify-center py-8">
                   <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
                 </div>
+              ) : estError ? (
+                <p className="text-center text-red-600 py-8">{estError}</p>
               ) : estLista && estLista.length === 0 ? (
                 <p className="text-center text-gray-500 py-8">No hay estudiantes matriculados en este grado.</p>
               ) : (
@@ -162,7 +166,7 @@ export default function Grupos() {
                     {estLista.map(m => (
                       <tr key={m._id} className="hover:bg-gray-50">
                         <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                          {m.estudianteId?.nombres} {m.estudianteId?.apellidos}
+                          {m.estudianteId?.nombres ? `${m.estudianteId.nombres} ${m.estudianteId.apellidos}` : '—'}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-700">{m.estudianteId?.documento || '—'}</td>
                         <td className="px-4 py-3 text-sm text-gray-700">{m.grupoId?.nombre || '—'}</td>

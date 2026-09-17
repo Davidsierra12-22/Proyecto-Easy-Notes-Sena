@@ -315,7 +315,7 @@ export default function Usuarios() {
           <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-bold text-gray-900">Foto de perfil</h2>
-              <button onClick={() => setFotoUser(null)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setFotoUser(null)} aria-label="Cerrar modal de foto" className="text-gray-400 hover:text-gray-600">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -399,7 +399,7 @@ export default function Usuarios() {
               <h2 className="text-lg font-bold text-gray-900">
                 {modal.mode === 'reset' ? 'Restablecer contraseña y enviar credenciales' : 'Contraseña'}
               </h2>
-              <button onClick={cerrarModal} className="text-gray-400 hover:text-gray-600">
+              <button onClick={cerrarModal} aria-label="Cerrar modal de contraseña" className="text-gray-400 hover:text-gray-600">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -421,7 +421,7 @@ export default function Usuarios() {
                   <input
                     type="text"
                     value={resetPass}
-                    onChange={(e) => setResetPass(e.target.value)}
+                    onChange={(e) => { setResetPass(e.target.value); setResetError('') }}
                     autoFocus
                     placeholder="Vacío = se genera una temporal"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"

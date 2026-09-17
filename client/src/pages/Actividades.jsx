@@ -66,7 +66,7 @@ export default function Actividades() {
     try {
       const r = await api.get(`/indicadores/asignatura/${filtros.asignaturaId}/periodo/${filtros.periodo}`)
       setIndicadores(r.data.data)
-    } catch (e) { setIndicadores([]) }
+    } catch { setIndicadores([]) }
   }
 
   useEffect(() => { cargarIndicadores() }, [filtros.asignaturaId, filtros.periodo])
@@ -165,7 +165,7 @@ export default function Actividades() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <h1 className="text-xl font-bold text-gray-900">Actividades Evaluativas</h1>
           <div className="flex items-center gap-2">
-            <button onClick={cargar} className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100">
+            <button onClick={cargar} aria-label="Recargar actividades" title="Recargar actividades" className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100">
               <RefreshCw className="w-4 h-4" />
             </button>
           </div>
@@ -276,7 +276,7 @@ export default function Actividades() {
           <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-bold text-gray-900">{editing ? 'Editar Actividad' : 'Nueva Actividad'}</h2>
-              <button onClick={() => setModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+              <button onClick={() => { setModal(false); setError('') }} aria-label="Cerrar modal de actividad" className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
             </div>
             <form onSubmit={guardar} className="p-6 space-y-4">
               <div>

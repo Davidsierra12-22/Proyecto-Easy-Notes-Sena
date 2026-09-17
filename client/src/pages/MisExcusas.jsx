@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Plus, X, Stethoscope } from 'lucide-react'
 import api from '../services/api'
-import { useAuth } from '../context/AuthContext'
 import { useEstudiante } from '../hooks/useEstudiante'
 
 const estadoBadge = (estado) => {
@@ -14,7 +13,6 @@ const estadoBadge = (estado) => {
 }
 
 export default function MisExcusas() {
-  const { usuario } = useAuth()
   const { matricula, loading: cargaMatricula } = useEstudiante()
   const [excusas, setExcusas] = useState([])
   const [docentes, setDocentes] = useState([])
@@ -153,7 +151,7 @@ export default function MisExcusas() {
           <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-bold text-gray-900">Nueva excusa</h2>
-              <button onClick={() => setModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => { setModal(false); setError('') }} aria-label="Cerrar modal de excusa" className="text-gray-400 hover:text-gray-600">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -208,7 +206,7 @@ export default function MisExcusas() {
               )}
 
               <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setModal(false)}
+                <button type="button" onClick={() => { setModal(false); setError('') }}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg">
                   Cancelar
                 </button>

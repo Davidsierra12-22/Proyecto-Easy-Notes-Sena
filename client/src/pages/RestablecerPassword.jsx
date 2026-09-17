@@ -86,7 +86,7 @@ export default function RestablecerPassword() {
                 <input
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => { setPassword(e.target.value); setError('') }}
                   required
                   autoFocus
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -98,7 +98,7 @@ export default function RestablecerPassword() {
                 <input
                   type="password"
                   value={confirmar}
-                  onChange={(e) => setConfirmar(e.target.value)}
+                  onChange={(e) => { setConfirmar(e.target.value); setError('') }}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="Repite la nueva contraseña"

@@ -77,7 +77,7 @@ export default function AniosAcademicos() {
             <p className="text-sm text-gray-500">Gestiona los ciclos lectivos de la institución</p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={cargar} className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100">
+            <button onClick={cargar} aria-label="Recargar años académicos" title="Recargar años académicos" className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100">
               <RefreshCw className="w-4 h-4" />
             </button>
             {puedeGestionar && (
@@ -118,7 +118,9 @@ export default function AniosAcademicos() {
                     <td className="px-4 py-3 text-sm text-gray-700">{a.configuracion?.numeroPeriodos ?? 4}</td>
                     <td className="px-4 py-3 text-sm text-gray-700">{a.configuracion?.notaMinima ?? 3.0}</td>
                     <td className="px-4 py-3 text-sm text-gray-700">
-                      {a.configuracion?.pierdeAnoPor === 'areas' ? `${a.configuracion?.numPerdidas} áreas` : `${a.configuracion?.numPerdidas} materias`}
+                      {a.configuracion?.numPerdidas != null
+                        ? `${a.configuracion.numPerdidas} ${a.configuracion.pierdeAnoPor === 'areas' ? 'áreas' : 'materias'}`
+                        : '—'}
                     </td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">
                       {a.estado !== 'activo' && (
@@ -152,7 +154,7 @@ export default function AniosAcademicos() {
           <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-bold text-gray-900">Nuevo Año Académico</h2>
-              <button onClick={() => setModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+              <button onClick={() => setModal(false)} aria-label="Cerrar modal de año académico" className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
             </div>
             <form onSubmit={crear} className="p-6 space-y-4">
               <div>

@@ -35,32 +35,32 @@ export default function Dashboard() {
       try {
         if (usuario?.tipoPerfil === 'super_admin') {
           const [estadisticas, listado] = await Promise.all([
-            api.get('/nucleo/estadisticas').catch(() => ({ data: { data: {} } })),
-            api.get('/nucleo/instituciones').catch(() => ({ data: { data: [] } }))
+            api.get('/nucleo/estadisticas').catch(() => null),
+            api.get('/nucleo/instituciones').catch(() => null)
           ])
-          const e = estadisticas.data.data || {}
+          const e = estadisticas?.data?.data || {}
           setStats({
-            colegios: e.colegios || 0,
-            estudiantes: e.estudiantes || 0,
-            docentes: e.docentes || 0,
-            matriculas: e.matriculasActivas || 0,
-            sedes: e.sedes || 0,
-            grupos: e.grupos || 0
+            colegios: e.colegios ?? null,
+            estudiantes: e.estudiantes ?? null,
+            docentes: e.docentes ?? null,
+            matriculas: e.matriculasActivas ?? null,
+            sedes: e.sedes ?? null,
+            grupos: e.grupos ?? null
           })
-          setColegios(listado.data.data || [])
+          setColegios(listado?.data?.data || [])
         } else {
           const params = sedeId ? { sedeId } : {}
           const [matriculas, usuarios, grupos, asignaturas] = await Promise.all([
-            api.get('/matriculas', { params }).catch(() => ({ data: { data: [] } })),
-            api.get('/usuarios', { params }).catch(() => ({ data: { data: [] } })),
-            api.get('/grupos', { params }).catch(() => ({ data: { data: [] } })),
-            api.get('/asignaturas', { params }).catch(() => ({ data: { data: [] } }))
+            api.get('/matriculas', { params }).catch(() => null),
+            api.get('/usuarios', { params }).catch(() => null),
+            api.get('/grupos', { params }).catch(() => null),
+            api.get('/asignaturas', { params }).catch(() => null)
           ])
           setStats({
-            matriculas: matriculas.data.data.length,
-            usuarios: usuarios.data.data.length,
-            grupos: grupos.data.data.length,
-            asignaturas: asignaturas.data.data.length
+            matriculas: matriculas ? matriculas.data.data.length : null,
+            usuarios: usuarios ? usuarios.data.data.length : null,
+            grupos: grupos ? grupos.data.data.length : null,
+            asignaturas: asignaturas ? asignaturas.data.data.length : null
           })
         }
       } catch {

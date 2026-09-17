@@ -172,7 +172,7 @@ export default function Certificados() {
 
               <p className="text-center text-sm text-gray-600 leading-relaxed">El rector de la institución hace constar que el estudiante</p>
               <p className="text-center text-lg font-bold text-gray-900 my-2">
-                {doc.estudiante?.nombres} {doc.estudiante?.apellidos}
+                {doc.estudiante?.nombres ? `${doc.estudiante.nombres} ${doc.estudiante.apellidos}` : 'Estudiante'}
               </p>
               <p className="text-center text-sm text-gray-600">
                 identificado con {doc.estudiante?.tipoDocumento || 'CC'} N°{' '}

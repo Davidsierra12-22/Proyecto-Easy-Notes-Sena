@@ -111,7 +111,7 @@ export default function Calificaciones() {
               }
             }
           }
-        } catch (e) { /* sin notas previas */ }
+        } catch { /* sin notas previas */ }
       }
       setFilas(f)
       setCargado(true)
@@ -210,7 +210,7 @@ export default function Calificaciones() {
             <h1 className="text-xl font-bold text-gray-900">Calificaciones</h1>
             <p className="text-sm text-gray-500">Registro de notas, recuperaciones, habilitaciones y desempeños por período</p>
           </div>
-          <button onClick={cargarDependencias} className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 self-start">
+          <button onClick={cargarDependencias} aria-label="Recargar listas" title="Recargar listas" className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 self-start">
             <RefreshCw className="w-4 h-4" />
           </button>
         </div>

@@ -198,7 +198,7 @@ export default function Configuracion() {
             </h1>
             <p className="text-sm text-gray-500 mt-1">Datos institucionales y grados que ofrece el colegio</p>
           </div>
-          <button onClick={cargar} className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100">
+          <button onClick={cargar} aria-label="Recargar configuración" title="Recargar configuración" className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100">
             <RefreshCw className="w-4 h-4" />
           </button>
         </div>

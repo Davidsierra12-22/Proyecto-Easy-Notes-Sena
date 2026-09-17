@@ -57,7 +57,7 @@ export default function CambiarPassword() {
               <input
                 type="password"
                 value={passwordActual}
-                onChange={(e) => setPasswordActual(e.target.value)}
+                onChange={(e) => { setPasswordActual(e.target.value); setError('') }}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 placeholder="••••••••"
@@ -71,7 +71,7 @@ export default function CambiarPassword() {
               <input
                 type="password"
                 value={passwordNueva}
-                onChange={(e) => setPasswordNueva(e.target.value)}
+                onChange={(e) => { setPasswordNueva(e.target.value); setError('') }}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 placeholder="Mínimo 6 caracteres"
@@ -85,7 +85,7 @@ export default function CambiarPassword() {
               <input
                 type="password"
                 value={confirmar}
-                onChange={(e) => setConfirmar(e.target.value)}
+                onChange={(e) => { setConfirmar(e.target.value); setError('') }}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 placeholder="Repita la nueva contraseña"
