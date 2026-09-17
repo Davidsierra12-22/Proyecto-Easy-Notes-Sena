@@ -32,6 +32,11 @@ body {
     overflow: hidden !important;
   }
 
+  .print-area,
+  .print-area * {
+    visibility: visible !important;
+  }
+
   .print-area {
     position: absolute !important;
     left: 0 !important;
@@ -39,6 +44,8 @@ body {
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   .print-area-single {
