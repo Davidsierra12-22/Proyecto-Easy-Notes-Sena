@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { CalendarDays, Clock } from 'lucide-react'
 import api from '../services/api'
-import { useAuth } from '../context/AuthContext'
 import { useEstudiante } from '../hooks/useEstudiante'
 
 const JORNADAS = {
@@ -12,7 +11,6 @@ const JORNADAS = {
 }
 
 export default function Horario() {
-  const { usuario } = useAuth()
   const { matricula, loading: cargaMatricula } = useEstudiante()
   const [cargas, setCargas] = useState([])
   const [docentes, setDocentes] = useState([])

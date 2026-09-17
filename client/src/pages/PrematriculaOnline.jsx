@@ -51,7 +51,7 @@ export default function PrematriculaOnline() {
           email: (form.acudiente.email || '').trim()
         }
       }
-      const r = await api.post('/prematriculas/solicitar', payload)
+      await api.post('/prematriculas/solicitar', payload)
       setMensaje('Solicitud registrada. Anota tu número de documento para consultar el estado.')
       setForm(initialForm)
       setTab('estado')
