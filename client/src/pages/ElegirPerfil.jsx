@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { GraduationCap, LogOut, Shield, ClipboardList, School, Users, BookOpen, Home, BadgeCheck } from 'lucide-react'
+import { GraduationCap, LogOut, Shield, ClipboardList, School, Users, BookOpen, BadgeCheck } from 'lucide-react'
 
 const ROL_LABEL = {
   super_admin: 'Dirección de Núcleo',
@@ -49,7 +49,7 @@ export default function ElegirPerfil() {
     try {
       await cambiarPerfil(rol)
       navigate('/')
-    } catch (_) {
+    } catch {
       // error ya está en el contexto
     }
   }
