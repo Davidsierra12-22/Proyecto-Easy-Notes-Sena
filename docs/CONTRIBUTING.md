@@ -63,7 +63,7 @@ Cuentas del equipo:
 ## 5. Reparto del frontend
 
 El plan de trabajo por persona y el orden de entrega está en
-`REPARTO_FRONTEND.md` y `REPARTO_FRONTEND.docx`.
+`docs/REPARTO_FRONTEND.md`.
 
 ## 6. Verificación antes de subir
 
