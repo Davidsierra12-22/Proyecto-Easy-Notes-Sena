@@ -95,7 +95,9 @@ export default function Horario() {
             )}
 
             {cargas.length === 0 ? (
-              <p className="text-center text-gray-500 py-12">Tu grupo aún no tiene cargas académicas asignadas.</p>
+              <p className="text-center text-gray-500 py-12">
+                {error ? 'No se pudo cargar el horario. Vuelve a intentarlo en unos minutos.' : 'Tu grupo aún no tiene cargas académicas asignadas.'}
+              </p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {cargas.map(c => (

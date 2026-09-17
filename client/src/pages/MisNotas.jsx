@@ -48,7 +48,7 @@ export default function MisNotas() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-900">Mis Notas</h1>
-            <p className="text-sm text-gray-500">Calificaciones del año académico {matricula ? `— ${matricula.anioAcademicoId ? '' : ''}` : ''}</p>
+            <p className="text-sm text-gray-500">Calificaciones de tu año académico actual</p>
           </div>
         </div>
 
@@ -61,7 +61,9 @@ export default function MisNotas() {
         ) : !matricula ? (
           <p className="text-center text-gray-500 py-12">Aún no tienes una matrícula activa para consultar notas.</p>
         ) : materias.length === 0 ? (
-          <p className="text-center text-gray-500 py-12">Todavía no hay calificaciones registradas para tus asignaturas.</p>
+          <p className="text-center text-gray-500 py-12">
+            {error ? 'No se pudieron cargar tus notas. Vuelve a intentarlo en unos minutos.' : 'Todavía no hay calificaciones registradas para tus asignaturas.'}
+          </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
