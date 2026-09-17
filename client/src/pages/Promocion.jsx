@@ -84,7 +84,8 @@ export default function Promocion() {
   }
 
   const promoverManual = async (m, reprobar) => {
-    if (!window.confirm(`¿Promover manualmente a ${m.estudianteId?.nombres} ${m.estudianteId?.apellidos}?`)) return
+    const nombreEst = m.estudianteId?.nombres ? `${m.estudianteId.nombres} ${m.estudianteId.apellidos}` : 'un estudiante'
+    if (!window.confirm(`¿Promover manualmente a ${nombreEst}?`)) return
     const obs = window.prompt('Justificación (consejo académico):')
     if (obs === null) return
     try {
@@ -217,7 +218,7 @@ export default function Promocion() {
                     const ev = evaluaciones[m._id]
                     return (
                       <tr key={m._id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{m.estudianteId?.nombres} {m.estudianteId?.apellidos}</td>
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{m.estudianteId?.nombres ? `${m.estudianteId.nombres} ${m.estudianteId.apellidos}` : '—'}</td>
                         <td className="px-4 py-3 text-sm text-gray-700">{m.estudianteId?.documento || '—'}</td>
                         <td className="px-4 py-3 text-sm text-center text-gray-700">{ev ? (promedioGeneral(ev) ?? '—') : '—'}</td>
                         <td className="px-4 py-3 text-sm text-center text-gray-700">{ev ? `${ev.areasPerdidas}/${ev.umbral}` : '—'}</td>
