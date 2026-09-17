@@ -76,7 +76,6 @@ export default function Dashboard() {
   const requiereSede = ['admin', 'rector', 'coordinador', 'secretaria'].includes(rol)
 
   const rolEstudiante = rol === 'estudiante'
-  const rolAcudiente = rol === 'acudiente'
 
   if (requiereSede && !sedeId) {
     return (
