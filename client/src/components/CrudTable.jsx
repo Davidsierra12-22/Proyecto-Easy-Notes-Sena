@@ -162,7 +162,7 @@ export default function CrudTable({
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
+                onChange={(e) => { setBusqueda(e.target.value); setError('') }}
                 onKeyDown={(e) => e.key === 'Enter' && cargar({}, 1)}
                 placeholder="Buscar..."
                 className="pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 w-48 sm:w-64"
@@ -273,7 +273,7 @@ export default function CrudTable({
               <h2 className="text-lg font-bold text-gray-900">
                 {editing ? 'Editar registro' : 'Nuevo registro'}
               </h2>
-              <button onClick={() => setModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+              <button onClick={() => setModal(false)} aria-label="Cerrar modal" className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
             </div>
             <form onSubmit={guardar} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
