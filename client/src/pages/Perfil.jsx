@@ -21,9 +21,11 @@ export default function Perfil() {
   const [subiendo, setSubiendo] = useState(false)
   const [confirmando, setConfirmando] = useState(false)
   const [error, setError] = useState('')
+  const [exito, setExito] = useState('')
 
   const seleccionar = (e) => {
     setError('')
+    setExito('')
     const file = e.target.files?.[0]
     if (!file) return
     if (file.size > 2 * 1024 * 1024) {
@@ -40,6 +42,7 @@ export default function Perfil() {
     if (!file) return
     setSubiendo(true)
     setError('')
+    setExito('')
     try {
       const form = new FormData()
       form.append('archivo', file)
@@ -49,6 +52,7 @@ export default function Perfil() {
       actualizarUsuario({ foto: res.data.data.foto })
       setPreview(null)
       if (fileRef.current) fileRef.current.value = ''
+      setExito('Foto de perfil actualizada')
     } catch (e) {
       setError(e.response?.data?.message || 'Error al subir la foto')
     } finally {
@@ -59,9 +63,11 @@ export default function Perfil() {
   const quitar = async () => {
     setSubiendo(true)
     setError('')
+    setExito('')
     try {
       await api.delete(`/usuarios/${usuario.id}/foto`)
       actualizarUsuario({ foto: null })
+      setExito('Foto de perfil eliminada')
     } catch (e) {
       setError(e.response?.data?.message || 'Error al quitar la foto')
     } finally {
@@ -72,7 +78,7 @@ export default function Perfil() {
   const inicial = (usuario?.nombreCompleto || usuario?.nombres || 'U').charAt(0).toUpperCase()
 
   const datos = [
-    { label: 'Documento', value: usuario?.documento },
+    { label: 'Documento', value: usuario?.documento || '—' },
     { label: 'Email', value: usuario?.email || '—' },
     { label: 'Celular', value: usuario?.celular || '—' },
     { label: 'Rol', value: ROL_LABEL[usuario?.tipoPerfil] || usuario?.tipoPerfil }
@@ -171,6 +177,11 @@ export default function Perfil() {
             {error && (
               <div className="mt-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-3 py-2">
                 {error}
+              </div>
+            )}
+            {exito && (
+              <div className="mt-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-lg px-3 py-2">
+                {exito}
               </div>
             )}
           </div>
