@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, RefreshCw, Search, HandCoins, Printer } from 'lucide-react'
+import { Plus, RefreshCw, Search, HandCoins } from 'lucide-react'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import PaginationBar from '../components/PaginationBar'
@@ -78,7 +78,6 @@ export default function Pagos() {
   }, [])
 
   const concepto = (id) => conceptos.find(c => c._id === id)
-  const estudiante = (id) => estudiantes.find(s => s._id === id)
 
   const onSelectConcepto = (id) => {
     const c = concepto(id)
