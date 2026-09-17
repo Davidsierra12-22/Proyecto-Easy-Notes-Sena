@@ -79,7 +79,7 @@ export default function Bitacora() {
                 <Trash2 className="w-4 h-4" /> Limpiar
               </button>
             )}
-            <button onClick={() => cargar(paginacion.pagina)} className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100">
+            <button onClick={() => cargar(paginacion.pagina)} aria-label="Recargar bitacora" title="Recargar bitacora" className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100">
               <RefreshCw className="w-4 h-4" />
             </button>
           </div>
@@ -145,7 +145,7 @@ export default function Bitacora() {
                   <tr key={b._id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">{new Date(b.createdAt).toLocaleString('es-CO')}</td>
                     <td className="px-4 py-3 text-sm text-gray-700">
-                      {b.usuarioId ? `${b.usuarioId.nombres} ${b.usuarioId.apellidos}` : 'Sistema'}
+                      {b.usuarioId?.nombres ? `${b.usuarioId.nombres} ${b.usuarioId.apellidos}` : (b.usuarioId ? '—' : 'Sistema')}
                     </td>
                     <td className="px-4 py-3">
                       <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-primary-50 text-primary-700">
@@ -168,11 +168,11 @@ export default function Bitacora() {
               Página {paginacion.pagina} de {paginacion.totalPaginas}
             </span>
             <div className="flex items-center gap-2">
-              <button onClick={() => cargar(paginacion.pagina - 1)} disabled={paginacion.pagina <= 1}
+              <button onClick={() => cargar(paginacion.pagina - 1)} disabled={paginacion.pagina <= 1} aria-label="Página anterior"
                 className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-40">
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <button onClick={() => cargar(paginacion.pagina + 1)} disabled={paginacion.pagina >= paginacion.totalPaginas}
+              <button onClick={() => cargar(paginacion.pagina + 1)} disabled={paginacion.pagina >= paginacion.totalPaginas} aria-label="Página siguiente"
                 className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-40">
                 <ChevronRight className="w-4 h-4" />
               </button>
