@@ -14,7 +14,7 @@ export default function Login() {
     e.preventDefault()
     setError('')
     try {
-      const datos = await login(usuario, password)
+      const datos = await login(usuario.trim(), password)
       if (datos.debeCambiarPassword) {
         window.location.href = '/cambiar-password'
       } else if (datos.roles && datos.roles.length > 1) {
@@ -50,7 +50,7 @@ export default function Login() {
                 name="usuario"
                 autoComplete="username"
                 value={usuario}
-                onChange={(e) => setUsuario(e.target.value)}
+                onChange={(e) => { setUsuario(e.target.value); setError('') }}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="Número de documento"
@@ -67,7 +67,7 @@ export default function Login() {
                   name="password"
                   autoComplete="current-password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => { setPassword(e.target.value); setError('') }}
                   required
                   className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="••••••••"
