@@ -106,7 +106,7 @@ export default function Cartera() {
                 {estudiantes.map((e, i) => (
                   <tr key={e.estudiante?._id || i}>
                     <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                      {e.estudiante?.nombres} {e.estudiante?.apellidos}
+                      {e.estudiante?.nombres ? `${e.estudiante.nombres} ${e.estudiante.apellidos}` : '—'}
                     </td>
                     <td className="px-4 py-3 text-sm text-center text-gray-600">{e.estudiante?.documento}</td>
                     <td className="px-4 py-3 text-sm text-right font-bold text-red-700">
