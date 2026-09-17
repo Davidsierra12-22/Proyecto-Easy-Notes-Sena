@@ -14,7 +14,7 @@ export default function RecuperarPassword() {
     setError('')
     setLoading(true)
     try {
-      await api.post('/auth/recuperar-password', { documento })
+      await api.post('/auth/recuperar-password', { documento: documento.trim() })
       setEnviado(true)
     } catch (err) {
       setError(err.response?.data?.message || 'Error al solicitar la recuperación')
@@ -60,7 +60,7 @@ export default function RecuperarPassword() {
                 <input
                   type="text"
                   value={documento}
-                  onChange={(e) => setDocumento(e.target.value)}
+                  onChange={(e) => { setDocumento(e.target.value); setError('') }}
                   required
                   autoFocus
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
