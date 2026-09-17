@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, RefreshCw, ArrowLeft } from 'lucide-react'
+import { Search, RefreshCw, ArrowLeft, Pencil, ToggleLeft, ToggleRight } from 'lucide-react'
 import api from '../services/api'
 import PaginationBar from './PaginationBar'
 
@@ -137,6 +137,7 @@ export default function CrudTable({
           <div className="flex items-center gap-2">
             <button
               onClick={() => navigate(-1)}
+              aria-label="Volver"
               title="Volver"
               className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100"
             >
@@ -170,8 +171,9 @@ export default function CrudTable({
             </div>
             <button
               onClick={() => { setBusqueda(''); setFiltrosValores({}); setTimeout(() => cargar({}, 1), 0) }}
-              className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100"
+              aria-label="Refrescar"
               title="Refrescar"
+              className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100"
             >
               <RefreshCw className="w-4 h-4" />
             </button>
@@ -227,24 +229,31 @@ export default function CrudTable({
                     ))}
                     {puedeGestionar && (
                       <td className="px-4 py-3 text-right whitespace-nowrap">
-                        {renderAcciones && renderAcciones(item)}
-                        <button
-                          onClick={() => abrirEditar(item)}
-                          className="text-primary-600 hover:text-primary-800 text-sm font-medium mr-3"
-                          disabled={item._protegido}
-                        >
-                          Editar
-                        </button>
-                        <button
-                          onClick={() => cambiarEstado(item)}
-                          className={`text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed ${
-                            item.estado === 'activo' ? 'text-amber-600 hover:text-amber-800' : 'text-emerald-600 hover:text-emerald-800'
-                          }`}
-                          disabled={item._protegido}
-                          style={puedeDesactivar ? undefined : { display: 'none' }}
-                        >
-                          {item.estado === 'activo' ? 'Desactivar' : 'Activar'}
-                        </button>
+                        <div className="flex items-center justify-end gap-1">
+                          {renderAcciones && renderAcciones(item)}
+                          <button
+                            onClick={() => abrirEditar(item)}
+                            aria-label="Editar"
+                            title="Editar"
+                            className="p-1.5 text-primary-600 hover:text-primary-800 rounded-lg hover:bg-primary-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                            disabled={item._protegido}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          {puedeDesactivar && (
+                            <button
+                              onClick={() => cambiarEstado(item)}
+                              aria-label={item.estado === 'activo' ? 'Desactivar' : 'Activar'}
+                              title={item.estado === 'activo' ? 'Desactivar' : 'Activar'}
+                              className={`p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed ${
+                                item.estado === 'activo' ? 'text-amber-600 hover:text-amber-800' : 'text-emerald-600 hover:text-emerald-800'
+                              }`}
+                              disabled={item._protegido}
+                            >
+                              {item.estado === 'activo' ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
+                            </button>
+                          )}
+                        </div>
                       </td>
                     )}
                   </tr>
