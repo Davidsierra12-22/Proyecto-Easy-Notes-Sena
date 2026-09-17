@@ -123,10 +123,11 @@ export default function Grupos() {
         renderAcciones={(g) => (
           <button
             onClick={() => verEstudiantes(g)}
-            className="text-primary-600 hover:text-primary-800 text-sm font-medium mr-3 inline-flex items-center gap-1"
+            aria-label="Ver estudiantes"
             title="Ver estudiantes de este grado"
+            className="p-1.5 text-primary-600 hover:text-primary-800 rounded-lg hover:bg-primary-50"
           >
-            <Users className="w-4 h-4" /> Ver estudiantes
+            <Users className="w-4 h-4" />
           </button>
         )}
       />
