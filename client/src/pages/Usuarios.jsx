@@ -292,17 +292,19 @@ export default function Usuarios() {
             <>
               <button
                 onClick={() => abrirReset(u)}
+                aria-label="Restablecer contrasena"
                 title="Restablecer contraseña y enviar credenciales"
-                className="text-amber-600 hover:text-amber-800 text-sm font-medium mr-3 inline-flex items-center gap-1"
+                className="p-1.5 text-amber-600 hover:text-amber-800 rounded-lg hover:bg-amber-50"
               >
-                <KeyRound className="w-4 h-4" /> Contraseña
+                <KeyRound className="w-4 h-4" />
               </button>
               <button
                 onClick={() => abrirFoto(u)}
+                aria-label="Subir foto de perfil"
                 title="Subir foto de perfil"
-                className="text-primary-600 hover:text-primary-800 text-sm font-medium inline-flex items-center gap-1"
+                className="p-1.5 text-primary-600 hover:text-primary-800 rounded-lg hover:bg-primary-50"
               >
-                <ImagePlus className="w-4 h-4" /> Foto
+                <ImagePlus className="w-4 h-4" />
               </button>
             </>
           )
