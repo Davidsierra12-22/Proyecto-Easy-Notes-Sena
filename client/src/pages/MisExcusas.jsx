@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Plus, X, Stethoscope } from 'lucide-react'
 import api from '../services/api'
-import { useAuth } from '../context/AuthContext'
 import { useEstudiante } from '../hooks/useEstudiante'
 
 const estadoBadge = (estado) => {
@@ -14,7 +13,6 @@ const estadoBadge = (estado) => {
 }
 
 export default function MisExcusas() {
-  const { usuario } = useAuth()
   const { matricula, loading: cargaMatricula } = useEstudiante()
   const [excusas, setExcusas] = useState([])
   const [docentes, setDocentes] = useState([])
