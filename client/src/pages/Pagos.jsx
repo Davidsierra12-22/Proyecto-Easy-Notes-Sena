@@ -91,6 +91,13 @@ export default function Pagos() {
     })
   }
 
+  const recompute = (patch) => {
+    const valor = Number(patch.valor ?? form.valor) || 0
+    const descuento = Number(patch.descuento ?? form.descuento) || 0
+    const recargo = Number(patch.recargo ?? form.recargo) || 0
+    setForm({ ...form, ...patch, valorFinal: valor - descuento + recargo })
+  }
+
   const crear = async (e) => {
     e.preventDefault()
     setSaving(true)
@@ -154,7 +161,7 @@ export default function Pagos() {
                 <option value="anulado">Anulados</option>
               </select>
             </div>
-            <button onClick={cargar} className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100">
+            <button onClick={cargar} aria-label="Recargar pagos" title="Recargar pagos" className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100">
               <RefreshCw className="w-4 h-4" />
             </button>
             {puedeGestionar && (
@@ -248,7 +255,7 @@ export default function Pagos() {
           <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-bold text-gray-900">Generar Pago</h2>
-              <button onClick={() => setModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+              <button onClick={() => { setModal(false); setError('') }} aria-label="Cerrar modal de pago" className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
             </div>
             <form onSubmit={crear} className="p-6 space-y-4">
               <div>
@@ -278,17 +285,17 @@ export default function Pagos() {
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Valor</label>
-                  <input type="number" value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} required
+                  <input type="number" value={form.valor} onChange={(e) => recompute({ valor: e.target.value })} required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Descuento</label>
-                  <input type="number" value={form.descuento || 0} onChange={(e) => setForm({ ...form, descuento: e.target.value })} min="0"
+                  <input type="number" value={form.descuento || 0} onChange={(e) => recompute({ descuento: e.target.value })} min="0"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Recargo</label>
-                  <input type="number" value={form.recargo || 0} onChange={(e) => setForm({ ...form, recargo: e.target.value })} min="0"
+                  <input type="number" value={form.recargo || 0} onChange={(e) => recompute({ recargo: e.target.value })} min="0"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm" />
                 </div>
               </div>
