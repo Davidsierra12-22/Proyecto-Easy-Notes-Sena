@@ -13,7 +13,6 @@ export default function Certificados() {
   const [filtros, setFiltros] = useState({})
   const [facultad, setFacultad] = useState({ estilo: 'certificado' }) // certificado | constancia
   const [doc, setDoc] = useState(null)
-  const [estudianteSel, setEstudianteSel] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
