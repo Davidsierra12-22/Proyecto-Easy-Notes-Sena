@@ -166,7 +166,7 @@ export default function Grupos() {
                     {estLista.map(m => (
                       <tr key={m._id} className="hover:bg-gray-50">
                         <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                          {m.estudianteId?.nombres} {m.estudianteId?.apellidos}
+                          {m.estudianteId?.nombres ? `${m.estudianteId.nombres} ${m.estudianteId.apellidos}` : '—'}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-700">{m.estudianteId?.documento || '—'}</td>
                         <td className="px-4 py-3 text-sm text-gray-700">{m.grupoId?.nombre || '—'}</td>
