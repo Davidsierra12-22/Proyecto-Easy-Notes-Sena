@@ -6,6 +6,7 @@ Sistema de gestión educativa (matrículas, calificaciones, pagos, comunicación
 
 - `client/` — Frontend en React + Vite
 - `server/` — Backend en Node.js + Express + MongoDB
+- `docs/` — Documentación del proyecto (guía de contribución, modelo de datos, plan de migración, reparto del frontend)
 
 ## Requisitos
 
