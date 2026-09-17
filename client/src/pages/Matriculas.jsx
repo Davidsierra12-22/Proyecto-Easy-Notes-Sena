@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, RefreshCw, Search, LogOut, TrendingUp, TrendingDown, UserCheck, ArrowLeftRight } from 'lucide-react'
+import { Plus, Search, LogOut, TrendingUp, TrendingDown, UserCheck, ArrowLeftRight } from 'lucide-react'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { useSede } from '../context/SedeContext'
@@ -45,7 +45,6 @@ export default function Matriculas() {
 
   const puedeGestionar = ['super_admin', 'admin', 'secretaria'].includes(usuario?.tipoPerfil)
 
-  const grupoIdDe = (m) => (typeof m.grupoId === 'object' && m.grupoId) ? m.grupoId._id : m.grupoId
   const visibles = datos
 
   const toggleSelect = (id) => {
