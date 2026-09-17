@@ -338,7 +338,7 @@ export default function Matriculas() {
           <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-bold text-gray-900">Nueva Matrícula</h2>
-              <button onClick={() => setModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+              <button onClick={() => { setModal(false); setError('') }} aria-label="Cerrar modal de matricula" className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
             </div>
             <form onSubmit={crear} className="p-6 space-y-4">
               <div>
@@ -402,7 +402,7 @@ export default function Matriculas() {
           <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-bold text-gray-900">Cambiar de grupo (MT-002)</h2>
-              <button onClick={() => setModalGrupo(false)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+              <button onClick={() => { setModalGrupo(false); setError('') }} aria-label="Cerrar modal de cambio de grupo" className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
             </div>
             <form onSubmit={aplicarCambio} className="p-6 space-y-4">
               <div>
