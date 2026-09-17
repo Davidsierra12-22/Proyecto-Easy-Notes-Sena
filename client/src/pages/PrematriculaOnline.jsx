@@ -37,7 +37,21 @@ export default function PrematriculaOnline() {
     setError('')
     setMensaje('')
     try {
-      const r = await api.post('/prematriculas/solicitar', form)
+      const payload = {
+        ...form,
+        estudiante: {
+          ...form.estudiante,
+          documento: (form.estudiante.documento || '').trim(),
+          nombres: (form.estudiante.nombres || '').trim(),
+          apellidos: (form.estudiante.apellidos || '').trim()
+        },
+        acudiente: {
+          ...form.acudiente,
+          documento: (form.acudiente.documento || '').trim(),
+          email: (form.acudiente.email || '').trim()
+        }
+      }
+      const r = await api.post('/prematriculas/solicitar', payload)
       setMensaje('Solicitud registrada. Anota tu número de documento para consultar el estado.')
       setForm(initialForm)
       setTab('estado')
