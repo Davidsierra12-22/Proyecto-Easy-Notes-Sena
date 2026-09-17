@@ -111,7 +111,7 @@ export default function Calificaciones() {
               }
             }
           }
-        } catch (e) { /* sin notas previas */ }
+        } catch { /* sin notas previas */ }
       }
       setFilas(f)
       setCargado(true)
