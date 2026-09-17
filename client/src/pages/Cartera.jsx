@@ -47,7 +47,7 @@ export default function Cartera() {
             <h1 className="text-xl font-bold text-gray-900">Reporte de Cartera</h1>
             <p className="text-sm text-gray-500">Deudas pendientes y vencidas por estudiante (RN-CONT-04)</p>
           </div>
-          <button onClick={cargar} disabled={loading}
+          <button onClick={cargar} disabled={loading} aria-label="Recargar cartera" title="Recargar cartera"
             className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 self-start">
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -87,7 +87,7 @@ export default function Cartera() {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        {!estudiantes.length && !loading && (
+        {!estudiantes.length && !loading && !error && (
           <div className="p-8 text-center text-gray-500">No hay deudas pendientes o vencidas.</div>
         )}
         {estudiantes.length > 0 && (
