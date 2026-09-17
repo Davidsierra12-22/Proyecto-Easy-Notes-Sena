@@ -25,6 +25,7 @@ export default function MisClases() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate(-1)}
+            aria-label="Volver"
             title="Volver"
             className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100"
           >
