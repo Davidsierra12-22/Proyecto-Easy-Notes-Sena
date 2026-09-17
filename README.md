@@ -30,7 +30,3 @@ cd client
 npm install
 npm run dev
 ```
-
-## Contribución
-
-Ver `docs/CONTRIBUTING.md` antes de hacer commits.
