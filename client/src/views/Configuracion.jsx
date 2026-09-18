@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Building2, GraduationCap, Save, Plus, Trash2, RefreshCw, Settings2 } from 'lucide-react'
-import api from '../services/api'
-import { useAuth } from '../context/AuthContext'
+import {
+  Alert, Button, Checkbox, FormControl, IconButton, InputLabel, MenuItem, Select,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField
+} from '@mui/material'
+import api from '../services/api.service'
+import { useAuth } from '../store/Auth'
 
 const GRADOS_ESTANDAR = [
   { numero: 0, nombre: 'Preescolar' },
@@ -198,12 +202,12 @@ export default function Configuracion() {
             </h1>
             <p className="text-sm text-gray-500 mt-1">Datos institucionales y grados que ofrece el colegio</p>
           </div>
-          <button onClick={cargar} aria-label="Recargar configuración" title="Recargar configuración" className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100">
+          <IconButton onClick={cargar} aria-label="Recargar configuración" title="Recargar configuración" size="small" className="!text-gray-500 hover:!bg-gray-100">
             <RefreshCw className="w-4 h-4" />
-          </button>
+          </IconButton>
         </div>
-        {error && <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-3 py-2 mt-4">{error}</div>}
-        {exito && <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-3 py-2 mt-4">{exito}</div>}
+        {error && <Alert severity="error" className="mt-4">{error}</Alert>}
+        {exito && <Alert severity="success" className="mt-4">{exito}</Alert>}
       </div>
 
       {institucion && (
@@ -217,40 +221,34 @@ export default function Configuracion() {
             )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="sm:col-span-2">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Nombre</label>
-                <input value={datos.nombre} onChange={e => setDatos({ ...datos, nombre: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm" />
+                <TextField value={datos.nombre} onChange={e => setDatos({ ...datos, nombre: e.target.value })}
+                  label="Nombre" size="small" fullWidth />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">NIT</label>
-                <input value={datos.nit} onChange={e => setDatos({ ...datos, nit: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm" />
+                <TextField value={datos.nit} onChange={e => setDatos({ ...datos, nit: e.target.value })}
+                  label="NIT" size="small" fullWidth />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">DANE</label>
-                <input value={datos.dane} onChange={e => setDatos({ ...datos, dane: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm" />
+                <TextField value={datos.dane} onChange={e => setDatos({ ...datos, dane: e.target.value })}
+                  label="DANE" size="small" fullWidth />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Teléfono</label>
-                <input value={datos.telefono} onChange={e => setDatos({ ...datos, telefono: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm" />
+                <TextField value={datos.telefono} onChange={e => setDatos({ ...datos, telefono: e.target.value })}
+                  label="Teléfono" size="small" fullWidth />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Dirección</label>
-                <input value={datos.direccion} onChange={e => setDatos({ ...datos, direccion: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm" />
+                <TextField value={datos.direccion} onChange={e => setDatos({ ...datos, direccion: e.target.value })}
+                  label="Dirección" size="small" fullWidth />
               </div>
               <div className="sm:col-span-2">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Correo</label>
-                <input value={datos.email} onChange={e => setDatos({ ...datos, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm" />
+                <TextField value={datos.email} onChange={e => setDatos({ ...datos, email: e.target.value })}
+                  label="Correo" size="small" fullWidth />
               </div>
             </div>
-            <button onClick={guardarDatos} disabled={guardandoDatos}
-              className="mt-4 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 disabled:opacity-50">
-              <Save className="w-4 h-4" /> {guardandoDatos ? 'Guardando...' : 'Guardar datos del colegio'}
-            </button>
+            <Button variant="contained" color="primary" onClick={guardarDatos} disabled={guardandoDatos}
+              className="mt-4" startIcon={<Save className="w-4 h-4" />}>
+              {guardandoDatos ? 'Guardando...' : 'Guardar datos del colegio'}
+            </Button>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 lg:p-6">
@@ -265,10 +263,7 @@ export default function Configuracion() {
                 return (
                   <label key={g.numero}
                     className={`flex items-center gap-3 border rounded-lg px-3 py-2 cursor-pointer transition-colors ${activo ? 'border-primary-500 bg-primary-50' : 'border-gray-200 bg-gray-50 hover:border-gray-300'}`}>
-                    <input type="checkbox"
-                      checked={activo}
-                      onChange={() => alternarGradoEstandar(g)}
-                      className="w-4 h-4 accent-primary-600" />
+                    <Checkbox checked={activo} onChange={() => alternarGradoEstandar(g)} size="small" color="primary" />
                     <span className={`text-sm font-medium ${activo ? 'text-primary-700' : 'text-gray-600'}`}>
                       {g.nombre} <span className="text-xs opacity-70">· Grado {g.numero}</span>
                     </span>
@@ -285,10 +280,10 @@ export default function Configuracion() {
                     <div key={g.numero} className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
                       <span className="text-sm font-semibold text-gray-700 w-24">Grado {g.numero}</span>
                       <span className="text-sm text-gray-600 flex-1">{g.nombre}</span>
-                      <button onClick={() => setGrados(prev => prev.filter(x => String(x.numero) !== String(g.numero)))}
-                        className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg" title="Quitar">
+                      <IconButton onClick={() => setGrados(prev => prev.filter(x => String(x.numero) !== String(g.numero)))}
+                        size="small" className="!text-red-500 hover:!bg-red-50" title="Quitar">
                         <Trash2 className="w-4 h-4" />
-                      </button>
+                      </IconButton>
                     </div>
                   ))}
                 </div>
@@ -296,121 +291,121 @@ export default function Configuracion() {
             )}
 
             <div className="mt-4">
-              <label className="block text-xs font-medium text-gray-600 mb-1">Agregar grado personalizado</label>
               <div className="flex gap-2">
-                <input value={nuevoNombre}
+                <TextField value={nuevoNombre}
                   onChange={e => setNuevoNombre(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); agregarGrado() } }}
                   placeholder="Ej: Aceleración, Transición..."
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm" />
-                <button onClick={agregarGrado}
-                  className="px-3 py-2 border border-primary-600 text-primary-600 hover:bg-primary-50 rounded-lg flex items-center gap-1 text-sm">
-                  <Plus className="w-4 h-4" /> Agregar
-                </button>
+                  label="Agregar grado personalizado" size="small" className="flex-1" />
+                <Button variant="outlined" color="primary" onClick={agregarGrado} startIcon={<Plus className="w-4 h-4" />}>
+                  Agregar
+                </Button>
               </div>
             </div>
 
-            <button onClick={guardarGrados} disabled={guardandoGrados}
-              className="mt-4 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 disabled:opacity-50">
-              <Save className="w-4 h-4" /> {guardandoGrados ? 'Guardando...' : 'Guardar grados'}
-            </button>
+            <Button variant="contained" color="primary" onClick={guardarGrados} disabled={guardandoGrados}
+              className="mt-4" startIcon={<Save className="w-4 h-4" />}>
+              {guardandoGrados ? 'Guardando...' : 'Guardar grados'}
+            </Button>
           </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 lg:p-6 lg:col-span-2">
-          <h2 className="text-lg font-bold text-gray-900 mb-1 flex items-center gap-2">
-            <Settings2 className="w-5 h-5 text-primary-600" /> SIEE · Política de evaluación
-          </h2>
-          <p className="text-xs text-gray-500 mb-4">
-            Define cómo se evalúa en el colegio. Lo usan Calificaciones, Boletines y la Promoción.
-          </p>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 lg:p-6 lg:col-span-2">
+            <h2 className="text-lg font-bold text-gray-900 mb-1 flex items-center gap-2">
+              <Settings2 className="w-5 h-5 text-primary-600" /> SIEE · Política de evaluación
+            </h2>
+            <p className="text-xs text-gray-500 mb-4">
+              Define cómo se evalúa en el colegio. Lo usan Calificaciones, Boletines y la Promoción.
+            </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Nota mínima de aprobación</label>
-              <input type="number" min="0" max="5" step="0.1" value={siee.notaMinima}
-                onChange={e => setSiee({ ...siee, notaMinima: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+              <div>
+                <TextField label="Nota mínima de aprobación" type="number" value={siee.notaMinima}
+                  onChange={e => setSiee({ ...siee, notaMinima: e.target.value })}
+                  slotProps={{ htmlInput: { min: 0, max: 5, step: 0.1 } }} size="small" fullWidth />
+              </div>
+              <div>
+                <TextField label="Número de períodos" type="number" value={siee.numeroPeriodos}
+                  onChange={e => setSiee({ ...siee, numeroPeriodos: e.target.value })}
+                  slotProps={{ htmlInput: { min: 1, max: 6 } }} size="small" fullWidth />
+              </div>
+              <div>
+                <FormControl size="small" fullWidth>
+                  <InputLabel>Pierde el año por</InputLabel>
+                  <Select value={siee.pierdeAnoPor} onChange={e => setSiee({ ...siee, pierdeAnoPor: e.target.value })} label="Pierde el año por">
+                    <MenuItem value="areas">Áreas perdidas</MenuItem>
+                    <MenuItem value="materias">Materias perdidas</MenuItem>
+                  </Select>
+                </FormControl>
+              </div>
+              <div>
+                <TextField label="Cantidad de pérdidas para reprobar" type="number" value={siee.numPerdidas}
+                  onChange={e => setSiee({ ...siee, numPerdidas: e.target.value })}
+                  slotProps={{ htmlInput: { min: 1, max: 20 } }} size="small" fullWidth />
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Número de períodos</label>
-              <input type="number" min="1" max="6" value={siee.numeroPeriodos}
-                onChange={e => setSiee({ ...siee, numeroPeriodos: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm" />
+
+            <label className="flex items-center gap-2 text-sm text-gray-700 mb-4">
+              <Checkbox checked={siee.aproximaPromedio}
+                onChange={e => setSiee({ ...siee, aproximaPromedio: e.target.checked })}
+                size="small" color="primary" />
+              Aproximar promedios
+            </label>
+
+            <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Escala de desempeños (cualitativo)</h3>
+            <div className="overflow-x-auto mb-4">
+              <TableContainer>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow className="!border-b !border-gray-200">
+                      <TableCell className="!py-2 !pr-2 !pl-0 !font-semibold !text-xs !text-gray-500">Desempeño</TableCell>
+                      <TableCell className="!py-2 !pr-2 !font-semibold !text-xs !text-gray-500">Desde</TableCell>
+                      <TableCell className="!py-2 !pr-2 !font-semibold !text-xs !text-gray-500">Hasta</TableCell>
+                      <TableCell className="!py-2 !font-semibold" />
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {siee.niveles.map((n, i) => (
+                      <TableRow key={i} className="!border-b !border-gray-100">
+                        <TableCell className="!py-1.5 !pr-2 !pl-0">
+                          <TextField value={n.valor}
+                            onChange={e => editarNivel(i, 'valor', e.target.value)}
+                            size="small" fullWidth />
+                        </TableCell>
+                        <TableCell className="!py-1.5 !pr-2">
+                          <TextField type="number" value={n.rangoMin}
+                            onChange={e => editarNivel(i, 'rangoMin', e.target.value)}
+                            slotProps={{ htmlInput: { min: 0, max: 5, step: 0.1 } }}
+                            size="small" className="!w-24" />
+                        </TableCell>
+                        <TableCell className="!py-1.5 !pr-2">
+                          <TextField type="number" value={n.rangoMax}
+                            onChange={e => editarNivel(i, 'rangoMax', e.target.value)}
+                            slotProps={{ htmlInput: { min: 0, max: 5, step: 0.1 } }}
+                            size="small" className="!w-24" />
+                        </TableCell>
+                        <TableCell className="!py-1.5 !text-right">
+                          <IconButton onClick={() => setSiee(prev => ({ ...prev, niveles: prev.niveles.filter((_, j) => j !== i) }))}
+                            disabled={siee.niveles.length <= 1}
+                            size="small" className="!text-red-500 hover:!bg-red-50 disabled:!opacity-40" title="Quitar nivel">
+                            <Trash2 className="w-4 h-4" />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Pierde el año por</label>
-              <select value={siee.pierdeAnoPor} onChange={e => setSiee({ ...siee, pierdeAnoPor: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm">
-                <option value="areas">Áreas perdidas</option>
-                <option value="materias">Materias perdidas</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Cantidad de pérdidas para reprobar</label>
-              <input type="number" min="1" max="20" value={siee.numPerdidas}
-                onChange={e => setSiee({ ...siee, numPerdidas: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm" />
-            </div>
+            <Button variant="outlined" color="primary" onClick={() => setSiee(prev => ({ ...prev, niveles: [...prev.niveles, { valor: '', rangoMin: '', rangoMax: '' }] }))}
+              className="mb-4" startIcon={<Plus className="w-4 h-4" />}>
+              Agregar desempeño
+            </Button>
+
+            <Button variant="contained" color="primary" onClick={guardarSiee} disabled={guardandoSiee}
+              className="mt-2" startIcon={<Save className="w-4 h-4" />}>
+              {guardandoSiee ? 'Guardando...' : 'Guardar política de evaluación'}
+            </Button>
           </div>
-
-          <label className="flex items-center gap-2 text-sm text-gray-700 mb-4">
-            <input type="checkbox" checked={siee.aproximaPromedio}
-              onChange={e => setSiee({ ...siee, aproximaPromedio: e.target.checked })}
-              className="w-4 h-4 accent-primary-600" />
-            Aproximar promedios
-          </label>
-
-          <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Escala de desempeños (cualitativo)</h3>
-          <div className="overflow-x-auto mb-4">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-gray-500 border-b border-gray-200">
-                  <th className="py-2 pr-2 font-medium">Desempeño</th>
-                  <th className="py-2 pr-2 font-medium">Desde</th>
-                  <th className="py-2 pr-2 font-medium">Hasta</th>
-                  <th className="py-2 font-medium"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {siee.niveles.map((n, i) => (
-                  <tr key={i} className="border-b border-gray-100">
-                    <td className="py-1.5 pr-2">
-                      <input value={n.valor}
-                        onChange={e => editarNivel(i, 'valor', e.target.value)}
-                        className="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm" />
-                    </td>
-                    <td className="py-1.5 pr-2">
-                      <input type="number" min="0" max="5" step="0.1" value={n.rangoMin}
-                        onChange={e => editarNivel(i, 'rangoMin', e.target.value)}
-                        className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm" />
-                    </td>
-                    <td className="py-1.5 pr-2">
-                      <input type="number" min="0" max="5" step="0.1" value={n.rangoMax}
-                        onChange={e => editarNivel(i, 'rangoMax', e.target.value)}
-                        className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm" />
-                    </td>
-                    <td className="py-1.5 text-right">
-                      <button onClick={() => setSiee(prev => ({ ...prev, niveles: prev.niveles.filter((_, j) => j !== i) }))}
-                        disabled={siee.niveles.length <= 1}
-                        className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg disabled:opacity-40" title="Quitar nivel">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <button onClick={() => setSiee(prev => ({ ...prev, niveles: [...prev.niveles, { valor: '', rangoMin: '', rangoMax: '' }] }))}
-            className="mb-4 px-3 py-1.5 border border-primary-600 text-primary-600 hover:bg-primary-50 rounded-lg flex items-center gap-1 text-sm">
-            <Plus className="w-4 h-4" /> Agregar desempeño
-          </button>
-
-          <button onClick={guardarSiee} disabled={guardandoSiee}
-            className="mt-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 disabled:opacity-50">
-            <Save className="w-4 h-4" /> {guardandoSiee ? 'Guardando...' : 'Guardar política de evaluación'}
-          </button>
-        </div>
         </div>
       )}
     </div>

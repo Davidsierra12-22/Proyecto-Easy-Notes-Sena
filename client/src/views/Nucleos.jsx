@@ -1,4 +1,4 @@
-import CrudTable from '../components/CrudTable'
+import CrudTable from '../components/Tables/CrudTable'
 import { Building } from 'lucide-react'
 
 const columnas = [

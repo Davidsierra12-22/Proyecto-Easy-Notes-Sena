@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
-import { School, Users, GraduationCap, UserPlus, MapPin, Layers, Wallet, Loader2, RefreshCw } from 'lucide-react'
-import api from '../services/api'
+import { School, Users, GraduationCap, UserPlus, MapPin, Layers, Wallet, RefreshCw } from 'lucide-react'
+import {
+  IconButton, CircularProgress,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow
+} from '@mui/material'
+import api from '../services/api.service'
 
 const formatoPesos = (v) =>
   v == null ? '—' : `$${Number(v).toLocaleString('es-CO')}`
@@ -59,7 +63,7 @@ export default function EstadisticasNucleo() {
     return (
       <div className="flex justify-center py-16">
         <div className="flex items-center gap-2 text-gray-500">
-          <Loader2 className="w-5 h-5 animate-spin" /> Cargando estadísticas...
+          <CircularProgress size={20} className="!text-primary-600" /> Cargando estadísticas...
         </div>
       </div>
     )
@@ -86,9 +90,9 @@ export default function EstadisticasNucleo() {
             <h1 className="text-xl font-bold text-gray-900">Estadísticas del Núcleo</h1>
             <p className="text-sm text-gray-500 mt-0.5">Indicadores agregados de todos los colegios del núcleo.</p>
           </div>
-          <button onClick={cargar} aria-label="Recargar estadisticas" title="Recargar estadisticas" className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100">
+          <IconButton onClick={cargar} aria-label="Recargar estadisticas" title="Recargar estadisticas" size="small" color="inherit">
             <RefreshCw className="w-4 h-4" />
-          </button>
+          </IconButton>
         </div>
       </div>
 
@@ -108,40 +112,42 @@ export default function EstadisticasNucleo() {
           <h2 className="text-lg font-semibold text-gray-900">Comparativo entre colegios</h2>
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                {COLUMNAS.map(c => (
-                  <th key={c.key} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    {c.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {comparativo.map(f => (
-                <tr key={f._id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">{f.nombre}</td>
-                  <td className="px-4 py-3 text-gray-600">{f.estudiantes}</td>
-                  <td className="px-4 py-3 text-gray-600">{f.docentes}</td>
-                  <td className="px-4 py-3 text-gray-600">{f.matriculasActivas}</td>
-                  <td className="px-4 py-3 text-gray-600">{f.grupos}</td>
-                  <td className="px-4 py-3 text-gray-600">{f.sedes}</td>
-                  <td className="px-4 py-3 text-gray-600">{f.pagosPendientes}</td>
-                  <td className="px-4 py-3 text-gray-600">{formatoPesos(f.recaudado)}</td>
-                </tr>
-              ))}
-              {comparativo.length > 0 && (
-                <tr className="bg-gray-50 font-semibold">
-                  <td className="px-4 py-3 text-gray-900">Total</td>
-                  {totalFilas.map(c => (
-                    <td key={c.key} className="px-4 py-3 text-gray-900">{totales[c.key]}</td>
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow className="bg-gray-50">
+                  {COLUMNAS.map(c => (
+                    <TableCell key={c.key} className="!font-semibold !text-gray-500 !text-xs !uppercase !tracking-wider whitespace-nowrap">
+                      {c.label}
+                    </TableCell>
                   ))}
-                  <td className="px-4 py-3 text-gray-900">{formatoPesos(recaudadoTotal)}</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {comparativo.map(f => (
+                  <TableRow key={f._id} hover>
+                    <TableCell className="!font-medium !text-gray-900">{f.nombre}</TableCell>
+                    <TableCell className="!text-gray-600">{f.estudiantes}</TableCell>
+                    <TableCell className="!text-gray-600">{f.docentes}</TableCell>
+                    <TableCell className="!text-gray-600">{f.matriculasActivas}</TableCell>
+                    <TableCell className="!text-gray-600">{f.grupos}</TableCell>
+                    <TableCell className="!text-gray-600">{f.sedes}</TableCell>
+                    <TableCell className="!text-gray-600">{f.pagosPendientes}</TableCell>
+                    <TableCell className="!text-gray-600">{formatoPesos(f.recaudado)}</TableCell>
+                  </TableRow>
+                ))}
+                {comparativo.length > 0 && (
+                  <TableRow className="bg-gray-50 font-semibold">
+                    <TableCell className="!font-semibold !text-gray-900">Total</TableCell>
+                    {totalFilas.map(c => (
+                      <TableCell key={c.key} className="!font-semibold !text-gray-900">{totales[c.key]}</TableCell>
+                    ))}
+                    <TableCell className="!font-semibold !text-gray-900">{formatoPesos(recaudadoTotal)}</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
           {comparativo.length === 0 && (
             <p className="px-6 py-8 text-center text-sm text-gray-500">No hay colegios con datos para comparar.</p>
           )}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { CalendarDays, Clock } from 'lucide-react'
-import api from '../services/api'
+import { Alert, CircularProgress } from '@mui/material'
+import api from '../services/api.service'
 import { useEstudiante } from '../hooks/useEstudiante'
 
 const JORNADAS = {
@@ -71,11 +72,11 @@ export default function Horario() {
           </div>
         </div>
 
-        {error && <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-3 py-2 mb-4">{error}</div>}
+        {error && <Alert severity="error" className="mb-4">{error}</Alert>}
 
         {cargaMatricula || loading ? (
           <div className="flex justify-center py-12">
-            <div className="w-7 h-7 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+            <CircularProgress size={28} className="!text-primary-600" />
           </div>
         ) : !matricula ? (
           <p className="text-center text-gray-500 py-12">Aún no tienes una matrícula activa.</p>
