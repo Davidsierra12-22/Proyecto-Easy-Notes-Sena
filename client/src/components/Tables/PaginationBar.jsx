@@ -1,3 +1,4 @@
+import { Button } from '@mui/material'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 export default function PaginationBar({ pagina, total, limite, totalPaginas, onCambio }) {
@@ -12,20 +13,27 @@ export default function PaginationBar({ pagina, total, limite, totalPaginas, onC
         <span className="font-medium text-gray-700">{total}</span> registros · página {pagina} de {totalPaginas}
       </p>
       <div className="flex items-center gap-1">
-        <button
+        <Button
           onClick={() => onCambio(pagina - 1)}
           disabled={pagina <= 1}
-          className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40 flex items-center gap-1"
+          size="small"
+          variant="outlined"
+          color="inherit"
+          className="!normal-case !text-gray-700"
+          startIcon={<ChevronLeft className="w-4 h-4" />}
         >
-          <ChevronLeft className="w-4 h-4" /> Anterior
-        </button>
-        <button
+          Anterior
+        </Button>
+        <Button
           onClick={() => onCambio(pagina + 1)}
           disabled={pagina >= totalPaginas}
-          className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40 flex items-center gap-1"
+          size="small"
+          variant="outlined"
+          color="inherit"
+          className="!normal-case !text-gray-700"
         >
-          Siguiente <ChevronRight className="w-4 h-4" />
-        </button>
+          Siguiente <ChevronRight className="w-4 h-4 ml-1" />
+        </Button>
       </div>
     </div>
   )
