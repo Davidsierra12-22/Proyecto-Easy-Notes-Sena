@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../store/Auth'
 import { GraduationCap, Lock, Eye, EyeOff } from 'lucide-react'
+import { Alert, Button, CircularProgress, IconButton, InputAdornment, TextField } from '@mui/material'
 
 export default function Login() {
   const [usuario, setUsuario] = useState('')
@@ -42,66 +43,64 @@ export default function Login() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Usuario (Documento)
-              </label>
-              <input
+              <TextField
+                label="Usuario (Documento)"
                 type="text"
                 name="usuario"
                 autoComplete="username"
                 value={usuario}
                 onChange={(e) => { setUsuario(e.target.value); setError('') }}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                fullWidth
+                size="small"
                 placeholder="Número de documento"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Contraseña
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => { setPassword(e.target.value); setError('') }}
-                  required
-                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                  title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
+              <TextField
+                label="Contraseña"
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); setError('') }}
+                required
+                fullWidth
+                size="small"
+                placeholder="••••••••"
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowPassword(!showPassword)}
+                          aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                          title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                          edge="end"
+                          size="small"
+                        >
+                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  }
+                }}
+              />
             </div>
 
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-3 py-2">
-                {error}
-              </div>
-            )}
+            {error && <Alert severity="error">{error}</Alert>}
 
-            <button
+            <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              variant="contained"
+              color="primary"
+              fullWidth
+              startIcon={loading ? <CircularProgress size={20} className="!text-white" /> : <Lock className="w-4 h-4" />}
             >
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <Lock className="w-4 h-4" />
-              )}
               {loading ? 'Ingresando...' : 'Ingresar'}
-            </button>
+            </Button>
 
             <p className="text-center text-sm">
               <Link to="/recuperar-password" className="text-primary-600 hover:text-primary-700 font-medium">

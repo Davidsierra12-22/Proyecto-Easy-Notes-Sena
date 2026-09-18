@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react'
-import { useAuth } from '../context/AuthContext'
-import api from '../services/api'
+import { useAuth } from '../store/Auth'
+import api from '../services/api.service'
 import { Camera, Trash2, X, Loader2 } from 'lucide-react'
+import { Alert, Button } from '@mui/material'
 
 const ROL_LABEL = {
   super_admin: 'Dirección de Núcleo',
@@ -116,58 +117,68 @@ export default function Perfil() {
 
             <div className="flex flex-wrap gap-2">
               <input ref={fileRef} type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" onChange={seleccionar} className="hidden" />
-              <button
+              <Button
+                variant="contained"
+                color="primary"
                 onClick={() => fileRef.current?.click()}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg"
+                startIcon={<Camera className="w-4 h-4" />}
               >
-                <Camera className="w-4 h-4" />
                 {usuario?.foto ? 'Cambiar foto' : 'Subir foto'}
-              </button>
+              </Button>
               {preview ? (
                 <>
-                  <button
+                  <Button
+                    variant="contained"
+                    color="success"
                     onClick={subir}
                     disabled={subiendo}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg disabled:opacity-50"
+                    startIcon={subiendo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
                   >
-                    {subiendo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
                     Guardar
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="contained"
                     onClick={() => { setPreview(null); if (fileRef.current) fileRef.current.value = '' }}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg"
+                    className="!bg-gray-100 !text-gray-700 hover:!bg-gray-200"
+                    startIcon={<X className="w-4 h-4" />}
                   >
-                    <X className="w-4 h-4" /> Cancelar
-                  </button>
+                    Cancelar
+                  </Button>
                 </>
               ) : (
                 usuario?.foto && (
                   confirmando ? (
                     <>
-                      <button
+                      <Button
+                        variant="contained"
+                        color="error"
                         onClick={quitar}
                         disabled={subiendo}
-                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:opacity-50"
+                        startIcon={subiendo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                       >
-                        {subiendo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                         Confirmar
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="contained"
                         onClick={() => setConfirmando(false)}
                         disabled={subiendo}
-                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg"
+                        className="!bg-gray-100 !text-gray-700 hover:!bg-gray-200"
+                        startIcon={<X className="w-4 h-4" />}
                       >
-                        <X className="w-4 h-4" /> Cancelar
-                      </button>
+                        Cancelar
+                      </Button>
                     </>
                   ) : (
-                    <button
+                    <Button
+                      variant="contained"
+                      color="error"
                       onClick={() => setConfirmando(true)}
                       disabled={subiendo}
-                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg disabled:opacity-50"
+                      className="!bg-red-50 !text-red-600 hover:!bg-red-100"
+                      startIcon={<Trash2 className="w-4 h-4" />}
                     >
-                      <Trash2 className="w-4 h-4" /> Quitar foto
-                    </button>
+                      Quitar foto
+                    </Button>
                   )
                 )
               )}
@@ -175,14 +186,10 @@ export default function Perfil() {
             <p className="text-xs text-gray-400 mt-3">Formatos: JPG o PNG · Máximo 2MB.</p>
 
             {error && (
-              <div className="mt-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-3 py-2">
-                {error}
-              </div>
+              <Alert severity="error" className="mt-3">{error}</Alert>
             )}
             {exito && (
-              <div className="mt-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-lg px-3 py-2">
-                {exito}
-              </div>
+              <Alert severity="success" className="mt-3">{exito}</Alert>
             )}
           </div>
         </div>

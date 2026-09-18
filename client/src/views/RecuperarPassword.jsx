@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { GraduationCap, MailSearch, ArrowLeft } from 'lucide-react'
-import api from '../services/api'
+import { Button, TextField, Alert } from '@mui/material'
+import api from '../services/api.service'
 
 export default function RecuperarPassword() {
   const [documento, setDocumento] = useState('')
@@ -53,34 +54,31 @@ export default function RecuperarPassword() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Número de documento
-                </label>
-                <input
+              <TextField
+                  label="Número de documento"
                   type="text"
                   value={documento}
                   onChange={(e) => { setDocumento(e.target.value); setError('') }}
                   required
                   autoFocus
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="Documento registrado en el sistema"
+                  fullWidth
                 />
-              </div>
 
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-3 py-2">
-                  {error}
-                </div>
+                <Alert severity="error">{error}</Alert>
               )}
 
-              <button
+              <Button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50"
+                variant="contained"
+                color="primary"
+                fullWidth
+                className="!py-2.5 !normal-case"
               >
                 {loading ? 'Enviando...' : 'Enviar enlace de recuperación'}
-              </button>
+              </Button>
 
               <Link to="/login" className="flex items-center justify-center gap-1 text-sm text-gray-500 hover:text-gray-700">
                 <ArrowLeft className="w-4 h-4" /> Volver al inicio de sesión

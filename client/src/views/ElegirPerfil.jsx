@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../store/Auth'
 import { GraduationCap, LogOut, Shield, ClipboardList, School, Users, BookOpen, BadgeCheck } from 'lucide-react'
+import { Button } from '@mui/material'
 
 const ROL_LABEL = {
   super_admin: 'Dirección de Núcleo',
@@ -75,13 +76,15 @@ export default function ElegirPerfil() {
               const Icon = ROL_ICON[rol] || BadgeCheck
               const activo = rol === usuario.tipoPerfil
               return (
-                <button
+                <Button
                   key={rol}
                   onClick={() => seleccionar(rol)}
-                  className={`p-4 rounded-xl border text-left transition-colors ${
+                  variant="outlined"
+                  fullWidth
+                  className={`!p-4 !rounded-xl !normal-case !justify-start !text-left !items-stretch transition-colors ${
                     activo
-                      ? 'border-primary-500 bg-primary-50 ring-1 ring-primary-500'
-                      : 'border-gray-200 bg-white hover:border-primary-300 hover:bg-primary-50/50'
+                      ? '!border-primary-500 !bg-primary-50 !ring-1 !ring-primary-500'
+                      : '!border-gray-200 !bg-white hover:!border-primary-300 hover:!bg-primary-50/50'
                   }`}
                 >
                   <div className="flex items-start gap-3">
@@ -98,18 +101,19 @@ export default function ElegirPerfil() {
                       )}
                     </span>
                   </div>
-                </button>
+                </Button>
               )
             })}
           </div>
 
           <div className="flex justify-center mt-6">
-            <button
+            <Button
               onClick={logout}
-              className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-700"
+              className="!normal-case !text-gray-500 hover:!text-gray-700"
+              startIcon={<LogOut className="w-4 h-4" />}
             >
-              <LogOut className="w-4 h-4" /> Cerrar sesión
-            </button>
+              Cerrar sesión
+            </Button>
           </div>
         </div>
       </div>

@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { GraduationCap, KeyRound, AlertTriangle } from 'lucide-react'
-import api from '../services/api'
+import { Button, TextField, Alert } from '@mui/material'
+import api from '../services/api.service'
 
 export default function RestablecerPassword() {
   const [searchParams] = useSearchParams()
@@ -81,43 +82,40 @@ export default function RestablecerPassword() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nueva contraseña</label>
-                <input
+              <TextField
+                  label="Nueva contraseña"
                   type="password"
                   value={password}
                   onChange={(e) => { setPassword(e.target.value); setError('') }}
                   required
                   autoFocus
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="Mínimo 6 caracteres"
+                  fullWidth
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar contraseña</label>
-                <input
+              <TextField
+                  label="Confirmar contraseña"
                   type="password"
                   value={confirmar}
                   onChange={(e) => { setConfirmar(e.target.value); setError('') }}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="Repite la nueva contraseña"
+                  fullWidth
                 />
-              </div>
 
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-3 py-2">
-                  {error}
-                </div>
+                <Alert severity="error">{error}</Alert>
               )}
 
-              <button
+              <Button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50"
+                variant="contained"
+                color="primary"
+                fullWidth
+                className="!py-2.5 !normal-case"
               >
                 {loading ? 'Guardando...' : 'Restablecer contraseña'}
-              </button>
+              </Button>
             </form>
           )}
         </div>
