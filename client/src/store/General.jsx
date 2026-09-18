@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
-import api from '../services/api'
-import { useAuth } from './AuthContext'
+import api from '../services/api.service'
+import { useAuth } from './Auth'
 
 const SedeContext = createContext({})
 
