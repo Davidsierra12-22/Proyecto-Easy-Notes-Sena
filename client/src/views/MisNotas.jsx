@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
+import {
+  CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow
+} from '@mui/material'
 import { Calculator } from 'lucide-react'
-import api from '../services/api'
-import { useAuth } from '../context/AuthContext'
+import api from '../services/api.service'
+import { useAuth } from '../store/Auth'
 import { useEstudiante } from '../hooks/useEstudiante'
 
 const notaColor = (n) => {
-  if (n == null) return 'text-gray-400'
-  return n >= 3 ? 'text-emerald-600 font-semibold' : 'text-red-600 font-semibold'
+  if (n == null) return '!text-gray-400'
+  return n >= 3 ? '!text-emerald-600 !font-semibold' : '!text-red-600 !font-semibold'
 }
 
 export default function MisNotas() {
@@ -56,7 +59,7 @@ export default function MisNotas() {
 
         {cargaMatricula || loading ? (
           <div className="flex justify-center py-12">
-            <div className="w-7 h-7 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+            <CircularProgress size={28} className="!text-primary-600" />
           </div>
         ) : !matricula ? (
           <p className="text-center text-gray-500 py-12">Aún no tienes una matrícula activa para consultar notas.</p>
@@ -65,19 +68,19 @@ export default function MisNotas() {
             {error ? 'No se pudieron cargar tus notas. Vuelve a intentarlo en unos minutos.' : 'Todavía no hay calificaciones registradas para tus asignaturas.'}
           </p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Asignatura</th>
+          <TableContainer className="overflow-x-auto">
+            <Table size="small" className="min-w-full divide-y divide-gray-200">
+              <TableHead>
+                <TableRow className="bg-gray-50">
+                  <TableCell className="!px-4 !py-3 !text-left !text-xs !font-semibold !text-gray-500 !uppercase">Asignatura</TableCell>
                   {periodos.map(p => (
-                    <th key={p} className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Periodo {p}</th>
+                    <TableCell key={p} className="!px-4 !py-3 !text-center !text-xs !font-semibold !text-gray-500 !uppercase">Periodo {p}</TableCell>
                   ))}
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Definitiva</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Logro</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+                  <TableCell className="!px-4 !py-3 !text-center !text-xs !font-semibold !text-gray-500 !uppercase">Definitiva</TableCell>
+                  <TableCell className="!px-4 !py-3 !text-left !text-xs !font-semibold !text-gray-500 !uppercase">Logro</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody className="bg-white divide-y divide-gray-200">
                 {materias.map(m => {
                   const notaPeriodo = (p) => {
                     const reg = m.periodos.find(x => x.periodo === p)
@@ -85,25 +88,25 @@ export default function MisNotas() {
                     return reg.nota
                   }
                   return (
-                    <tr key={m.asignatura?._id || m.asignatura} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                    <TableRow key={m.asignatura?._id || m.asignatura} hover>
+                      <TableCell className="!px-4 !py-3 !text-sm !font-medium !text-gray-900">
                         {m.asignatura?.nombre || 'Asignatura'}
-                      </td>
+                      </TableCell>
                       {periodos.map(p => (
-                        <td key={p} className={`px-4 py-3 text-center text-sm ${notaColor(notaPeriodo(p))}`}>
+                        <TableCell key={p} className={`!px-4 !py-3 !text-center !text-sm ${notaColor(notaPeriodo(p))}`}>
                           {notaPeriodo(p)}
-                        </td>
+                        </TableCell>
                       ))}
-                      <td className={`px-4 py-3 text-center text-sm ${notaColor(m.notaDefinitiva)}`}>
+                      <TableCell className={`!px-4 !py-3 !text-center !text-sm ${notaColor(m.notaDefinitiva)}`}>
                         {m.notaDefinitiva ?? '—'}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{m.logro || '—'}</td>
-                    </tr>
+                      </TableCell>
+                      <TableCell className="!px-4 !py-3 !text-sm !text-gray-600">{m.logro || '—'}</TableCell>
+                    </TableRow>
                   )
                 })}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </TableContainer>
         )}
       </div>
     </div>

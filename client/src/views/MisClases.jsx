@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BookOpen, GraduationCap, CalendarDays, ArrowLeft } from 'lucide-react'
-import api from '../services/api'
-import { useAuth } from '../context/AuthContext'
+import { Button, IconButton, CircularProgress } from '@mui/material'
+import api from '../services/api.service'
+import { useAuth } from '../store/Auth'
 
 export default function MisClases() {
   const { usuario } = useAuth()
@@ -23,14 +24,15 @@ export default function MisClases() {
     <div className="space-y-4">
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 lg:p-6">
         <div className="flex items-center gap-2">
-          <button
+          <IconButton
             onClick={() => navigate(-1)}
             aria-label="Volver"
             title="Volver"
-            className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100"
+            color="inherit"
+            size="small"
           >
             <ArrowLeft className="w-5 h-5" />
-          </button>
+          </IconButton>
           <h1 className="text-xl font-bold text-gray-900">Mis Clases</h1>
         </div>
         <p className="text-sm text-gray-500 mt-1">
@@ -46,7 +48,7 @@ export default function MisClases() {
 
       {loading ? (
         <div className="flex justify-center py-12 bg-white rounded-xl border border-gray-200">
-          <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+          <CircularProgress size={32} className="!text-primary-600" />
         </div>
       ) : cargas.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center text-sm text-gray-500">
@@ -76,12 +78,15 @@ export default function MisClases() {
                     {grupo?.jornada || ''} · {c.horasSemanales ?? 4} h/sem
                   </p>
                 </div>
-                <button
+                <Button
                   onClick={() => navigate(`/calificaciones?grupoId=${grupo?._id || c.grupoId}&asignaturaId=${asig?._id || c.asignaturaId}`)}
-                  className="mt-4 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                  variant="contained"
+                  color="primary"
+                  fullWidth
+                  className="mt-4"
                 >
                   Calificar
-                </button>
+                </Button>
               </div>
             )
           })}

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { UserPlus, Search, ArrowLeft, School } from 'lucide-react'
-import api from '../services/api'
+import { TextField, Button, CircularProgress, MenuItem } from '@mui/material'
+import api from '../services/api.service'
 
 const initialForm = {
   estudiante: { tipoDocumento: 'TI', fechaNacimiento: '', genero: '' },
@@ -74,9 +75,6 @@ export default function PrematriculaOnline() {
     }
   }
 
-  const inputCls = "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm"
-  const labelCls = "block text-xs font-medium text-gray-600 mb-1"
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <header className="bg-primary-600 text-white">
@@ -94,7 +92,7 @@ export default function PrematriculaOnline() {
       <main className="flex-1 w-full max-w-3xl mx-auto px-4 py-8">
         {!cargado ? (
           <div className="flex justify-center py-16">
-            <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+            <CircularProgress size={32} className="!text-primary-600" />
           </div>
         ) : !periodo?.abierta ? (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-10 text-center">
@@ -118,14 +116,16 @@ export default function PrematriculaOnline() {
                   </p>
                 </div>
                 <div className="flex border border-gray-200 rounded-lg overflow-hidden">
-                  <button onClick={() => setTab('formulario')}
-                    className={`px-4 py-2 text-sm font-medium flex items-center gap-1 ${tab === 'formulario' ? 'bg-primary-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}>
-                    <UserPlus className="w-4 h-4" /> Registrar
-                  </button>
-                  <button onClick={() => setTab('estado')}
-                    className={`px-4 py-2 text-sm font-medium flex items-center gap-1 ${tab === 'estado' ? 'bg-primary-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}>
-                    <Search className="w-4 h-4" /> Consultar estado
-                  </button>
+                  <Button onClick={() => setTab('formulario')} disableRipple
+                    className={`px-4 py-2 text-sm font-medium !rounded-none ${tab === 'formulario' ? '!bg-primary-600 !text-white' : '!text-gray-600 hover:!bg-gray-50'}`}
+                    startIcon={<UserPlus className="w-4 h-4" />}>
+                    Registrar
+                  </Button>
+                  <Button onClick={() => setTab('estado')} disableRipple
+                    className={`px-4 py-2 text-sm font-medium !rounded-none ${tab === 'estado' ? '!bg-primary-600 !text-white' : '!text-gray-600 hover:!bg-gray-50'}`}
+                    startIcon={<Search className="w-4 h-4" />}>
+                    Consultar estado
+                  </Button>
                 </div>
               </div>
 
@@ -135,43 +135,39 @@ export default function PrematriculaOnline() {
                     <p className="text-sm font-semibold text-gray-700 mb-2 border-b border-gray-100 pb-1">Datos del estudiante</p>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                       <div>
-                        <label className={labelCls}>Tipo de documento</label>
-                        <select value={form.estudiante.tipoDocumento} onChange={(e) => setE('tipoDocumento', e.target.value)} className={inputCls}>
-                          <option value="RC">RC</option><option value="TI">TI</option><option value="CC">CC</option><option value="CE">CE</option><option value="PAS">PAS</option>
-                        </select>
+                        <TextField select label="Tipo de documento" value={form.estudiante.tipoDocumento} onChange={(e) => setE('tipoDocumento', e.target.value)} fullWidth>
+                          <MenuItem value="RC">RC</MenuItem>
+                          <MenuItem value="TI">TI</MenuItem>
+                          <MenuItem value="CC">CC</MenuItem>
+                          <MenuItem value="CE">CE</MenuItem>
+                          <MenuItem value="PAS">PAS</MenuItem>
+                        </TextField>
                       </div>
                       <div className="col-span-2">
-                        <label className={labelCls}>Número de documento <span className="text-red-500">*</span></label>
-                        <input value={form.estudiante.documento} onChange={(e) => setE('documento', e.target.value)} required className={inputCls} />
+                        <TextField label="Número de documento" value={form.estudiante.documento} onChange={(e) => setE('documento', e.target.value)} required fullWidth />
                       </div>
                       <div>
-                        <label className={labelCls}>Nombres <span className="text-red-500">*</span></label>
-                        <input value={form.estudiante.nombres} onChange={(e) => setE('nombres', e.target.value)} required className={inputCls} />
+                        <TextField label="Nombres" value={form.estudiante.nombres} onChange={(e) => setE('nombres', e.target.value)} required fullWidth />
                       </div>
                       <div>
-                        <label className={labelCls}>Apellidos <span className="text-red-500">*</span></label>
-                        <input value={form.estudiante.apellidos} onChange={(e) => setE('apellidos', e.target.value)} required className={inputCls} />
+                        <TextField label="Apellidos" value={form.estudiante.apellidos} onChange={(e) => setE('apellidos', e.target.value)} required fullWidth />
                       </div>
                       <div>
-                        <label className={labelCls}>Fecha de nacimiento</label>
-                        <input type="date" value={form.estudiante.fechaNacimiento} onChange={(e) => setE('fechaNacimiento', e.target.value)} className={inputCls} />
+                        <TextField type="date" label="Fecha de nacimiento" value={form.estudiante.fechaNacimiento} onChange={(e) => setE('fechaNacimiento', e.target.value)} fullWidth slotProps={{ inputLabel: { shrink: true } }} />
                       </div>
                       <div>
-                        <label className={labelCls}>Género</label>
-                        <select value={form.estudiante.genero} onChange={(e) => setE('genero', e.target.value)} className={inputCls}>
-                          <option value="">Seleccionar...</option>
-                          <option value="M">Masculino</option>
-                          <option value="F">Femenino</option>
-                          <option value="O">Otro</option>
-                        </select>
+                        <TextField select label="Género" value={form.estudiante.genero} onChange={(e) => setE('genero', e.target.value)} fullWidth>
+                          <MenuItem value="">Seleccionar...</MenuItem>
+                          <MenuItem value="M">Masculino</MenuItem>
+                          <MenuItem value="F">Femenino</MenuItem>
+                          <MenuItem value="O">Otro</MenuItem>
+                        </TextField>
                       </div>
                       <div className="col-span-2">
-                        <label className={labelCls}>Dirección</label>
-                        <input value={form.estudiante.direccion} onChange={(e) => setE('direccion', e.target.value)} className={inputCls} />
+                        <TextField label="Dirección" value={form.estudiante.direccion} onChange={(e) => setE('direccion', e.target.value)} fullWidth />
                       </div>
                       <div>
-                        <label className={labelCls}>Teléfono</label>
-                        <input value={form.estudiante.telefono} onChange={(e) => setE('telefono', e.target.value)} className={inputCls} />
+                        <TextField label="Teléfono" value={form.estudiante.telefono} onChange={(e) => setE('telefono', e.target.value)} fullWidth />
                       </div>
                     </div>
                   </div>
@@ -180,34 +176,30 @@ export default function PrematriculaOnline() {
                     <p className="text-sm font-semibold text-gray-700 mb-2 border-b border-gray-100 pb-1">Datos del acudiente</p>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                       <div>
-                        <label className={labelCls}>Nombres <span className="text-red-500">*</span></label>
-                        <input value={form.acudiente.nombres} onChange={(e) => setA('nombres', e.target.value)} required className={inputCls} />
+                        <TextField label="Nombres" value={form.acudiente.nombres} onChange={(e) => setA('nombres', e.target.value)} required fullWidth />
                       </div>
                       <div>
-                        <label className={labelCls}>Apellidos <span className="text-red-500">*</span></label>
-                        <input value={form.acudiente.apellidos} onChange={(e) => setA('apellidos', e.target.value)} required className={inputCls} />
+                        <TextField label="Apellidos" value={form.acudiente.apellidos} onChange={(e) => setA('apellidos', e.target.value)} required fullWidth />
                       </div>
                       <div>
-                        <label className={labelCls}>Parentesco</label>
-                        <input value={form.acudiente.parentesco} onChange={(e) => setA('parentesco', e.target.value)} className={inputCls} />
+                        <TextField label="Parentesco" value={form.acudiente.parentesco} onChange={(e) => setA('parentesco', e.target.value)} fullWidth />
                       </div>
                       <div>
-                        <label className={labelCls}>Tipo de documento</label>
-                        <select value={form.acudiente.tipoDocumento} onChange={(e) => setA('tipoDocumento', e.target.value)} className={inputCls}>
-                          <option value="CC">CC</option><option value="CE">CE</option><option value="TI">TI</option><option value="PAS">PAS</option>
-                        </select>
+                        <TextField select label="Tipo de documento" value={form.acudiente.tipoDocumento} onChange={(e) => setA('tipoDocumento', e.target.value)} fullWidth>
+                          <MenuItem value="CC">CC</MenuItem>
+                          <MenuItem value="CE">CE</MenuItem>
+                          <MenuItem value="TI">TI</MenuItem>
+                          <MenuItem value="PAS">PAS</MenuItem>
+                        </TextField>
                       </div>
                       <div>
-                        <label className={labelCls}>Número de documento</label>
-                        <input value={form.acudiente.documento} onChange={(e) => setA('documento', e.target.value)} className={inputCls} />
+                        <TextField label="Número de documento" value={form.acudiente.documento} onChange={(e) => setA('documento', e.target.value)} fullWidth />
                       </div>
                       <div>
-                        <label className={labelCls}>Email</label>
-                        <input type="email" value={form.acudiente.email} onChange={(e) => setA('email', e.target.value)} className={inputCls} />
+                        <TextField type="email" label="Email" value={form.acudiente.email} onChange={(e) => setA('email', e.target.value)} fullWidth />
                       </div>
                       <div>
-                        <label className={labelCls}>Teléfono</label>
-                        <input value={form.acudiente.telefono} onChange={(e) => setA('telefono', e.target.value)} className={inputCls} />
+                        <TextField label="Teléfono" value={form.acudiente.telefono} onChange={(e) => setA('telefono', e.target.value)} fullWidth />
                       </div>
                     </div>
                   </div>
@@ -216,15 +208,13 @@ export default function PrematriculaOnline() {
                     <p className="text-sm font-semibold text-gray-700 mb-2 border-b border-gray-100 pb-1">Grado a solicitar</p>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className={labelCls}>Grado <span className="text-red-500">*</span></label>
-                        <select value={form.gradoSolicitado} onChange={(e) => setForm({ ...form, gradoSolicitado: e.target.value })} required className={inputCls}>
-                          <option value="">Seleccionar grado...</option>
-                          {[6, 7, 8, 9, 10, 11].map(g => <option key={g} value={g}>{g}</option>)}
-                        </select>
+                        <TextField select label="Grado" value={form.gradoSolicitado} onChange={(e) => setForm({ ...form, gradoSolicitado: e.target.value })} required fullWidth>
+                          <MenuItem value="">Seleccionar grado...</MenuItem>
+                          {[6, 7, 8, 9, 10, 11].map(g => <MenuItem key={g} value={g}>{g}</MenuItem>)}
+                        </TextField>
                       </div>
                       <div>
-                        <label className={labelCls}>Grupo solicitado</label>
-                        <input value={form.grupoSolicitado} onChange={(e) => setForm({ ...form, grupoSolicitado: e.target.value })} placeholder="Ej: 601" className={inputCls} />
+                        <TextField label="Grupo solicitado" value={form.grupoSolicitado} onChange={(e) => setForm({ ...form, grupoSolicitado: e.target.value })} placeholder="Ej: 601" fullWidth />
                       </div>
                     </div>
                   </div>
@@ -232,20 +222,20 @@ export default function PrematriculaOnline() {
                   {error && <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-3 py-2">{error}</div>}
                   {mensaje && <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-lg px-3 py-2">{mensaje}</div>}
 
-                  <button type="submit" disabled={saving}
-                    className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 rounded-lg disabled:opacity-50">
+                  <Button type="submit" disabled={saving} variant="contained" color="primary" fullWidth className="!py-3 !normal-case">
                     {saving ? 'Enviando...' : 'Enviar solicitud de prematrícula'}
-                  </button>
+                  </Button>
                 </form>
               )}
 
               {tab === 'estado' && (
                 <div className="mt-4">
                   <form onSubmit={consultar} className="flex gap-2">
-                    <input value={docConsulta} onChange={(e) => setDocConsulta(e.target.value)} placeholder="Número de documento del estudiante" required className={inputCls} />
-                    <button type="submit" className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-1 shrink-0">
-                      <Search className="w-4 h-4" /> Consultar
-                    </button>
+                    <TextField value={docConsulta} onChange={(e) => setDocConsulta(e.target.value)} placeholder="Número de documento del estudiante" required fullWidth />
+                    <Button type="submit" variant="contained" color="primary" className="!normal-case text-sm font-medium shrink-0"
+                      startIcon={<Search className="w-4 h-4" />}>
+                      Consultar
+                    </Button>
                   </form>
 
                   {error && <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-3 py-2 mt-3">{error}</div>}

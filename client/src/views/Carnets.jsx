@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Printer, RefreshCw, School, UserRound, Layers, X } from 'lucide-react'
-import api from '../services/api'
-import { useAuth } from '../context/AuthContext'
+import { Select, MenuItem, IconButton, Button } from '@mui/material'
+import api from '../services/api.service'
+import { useAuth } from '../store/Auth'
 
 function CarnetCard({ institucion, dane, persona, grupo, tipoPerfil, anio }) {
   return (
@@ -197,62 +198,61 @@ export default function Carnets() {
             <h1 className="text-xl font-bold text-gray-900">Carnets</h1>
             <p className="text-sm text-gray-500">Generar carnet institucional para imprimir</p>
           </div>
-          <button onClick={cargarDependencias} className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 self-start">
+          <IconButton onClick={cargarDependencias} aria-label="Recargar" title="Recargar" size="small" className="!text-gray-500 hover:!text-gray-700 self-start">
             <RefreshCw className="w-4 h-4" />
-          </button>
+          </IconButton>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Año Académico</label>
-            <select value={filtros.anioAcademicoId} onChange={(e) => { setFiltros({ ...filtros, anioAcademicoId: e.target.value }); setImprimirTodos(false); setPersonaSel(null) }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm">
-              <option value="">Seleccionar...</option>
-              {anios.map(a => <option key={a._id} value={a._id}>Año {a.anio}</option>)}
-            </select>
+            <Select value={filtros.anioAcademicoId} onChange={(e) => { setFiltros({ ...filtros, anioAcademicoId: e.target.value }); setImprimirTodos(false); setPersonaSel(null) }}
+              size="small" fullWidth displayEmpty className="text-sm">
+              <MenuItem value="">Seleccionar...</MenuItem>
+              {anios.map(a => <MenuItem key={a._id} value={a._id}>Año {a.anio}</MenuItem>)}
+            </Select>
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Tipo de persona</label>
-            <select
-              value={filtros.tipoPerfil}
+            <Select
+              value={filtros.tipoPerfil || ''}
               onChange={(e) => { setFiltros({ ...filtros, tipoPerfil: e.target.value, grupoId: '' }); setGradoSel(''); setPersonas([]); setPersonaSel(null); setImprimirTodos(false) }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm">
-              <option value="">Seleccionar...</option>
-              <option value="estudiante">Estudiante</option>
-              <option value="docente">Docente</option>
-              <option value="admin">Administrativo</option>
-              <option value="secretaria">Secretaría</option>
-            </select>
+              size="small" fullWidth displayEmpty className="text-sm">
+              <MenuItem value="">Seleccionar...</MenuItem>
+              <MenuItem value="estudiante">Estudiante</MenuItem>
+              <MenuItem value="docente">Docente</MenuItem>
+              <MenuItem value="admin">Administrativo</MenuItem>
+              <MenuItem value="secretaria">Secretaría</MenuItem>
+            </Select>
           </div>
           {filtros.tipoPerfil === 'estudiante' && grados.length > 0 && (
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Grado</label>
-              <select value={gradoSel} onChange={(e) => cambiarGrado(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm">
-                <option value="">Todos los grados</option>
+              <Select value={gradoSel} onChange={(e) => cambiarGrado(e.target.value)}
+                size="small" fullWidth displayEmpty className="text-sm">
+                <MenuItem value="">Todos los grados</MenuItem>
                 {grados.map(g => (
-                  <option key={g} value={g}>{nombreGrado(g) ? `${nombreGrado(g)} · Grado ${g}` : `Grado ${g}`}</option>
+                  <MenuItem key={g} value={g}>{nombreGrado(g) ? `${nombreGrado(g)} · Grado ${g}` : `Grado ${g}`}</MenuItem>
                 ))}
-              </select>
+              </Select>
             </div>
           )}
           {filtros.tipoPerfil === 'estudiante' && gruposDelAnio.length > 0 && (
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Grupo</label>
-              <select value={filtros.grupoId || ''} onChange={(e) => { setFiltros({ ...filtros, grupoId: e.target.value }); setImprimirTodos(false); setPersonaSel(null) }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm">
-                <option value="">Todos los grupos</option>
+              <Select value={filtros.grupoId || ''} onChange={(e) => { setFiltros({ ...filtros, grupoId: e.target.value }); setImprimirTodos(false); setPersonaSel(null) }}
+                size="small" fullWidth displayEmpty className="text-sm">
+                <MenuItem value="">Todos los grupos</MenuItem>
                 {gruposDelAnio.map(g => (
-                  <option key={g._id} value={g._id}>{g.nombre}{g.jornada ? ` · ${g.jornada}` : ''}</option>
+                  <MenuItem key={g._id} value={g._id}>{g.nombre}{g.jornada ? ` · ${g.jornada}` : ''}</MenuItem>
                 ))}
-              </select>
+              </Select>
             </div>
           )}
           <div className="flex items-end">
-            <button onClick={cargarPersonas} disabled={loading}
-              className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-sm font-medium w-full disabled:opacity-50">
+            <Button onClick={cargarPersonas} disabled={loading} variant="contained" color="primary" size="small" className="!normal-case !text-sm !font-medium w-full">
               {loading ? 'Cargando...' : 'Cargar personas'}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -260,19 +260,18 @@ export default function Carnets() {
           <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3">
             <div className="flex-1">
               <label className="block text-xs font-medium text-gray-600 mb-1">Selecciona la persona</label>
-              <select value={personaSel?._id || ''} onChange={(e) => seleccionar(personas.find(p => p._id === e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm">
-                <option value="">Seleccionar...</option>
+              <Select value={personaSel?._id || ''} onChange={(e) => seleccionar(personas.find(p => p._id === e.target.value))}
+                size="small" fullWidth displayEmpty className="text-sm">
+                <MenuItem value="">Seleccionar...</MenuItem>
                 {personas.map(p => (
-                  <option key={p._id} value={p._id}>{p.nombres} {p.apellidos} - {p.documento}</option>
+                  <MenuItem key={p._id} value={p._id}>{p.nombres} {p.apellidos} - {p.documento}</MenuItem>
                 ))}
-              </select>
+              </Select>
             </div>
             <div className="flex items-end gap-2">
-              <button onClick={() => setImprimirTodos(true)}
-                className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
-                <Layers className="w-4 h-4" /> Imprimir todos ({personas.length})
-              </button>
+              <Button onClick={() => setImprimirTodos(true)} variant="contained" color="primary" size="small" className="!normal-case !text-sm !font-medium !py-2 !px-4" startIcon={<Layers className="w-4 h-4" />}>
+                Imprimir todos ({personas.length})
+              </Button>
             </div>
           </div>
         )}
@@ -288,14 +287,12 @@ export default function Carnets() {
               <School className="w-6 h-6" /> Carnets de {personas.length} {filtros.tipoPerfil}{gradoSel !== '' ? ` · Grado ${gradoSel}` : ''}
             </h2>
             <div className="flex items-center gap-2">
-              <button onClick={() => setImprimirTodos(false)}
-                className="text-white border border-white/60 rounded-lg px-3 py-1.5 text-sm flex items-center gap-1 bg-white/10 hover:bg-white/20">
-                <X className="w-4 h-4" /> Ver individual
-              </button>
-              <button onClick={() => window.print()}
-                className="text-white rounded-lg px-3 py-1.5 text-sm flex items-center gap-1 bg-white/25 hover:bg-white/40 border border-transparent">
-                <Printer className="w-4 h-4" /> Imprimir todos
-              </button>
+              <Button variant="outlined" onClick={() => setImprimirTodos(false)} size="small" className="!text-white !border-white/60 !bg-white/10 hover:!bg-white/20 !py-1.5 !px-3 !text-sm !normal-case" startIcon={<X className="w-4 h-4" />}>
+                Ver individual
+              </Button>
+              <Button variant="contained" onClick={() => window.print()} size="small" className="!bg-white/25 hover:!bg-white/40 !text-white !py-1.5 !px-3 !text-sm !normal-case" startIcon={<Printer className="w-4 h-4" />}>
+                Imprimir todos
+              </Button>
             </div>
           </div>
           <div className="print-area print-area-multiple p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -323,10 +320,9 @@ export default function Carnets() {
             <h2 className="text-lg font-bold flex items-center gap-2">
               <School className="w-6 h-6" /> Carnet de {filtros.tipoPerfil}
             </h2>
-            <button onClick={() => window.print()}
-              className="text-white border border-white/60 rounded-lg px-3 py-1.5 text-sm flex items-center gap-1 bg-white/10 hover:bg-white/20">
-              <Printer className="w-4 h-4" /> Imprimir
-            </button>
+            <Button variant="outlined" onClick={() => window.print()} size="small" className="!text-white !border-white/60 !bg-white/10 hover:!bg-white/20 !py-1.5 !px-3 !text-sm !normal-case" startIcon={<Printer className="w-4 h-4" />}>
+              Imprimir
+            </Button>
           </div>
           <div className="print-area print-area-single p-6 flex justify-center">
             <CarnetCard

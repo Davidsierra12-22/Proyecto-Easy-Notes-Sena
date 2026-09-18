@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react'
-import { RefreshCw, CheckCircle2, XCircle, Eye } from 'lucide-react'
-import api from '../services/api'
-import { useAuth } from '../context/AuthContext'
+import {
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  Button, IconButton, Select, MenuItem, Dialog, DialogTitle, DialogContent,
+  CircularProgress
+} from '@mui/material'
+import { RefreshCw, CheckCircle2, XCircle, Eye, X } from 'lucide-react'
+import api from '../services/api.service'
+import { useAuth } from '../store/Auth'
 
 const estadoBadge = (estado) => {
   const map = {
@@ -73,88 +78,98 @@ export default function Prematriculas() {
             <p className="text-sm text-gray-500">Solicitudes de prematrícula online recibidas por la institución</p>
           </div>
           <div className="flex items-center gap-2">
-            <select value={filtro} onChange={(e) => setFiltro(e.target.value)}
-              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500">
-              <option value="">Todas</option>
-              <option value="pendiente">Pendientes</option>
-              <option value="aprobada">Aprobadas</option>
-              <option value="rechazada">Rechazadas</option>
-              <option value="matriculada">Matriculadas</option>
-            </select>
-            <button onClick={cargar} aria-label="Recargar prematriculas" title="Recargar prematriculas" className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100">
+            <Select value={filtro} onChange={(e) => setFiltro(e.target.value)}
+              size="small"
+              sx={{ bgcolor: '#ffffff', minWidth: 150, fontSize: '0.875rem', '& fieldset': { borderColor: '#e5e7eb' } }}>
+              <MenuItem value="">Todas</MenuItem>
+              <MenuItem value="pendiente">Pendientes</MenuItem>
+              <MenuItem value="aprobada">Aprobadas</MenuItem>
+              <MenuItem value="rechazada">Rechazadas</MenuItem>
+              <MenuItem value="matriculada">Matriculadas</MenuItem>
+            </Select>
+            <IconButton onClick={cargar} aria-label="Recargar prematriculas" title="Recargar prematriculas" size="small"
+              className="!text-gray-500 hover:!text-gray-700 hover:!bg-gray-100">
               <RefreshCw className="w-4 h-4" />
-            </button>
+            </IconButton>
           </div>
         </div>
 
         {error && <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-3 py-2 mb-4">{error}</div>}
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead>
-              <tr className="bg-gray-50">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Estudiante</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Documento</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Grado</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Acudiente</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Estado</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Fecha</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+        <TableContainer>
+          <Table size="small">
+            <TableHead>
+              <TableRow className="bg-gray-50">
+                <TableCell className="!font-semibold !text-gray-500 !text-xs !uppercase !tracking-wider whitespace-nowrap">Estudiante</TableCell>
+                <TableCell className="!font-semibold !text-gray-500 !text-xs !uppercase !tracking-wider whitespace-nowrap">Documento</TableCell>
+                <TableCell className="!font-semibold !text-gray-500 !text-xs !uppercase !tracking-wider whitespace-nowrap">Grado</TableCell>
+                <TableCell className="!font-semibold !text-gray-500 !text-xs !uppercase !tracking-wider whitespace-nowrap">Acudiente</TableCell>
+                <TableCell className="!font-semibold !text-gray-500 !text-xs !uppercase !tracking-wider whitespace-nowrap">Estado</TableCell>
+                <TableCell className="!font-semibold !text-gray-500 !text-xs !uppercase !tracking-wider whitespace-nowrap">Fecha</TableCell>
+                <TableCell className="!font-semibold !text-gray-500 !text-xs !uppercase !tracking-wider !text-right whitespace-nowrap">Acciones</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
               {loading ? (
-                <tr><td colSpan="7" className="px-4 py-8 text-center">
-                  <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto" />
-                </td></tr>
+                <TableRow>
+                  <TableCell colSpan={7} className="!text-center !py-8 !text-gray-500">
+                    <CircularProgress size={24} className="!text-primary-600" />
+                  </TableCell>
+                </TableRow>
               ) : datos.length === 0 ? (
-                <tr><td colSpan="7" className="px-4 py-8 text-center text-gray-500">No hay solicitudes</td></tr>
+                <TableRow>
+                  <TableCell colSpan={7} className="!text-center !py-8 !text-gray-500">No hay solicitudes</TableCell>
+                </TableRow>
               ) : (
                 datos.map(p => (
-                  <tr key={p._id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                  <TableRow key={p._id} hover>
+                    <TableCell className="!text-sm !font-medium !text-gray-900 !py-3">
                       {p.estudiante?.nombres ? `${p.estudiante.nombres} ${p.estudiante.apellidos}` : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{p.estudiante?.tipoDocumento} {p.estudiante?.documento}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">Grado {p.gradoSolicitado}{p.grupoSolicitado ? ` (${p.grupoSolicitado})` : ''}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">
+                    </TableCell>
+                    <TableCell className="!text-sm !text-gray-700 !py-3">{p.estudiante?.tipoDocumento} {p.estudiante?.documento}</TableCell>
+                    <TableCell className="!text-sm !text-gray-700 !py-3">Grado {p.gradoSolicitado}{p.grupoSolicitado ? ` (${p.grupoSolicitado})` : ''}</TableCell>
+                    <TableCell className="!text-sm !text-gray-700 !py-3">
                       {p.acudiente?.nombres ? `${p.acudiente.nombres} ${p.acudiente.apellidos}` : '—'}
                       <span className="text-gray-400 text-xs block">{p.acudiente?.parentesco}</span>
-                    </td>
-                    <td className="px-4 py-3">{estadoBadge(p.estado)}</td>
-                    <td className="px-4 py-3 text-sm text-gray-500">{new Date(p.createdAt).toLocaleDateString('es-CO')}</td>
-                    <td className="px-4 py-3 text-right whitespace-nowrap">
-                      <button onClick={() => setDetalle(p)} className="text-gray-600 hover:text-gray-800 text-sm font-medium mr-3 inline-flex items-center gap-1">
-                        <Eye className="w-4 h-4" /> Ver
-                      </button>
+                    </TableCell>
+                    <TableCell className="!py-3">{estadoBadge(p.estado)}</TableCell>
+                    <TableCell className="!text-sm !text-gray-500 !py-3">{new Date(p.createdAt).toLocaleDateString('es-CO')}</TableCell>
+                    <TableCell className="!py-3 !text-right whitespace-nowrap">
+                      <Button onClick={() => setDetalle(p)} className="!text-gray-600 hover:!text-gray-800 !normal-case text-sm font-medium mr-3" size="small"
+                        startIcon={<Eye className="w-4 h-4" />}>
+                        Ver
+                      </Button>
                       {puedeAprobar && p.estado === 'pendiente' && (
                         <>
-                          <button onClick={() => aprobar(p)} className="text-emerald-600 hover:text-emerald-800 text-sm font-medium mr-3 inline-flex items-center gap-1">
-                            <CheckCircle2 className="w-4 h-4" /> Aprobar
-                          </button>
-                          <button onClick={() => rechazar(p)} className="text-red-600 hover:text-red-800 text-sm font-medium inline-flex items-center gap-1">
-                            <XCircle className="w-4 h-4" /> Rechazar
-                          </button>
+                          <Button onClick={() => aprobar(p)} className="!text-emerald-600 hover:!text-emerald-800 !normal-case text-sm font-medium mr-3" size="small"
+                            startIcon={<CheckCircle2 className="w-4 h-4" />}>
+                            Aprobar
+                          </Button>
+                          <Button onClick={() => rechazar(p)} className="!text-red-600 hover:!text-red-800 !normal-case text-sm font-medium" size="small"
+                            startIcon={<XCircle className="w-4 h-4" />}>
+                            Rechazar
+                          </Button>
                         </>
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))
               )}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </TableContainer>
       </div>
 
       {detalle && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setDetalle(null)} />
-          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-bold text-gray-900">Detalle de la solicitud</h2>
-              <button onClick={() => setDetalle(null)} aria-label="Cerrar detalle" className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
-            </div>
-            <div className="p-6 space-y-4 text-sm">
+        <Dialog open onClose={() => setDetalle(null)} maxWidth="sm" fullWidth>
+          <DialogTitle className="flex items-center justify-between pr-2">
+            <span>Detalle de la solicitud</span>
+            <IconButton onClick={() => setDetalle(null)} aria-label="Cerrar detalle" size="small">
+              <X className="w-5 h-5" />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent className="!pt-2">
+            <div className="space-y-4 text-sm">
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Estudiante</p>
                 {[
@@ -185,8 +200,8 @@ export default function Prematriculas() {
                 <p className="text-xs text-gray-600">Observaciones: {detalle.observaciones}</p>
               )}
             </div>
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   )

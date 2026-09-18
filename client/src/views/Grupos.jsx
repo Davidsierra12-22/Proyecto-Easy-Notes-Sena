@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Users, X } from 'lucide-react'
-import CrudTable from '../components/CrudTable'
-import api from '../services/api'
-import { useAuth } from '../context/AuthContext'
-import { useSede } from '../context/SedeContext'
+import CrudTable from '../components/Tables/CrudTable'
+import api from '../services/api.service'
+import { useAuth } from '../store/Auth'
+import { useSede } from '../store/General'
+import {
+  CircularProgress, Dialog, DialogTitle, IconButton,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow
+} from '@mui/material'
 
 const JORNADAS = [
   { value: 'manana', label: 'Mañana' },
@@ -121,70 +125,70 @@ export default function Grupos() {
         puedeGestionar={puedeGestionar}
         puedeDesactivar={puedeControl}
         renderAcciones={(g) => (
-          <button
+          <IconButton
             onClick={() => verEstudiantes(g)}
             aria-label="Ver estudiantes"
             title="Ver estudiantes de este grado"
-            className="p-1.5 text-primary-600 hover:text-primary-800 rounded-lg hover:bg-primary-50"
+            className="!text-primary-600 hover:!text-primary-800 !rounded-lg"
+            size="small"
           >
             <Users className="w-4 h-4" />
-          </button>
+          </IconButton>
         )}
       />
 
-      {estModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setEstModal(null)} />
-          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-bold text-gray-900">
-                Estudiantes del grado {estModal.grado} · {estModal.nombre}
-              </h2>
-              <button onClick={() => setEstModal(null)} aria-label="Cerrar lista de estudiantes" className="text-gray-400 hover:text-gray-600">
-                <X className="w-5 h-5" />
-              </button>
+      <Dialog open={Boolean(estModal)} onClose={() => setEstModal(null)} fullWidth maxWidth="md">
+        <DialogTitle className="flex items-center justify-between pr-2">
+          <span>
+            Estudiantes del grado {estModal?.grado} · {estModal?.nombre}
+          </span>
+          <IconButton onClick={() => setEstModal(null)} aria-label="Cerrar lista de estudiantes" size="small">
+            <X className="w-5 h-5" />
+          </IconButton>
+        </DialogTitle>
+        <div className="p-6">
+          {estLoading ? (
+            <div className="flex justify-center py-8">
+              <CircularProgress size={24} className="!text-primary-600" />
             </div>
-            <div className="p-6">
-              {estLoading ? (
-                <div className="flex justify-center py-8">
-                  <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-                </div>
-              ) : estError ? (
-                <p className="text-center text-red-600 py-8">{estError}</p>
-              ) : estLista && estLista.length === 0 ? (
-                <p className="text-center text-gray-500 py-8">No hay estudiantes matriculados en este grado.</p>
-              ) : (
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Estudiante</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Documento</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Grupo</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {estLista.map(m => (
-                      <tr key={m._id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
+          ) : estError ? (
+            <p className="text-center text-red-600 py-8">{estError}</p>
+          ) : estLista && estLista.length === 0 ? (
+            <p className="text-center text-gray-500 py-8">No hay estudiantes matriculados en este grado.</p>
+          ) : (
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow className="bg-gray-50">
+                    <TableCell className="!font-semibold !text-gray-500 !text-xs !uppercase !tracking-wider">Estudiante</TableCell>
+                    <TableCell className="!font-semibold !text-gray-500 !text-xs !uppercase !tracking-wider">Documento</TableCell>
+                    <TableCell className="!font-semibold !text-gray-500 !text-xs !uppercase !tracking-wider">Grupo</TableCell>
+                    <TableCell className="!font-semibold !text-gray-500 !text-xs !uppercase !tracking-wider">Estado</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {estLista.map(m => (
+                    <TableRow key={m._id} hover>
+                      <TableCell className="!text-sm !text-gray-900 !py-3">
+                        <span className="font-medium">
                           {m.estudianteId?.nombres ? `${m.estudianteId.nombres} ${m.estudianteId.apellidos}` : '—'}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{m.estudianteId?.documento || '—'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{m.grupoId?.nombre || '—'}</td>
-                        <td className="px-4 py-3 text-sm">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${m.estado === 'activa' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>
-                            {m.estado}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </div>
+                        </span>
+                      </TableCell>
+                      <TableCell className="!text-sm !text-gray-700 !py-3">{m.estudianteId?.documento || '—'}</TableCell>
+                      <TableCell className="!text-sm !text-gray-700 !py-3">{m.grupoId?.nombre || '—'}</TableCell>
+                      <TableCell className="!text-sm !py-3">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${m.estado === 'activa' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>
+                          {m.estado}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
         </div>
-      )}
+      </Dialog>
     </>
   )
 }
