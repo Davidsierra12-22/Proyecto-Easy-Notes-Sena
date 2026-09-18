@@ -1,5 +1,5 @@
-import CrudTable from '../components/CrudTable'
-import { useAuth } from '../context/AuthContext'
+import CrudTable from '../components/Tables/CrudTable'
+import { useAuth } from '../store/Auth'
 
 const columnas = [
   { key: 'nombre', label: 'Concepto' },

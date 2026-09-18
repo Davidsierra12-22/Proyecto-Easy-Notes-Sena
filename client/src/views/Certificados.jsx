@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Download, Printer, RefreshCw, School, ScrollText, Award } from 'lucide-react'
-import api from '../services/api'
-import { useAuth } from '../context/AuthContext'
+import { Select, MenuItem, Button, IconButton } from '@mui/material'
+import api from '../services/api.service'
+import { useAuth } from '../store/Auth'
 
 export default function Certificados() {
   const { usuario } = useAuth()
@@ -85,46 +86,41 @@ export default function Certificados() {
             <h1 className="text-xl font-bold text-gray-900">Certificados y Constancias</h1>
             <p className="text-sm text-gray-500">Documentos oficiales de estudio (BR-004 / IV-002)</p>
           </div>
-          <button onClick={cargarDependencias} className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100">
+          <IconButton onClick={cargarDependencias} size="small" title="Refrescar">
             <RefreshCw className="w-4 h-4" />
-          </button>
+          </IconButton>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-gray-50 border border-gray-200 rounded-lg p-3">
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Año Académico</label>
-            <select value={filtros.anioAcademicoId} onChange={(e) => setFiltros({ ...filtros, anioAcademicoId: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm bg-white">
-              <option value="">Seleccionar...</option>
-              {anios.map(a => <option key={a._id} value={a._id}>Año {a.anio}</option>)}
-            </select>
+            <Select value={filtros.anioAcademicoId || ''} onChange={(e) => setFiltros({ ...filtros, anioAcademicoId: e.target.value })} size="small" fullWidth displayEmpty>
+              <MenuItem value="">Seleccionar...</MenuItem>
+              {anios.map(a => <MenuItem key={a._id} value={a._id}>Año {a.anio}</MenuItem>)}
+            </Select>
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Estudiante</label>
-            <select value={filtros.estudianteId} onChange={(e) => setFiltros({ ...filtros, estudianteId: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm bg-white">
-              <option value="">Seleccionar...</option>
-              {estudiantes.map(s => <option key={s._id} value={s._id}>{s.nombres} {s.apellidos} - {s.documento}</option>)}
-            </select>
+            <Select value={filtros.estudianteId || ''} onChange={(e) => setFiltros({ ...filtros, estudianteId: e.target.value })} size="small" fullWidth displayEmpty>
+              <MenuItem value="">Seleccionar...</MenuItem>
+              {estudiantes.map(s => <MenuItem key={s._id} value={s._id}>{s.nombres} {s.apellidos} - {s.documento}</MenuItem>)}
+            </Select>
           </div>
           <div className="flex items-end">
-            <button onClick={() => filtros.estudianteId && generar(filtros.estudianteId)} disabled={!filtros.estudianteId || loading}
-              className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-sm font-medium w-full disabled:opacity-50">
+            <Button onClick={() => filtros.estudianteId && generar(filtros.estudianteId)} disabled={!filtros.estudianteId || loading} variant="contained" color="primary" fullWidth>
               {loading ? 'Generando...' : 'Generar documento'}
-            </button>
+            </Button>
           </div>
         </div>
 
         <div className="flex items-center gap-3 mt-3">
           <label className="text-sm font-medium text-gray-700">Tipo de documento:</label>
-          <button onClick={() => setFacultad({ estilo: 'certificado' })}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium ${facultad.estilo === 'certificado' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+          <Button onClick={() => setFacultad({ estilo: 'certificado' })} variant={facultad.estilo === 'certificado' ? 'contained' : 'outlined'} color="primary" size="small">
             Certificado
-          </button>
-          <button onClick={() => setFacultad({ estilo: 'constancia' })}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium ${facultad.estilo === 'constancia' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+          </Button>
+          <Button onClick={() => setFacultad({ estilo: 'constancia' })} variant={facultad.estilo === 'constancia' ? 'contained' : 'outlined'} color="primary" size="small">
             Constancia
-          </button>
+          </Button>
           {doc?.promedioGeneral >= 4.5 && (
             <span className="inline-flex items-center gap-1 text-amber-600 text-sm font-medium ml-auto">
               <Award className="w-4 h-4" /> Cuadro de Honor
@@ -142,12 +138,14 @@ export default function Certificados() {
               <ScrollText className="w-6 h-6 print:hidden" /> {facultad.estilo === 'certificado' ? 'Certificado de estudio' : 'Constancia de estudio'}
             </h2>
             <div className="flex gap-2 print:hidden">
-              <button onClick={descargarPdf} className="text-white border border-white/60 rounded-lg px-3 py-1.5 text-sm flex items-center gap-1 bg-white/10 hover:bg-white/20">
-                <Download className="w-4 h-4" /> Descargar PDF
-              </button>
-              <button onClick={() => window.print()} className="text-white border border-white/60 rounded-lg px-3 py-1.5 text-sm flex items-center gap-1 bg-white/10 hover:bg-white/20">
-                <Printer className="w-4 h-4" /> Imprimir
-              </button>
+              <Button onClick={descargarPdf} variant="outlined" size="small" startIcon={<Download className="w-4 h-4" />}
+                sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.6)', '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.2)' } }}>
+                Descargar PDF
+              </Button>
+              <Button onClick={() => window.print()} variant="outlined" size="small" startIcon={<Printer className="w-4 h-4" />}
+                sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.6)', '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.2)' } }}>
+                Imprimir
+              </Button>
             </div>
           </div>
 

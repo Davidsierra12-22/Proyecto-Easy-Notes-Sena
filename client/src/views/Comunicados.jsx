@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Plus, RefreshCw, Send, MailOpen, Mail, AlertCircle } from 'lucide-react'
-import api from '../services/api'
-import { useAuth } from '../context/AuthContext'
-import PaginationBar from '../components/PaginationBar'
+import {
+  Button, IconButton, TextField, Select, MenuItem, CircularProgress,
+  Dialog, DialogTitle, DialogContent, DialogActions, FormControl, InputLabel
+} from '@mui/material'
+import api from '../services/api.service'
+import { useAuth } from '../store/Auth'
+import PaginationBar from '../components/Tables/PaginationBar'
 
 const ROLES_DESTINO = [
   { value: 'estudiante', label: 'Estudiantes' },
@@ -105,14 +109,14 @@ export default function Comunicados() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <h1 className="text-xl font-bold text-gray-900">Comunicados</h1>
           <div className="flex items-center gap-2">
-            <button onClick={cargar} className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100">
+            <IconButton onClick={cargar} aria-label="Recargar comunicados" title="Recargar comunicados" size="small">
               <RefreshCw className="w-4 h-4" />
-            </button>
+            </IconButton>
             {puedeEnviar && (
-              <button onClick={() => { setForm({ destinatarios: [{ rol: 'estudiante' }], prioridad: 'normal' }); setModal(true); setError('') }}
-                className="bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium px-4 py-2 rounded-lg flex items-center gap-2">
-                <Plus className="w-4 h-4" /> Nuevo Comunicado
-              </button>
+              <Button onClick={() => { setForm({ destinatarios: [{ rol: 'estudiante' }], prioridad: 'normal' }); setModal(true); setError('') }}
+                variant="contained" color="primary" startIcon={<Plus className="w-4 h-4" />}>
+                Nuevo Comunicado
+              </Button>
             )}
           </div>
         </div>
@@ -122,7 +126,7 @@ export default function Comunicados() {
 
         <div className="space-y-3">
           {loading ? (
-            <div className="py-8 text-center"><div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto" /></div>
+            <div className="py-8 text-center"><CircularProgress size={24} className="!text-primary-600" /></div>
           ) : enviados.length === 0 ? (
             <div className="py-8 text-center text-gray-500">No hay comunicados</div>
           ) : (
@@ -148,11 +152,11 @@ export default function Comunicados() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-none">
-                    <button onClick={() => setDetalle(c)} className="text-primary-600 hover:text-primary-800 text-sm font-medium">Ver</button>
+                    <Button onClick={() => setDetalle(c)} size="small" className="!text-primary-600 hover:!text-primary-800 !normal-case !font-medium">Ver</Button>
                     {!yaLeido(c) && (
-                      <button onClick={() => marcarLeido(c)} className="text-gray-600 hover:text-gray-800 text-sm font-medium flex items-center gap-1">
-                        <MailOpen className="w-4 h-4" /> Leer
-                      </button>
+                      <Button onClick={() => marcarLeido(c)} size="small" className="!text-gray-600 hover:!text-gray-800 !normal-case !font-medium" startIcon={<MailOpen className="w-4 h-4" />}>
+                        Leer
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -172,41 +176,36 @@ export default function Comunicados() {
         )}
       </div>
 
-      {modal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setModal(false)} />
-          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-bold text-gray-900">Nuevo Comunicado</h2>
-              <button onClick={() => setModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
-            </div>
-            <form onSubmit={enviar} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Asunto <span className="text-red-500">*</span></label>
-                <input type="text" value={form.asunto} onChange={(e) => setForm({ ...form, asunto: e.target.value })} required
-                  placeholder="Asunto del comunicado" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Mensaje <span className="text-red-500">*</span></label>
-                <textarea value={form.mensaje} onChange={(e) => setForm({ ...form, mensaje: e.target.value })} required rows="4"
-                  placeholder="Contenido del comunicado..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm" />
-              </div>
+      <Dialog open={modal} onClose={() => setModal(false)} maxWidth="sm" fullWidth>
+        <DialogTitle className="flex items-center justify-between pr-2">
+          <span>Nuevo Comunicado</span>
+          <IconButton onClick={() => setModal(false)} aria-label="Cerrar modal" size="small">
+            <span className="text-xl">&times;</span>
+          </IconButton>
+        </DialogTitle>
+        <form onSubmit={enviar}>
+          <DialogContent className="!pt-2">
+            <div className="space-y-4">
+              <TextField type="text" value={form.asunto} onChange={(e) => setForm({ ...form, asunto: e.target.value })} required
+                label="Asunto" placeholder="Asunto del comunicado" fullWidth size="small" />
+              <TextField value={form.mensaje} onChange={(e) => setForm({ ...form, mensaje: e.target.value })} required
+                label="Mensaje" placeholder="Contenido del comunicado..." multiline minRows={4} fullWidth size="small" />
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Prioridad</label>
-                  <select value={form.prioridad} onChange={(e) => setForm({ ...form, prioridad: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm">
-                    <option value="normal">Normal</option>
-                    <option value="urgente">Urgente</option>
-                  </select>
-                </div>
+                <FormControl fullWidth size="small">
+                  <InputLabel id="prioridad-label">Prioridad</InputLabel>
+                  <Select labelId="prioridad-label" value={form.prioridad} onChange={(e) => setForm({ ...form, prioridad: e.target.value })} label="Prioridad">
+                    <MenuItem value="normal">Normal</MenuItem>
+                    <MenuItem value="urgente">Urgente</MenuItem>
+                  </Select>
+                </FormControl>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Destinatarios</label>
                 <div className="space-y-2">
                   {form.destinatarios?.map((d, i) => (
                     <div key={i} className="flex items-center gap-2">
-                      <select value={d.usuarioId ? 'usuario' : (d.grupoId ? 'grupo' : 'rol')}
+                      <Select
+                        value={d.usuarioId ? 'usuario' : (d.grupoId ? 'grupo' : 'rol')}
                         onChange={(e) => {
                           const tipo = e.target.value
                           setDestinatario(i, 'tipo', tipo)
@@ -216,68 +215,73 @@ export default function Comunicados() {
                             return { ...prev, destinatarios: nuevos }
                           })
                         }}
-                        className="px-2 py-2 border border-gray-300 rounded-lg text-sm">
-                        <option value="rol">Por rol</option>
-                        <option value="grupo">Por grupo</option>
-                        <option value="usuario">Usuario específico</option>
-                      </select>
+                        size="small"
+                        className="min-w-[140px] text-sm"
+                      >
+                        <MenuItem value="rol">Por rol</MenuItem>
+                        <MenuItem value="grupo">Por grupo</MenuItem>
+                        <MenuItem value="usuario">Usuario específico</MenuItem>
+                      </Select>
                       {d.tipo === 'grupo' || d.grupoId ? (
-                        <select value={d.grupoId} onChange={(e) => setDestinatario(i, 'grupoId', e.target.value)}
-                          className="flex-1 px-2 py-2 border border-gray-300 rounded-lg text-sm">
-                          <option value="">Seleccionar grupo...</option>
-                          {grupos.map(g => <option key={g._id} value={g._id}>{g.nombre} (Grado {g.grado})</option>)}
-                        </select>
+                        <Select value={d.grupoId} onChange={(e) => setDestinatario(i, 'grupoId', e.target.value)}
+                          displayEmpty size="small" className="flex-1 min-w-0 text-sm">
+                          <MenuItem value="">Seleccionar grupo...</MenuItem>
+                          {grupos.map(g => <MenuItem key={g._id} value={g._id}>{g.nombre} (Grado {g.grado})</MenuItem>)}
+                        </Select>
                       ) : d.tipo === 'usuario' || d.usuarioId ? (
-                        <input type="text" placeholder="ID de usuario (opcional)" value={d.usuarioId || ''}
+                        <TextField type="text" placeholder="ID de usuario (opcional)" value={d.usuarioId || ''}
                           onChange={(e) => setDestinatario(i, 'usuarioId', e.target.value)}
-                          className="flex-1 px-2 py-2 border border-gray-300 rounded-lg text-sm" />
+                          className="flex-1 min-w-0" size="small" />
                       ) : (
-                        <select value={d.rol} onChange={(e) => setDestinatario(i, 'rol', e.target.value)}
-                          className="flex-1 px-2 py-2 border border-gray-300 rounded-lg text-sm">
-                          {ROLES_DESTINO.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-                        </select>
+                        <Select value={d.rol} onChange={(e) => setDestinatario(i, 'rol', e.target.value)}
+                          displayEmpty size="small" className="flex-1 min-w-0 text-sm">
+                          {ROLES_DESTINO.map(r => <MenuItem key={r.value} value={r.value}>{r.label}</MenuItem>)}
+                        </Select>
                       )}
-                      <button type="button" onClick={() => quitarDestinatario(i)} className="text-red-500 hover:text-red-700 text-xl px-1">&times;</button>
+                      <IconButton type="button" onClick={() => quitarDestinatario(i)} aria-label="Quitar destinatario" size="small" className="!text-red-500">
+                        <span className="text-xl">&times;</span>
+                      </IconButton>
                     </div>
                   ))}
                 </div>
-                <button type="button" onClick={agregarDestinatario} className="mt-2 text-sm text-primary-600 hover:text-primary-800 font-medium">+ Agregar destinatario</button>
+                <Button type="button" onClick={agregarDestinatario} size="small" className="!text-primary-600 hover:!text-primary-800 !normal-case !font-medium mt-2">+ Agregar destinatario</Button>
               </div>
               {error && <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-3 py-2">{error}</div>}
-              <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg">Cancelar</button>
-                <button type="submit" disabled={saving} className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg disabled:opacity-50 flex items-center gap-1">
-                  <Send className="w-4 h-4" /> {saving ? 'Enviando...' : 'Enviar'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {detalle && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setDetalle(null)} />
-          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-bold text-gray-900">{detalle.asunto}</h2>
-              <button onClick={() => setDetalle(null)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
             </div>
-            <div className="p-6">
+          </DialogContent>
+          <DialogActions className="!px-6 !pb-5">
+            <Button onClick={() => setModal(false)} className="!text-gray-700 hover:!bg-gray-100">Cancelar</Button>
+            <Button type="submit" variant="contained" color="primary" disabled={saving} startIcon={<Send className="w-4 h-4" />}>
+              {saving ? 'Enviando...' : 'Enviar'}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      <Dialog open={Boolean(detalle)} onClose={() => setDetalle(null)} maxWidth="sm" fullWidth>
+        <DialogTitle className="flex items-center justify-between pr-2">
+          <span className="truncate">{detalle?.asunto}</span>
+          <IconButton onClick={() => setDetalle(null)} aria-label="Cerrar modal" size="small">
+            <span className="text-xl">&times;</span>
+          </IconButton>
+        </DialogTitle>
+        <DialogContent className="!pt-2">
+          {detalle && (
+            <>
               <p className="text-sm text-gray-500 mb-2">
                 De: {detalle.remitenteId ? `${detalle.remitenteId.nombres} ${detalle.remitenteId.apellidos}` : '—'} · {new Date(detalle.fecha || detalle.createdAt).toLocaleString('es-CO')}
               </p>
               <div className="bg-gray-50 rounded-lg p-4 whitespace-pre-wrap text-sm text-gray-800">{detalle.mensaje}</div>
               {!yaLeido(detalle) && (
-                <button onClick={() => { marcarLeido(detalle); setDetalle(null) }}
-                  className="mt-4 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg">
+                <Button onClick={() => { marcarLeido(detalle); setDetalle(null) }}
+                  variant="contained" color="primary" className="mt-4">
                   Marcar como leído
-                </button>
+                </Button>
               )}
-            </div>
-          </div>
-        </div>
-      )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

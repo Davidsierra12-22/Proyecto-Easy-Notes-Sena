@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
-import { useSede } from '../context/SedeContext'
-import api from '../services/api'
+import { useAuth } from '../store/Auth'
+import { useSede } from '../store/General'
+import api from '../services/api.service'
 import {
   Users, UserPlus, GraduationCap, BookOpen, CreditCard, School,
   CalendarDays, Calculator, ClipboardList, FilePlus2, Trophy,
   ScrollText, RefreshCcw, Target, ClipboardCheck, Building, IdCard, MapPin, Stethoscope
 } from 'lucide-react'
+import { CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material'
 
 export default function Dashboard() {
   const { usuario } = useAuth()
@@ -102,7 +103,7 @@ export default function Dashboard() {
 
           {loadingSedes ? (
             <div className="flex justify-center py-8">
-              <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+              <CircularProgress size={32} className="!text-primary-600" />
             </div>
           ) : sedes.length === 0 ? (
             <p className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-4 py-4">
@@ -246,7 +247,7 @@ export default function Dashboard() {
               </div>
               {loading ? (
                 <div className="flex justify-center py-8">
-                  <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                  <CircularProgress size={32} className="!text-primary-600" />
                 </div>
               ) : colegios.length === 0 ? (
                 <p className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-4 py-4">
@@ -254,32 +255,32 @@ export default function Dashboard() {
                   <Link to="/instituciones" className="text-primary-600 font-medium">Crear el primer colegio</Link>
                 </p>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead>
-                      <tr>
+                <TableContainer>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow className="bg-gray-50">
                         {['Colegio', 'Estudiantes', 'Docentes', 'Matrículas Activas', 'Grupos', 'Sedes'].map(h => (
-                          <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
+                          <TableCell key={h} className="!font-semibold !text-gray-500 !text-xs !uppercase !tracking-wider whitespace-nowrap">{h}</TableCell>
                         ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
+                      </TableRow>
+                    </TableHead>
+                    <TableBody className="divide-y divide-gray-100">
                       {colegios.map(c => (
-                        <tr key={c._id}>
-                          <td className="px-4 py-3">
-                            <p className="text-sm font-medium text-gray-900">{c.nombre}</p>
+                        <TableRow key={c._id} hover>
+                          <TableCell className="!text-sm !py-3">
+                            <p className="font-medium text-gray-900">{c.nombre}</p>
                             <p className="text-xs text-gray-500">NIT {c.nit} · {c.nucleoId?.nombre || 'Sin núcleo'}</p>
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-600">{c.estudiantes}</td>
-                          <td className="px-4 py-3 text-sm text-gray-600">{c.docentes}</td>
-                          <td className="px-4 py-3 text-sm text-gray-600">{c.matriculasActivas}</td>
-                          <td className="px-4 py-3 text-sm text-gray-600">{c.grupos}</td>
-                          <td className="px-4 py-3 text-sm text-gray-600">{c.sedes}</td>
-                        </tr>
+                          </TableCell>
+                          <TableCell className="!text-sm !text-gray-600 !py-3 whitespace-nowrap">{c.estudiantes}</TableCell>
+                          <TableCell className="!text-sm !text-gray-600 !py-3 whitespace-nowrap">{c.docentes}</TableCell>
+                          <TableCell className="!text-sm !text-gray-600 !py-3 whitespace-nowrap">{c.matriculasActivas}</TableCell>
+                          <TableCell className="!text-sm !text-gray-600 !py-3 whitespace-nowrap">{c.grupos}</TableCell>
+                          <TableCell className="!text-sm !text-gray-600 !py-3 whitespace-nowrap">{c.sedes}</TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
-                </div>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
               )}
             </div>
           )}

@@ -1,6 +1,6 @@
-import CrudTable from '../components/CrudTable'
-import { useAuth } from '../context/AuthContext'
-import { useSede } from '../context/SedeContext'
+import CrudTable from '../components/Tables/CrudTable'
+import { useAuth } from '../store/Auth'
+import { useSede } from '../store/General'
 
 const columnas = [
   {

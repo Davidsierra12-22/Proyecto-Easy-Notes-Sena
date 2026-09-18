@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { RefreshCw, Wallet, Clock, CalendarClock, Users } from 'lucide-react'
-import api from '../services/api'
+import { IconButton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material'
+import api from '../services/api.service'
 
 const FormatMoney = ({ value }) => {
   const n = Number(value || 0)
@@ -47,10 +48,9 @@ export default function Cartera() {
             <h1 className="text-xl font-bold text-gray-900">Reporte de Cartera</h1>
             <p className="text-sm text-gray-500">Deudas pendientes y vencidas por estudiante (RN-CONT-04)</p>
           </div>
-          <button onClick={cargar} disabled={loading} aria-label="Recargar cartera" title="Recargar cartera"
-            className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 self-start">
+          <IconButton onClick={cargar} disabled={loading} aria-label="Recargar cartera" title="Recargar cartera" size="small" className="self-start">
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
+          </IconButton>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5">
@@ -92,57 +92,59 @@ export default function Cartera() {
         )}
         {estudiantes.length > 0 && (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Estudiante</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Documento</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Total deuda</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Días mora</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Conceptos</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {estudiantes.map((e, i) => (
-                  <tr key={e.estudiante?._id || i}>
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                      {e.estudiante?.nombres ? `${e.estudiante.nombres} ${e.estudiante.apellidos}` : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-center text-gray-600">{e.estudiante?.documento}</td>
-                    <td className="px-4 py-3 text-sm text-right font-bold text-red-700">
-                      <FormatMoney value={e.totalDeuda} />
-                    </td>
-                    <td className="px-4 py-3 text-sm text-center">
-                      {e.diasMora > 0 ? (
-                        <span className="inline-flex items-center gap-1 bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-xs font-medium">
-                          <CalendarClock className="w-3.5 h-3.5" /> {e.diasMora}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <ul className="space-y-1">
-                        {e.conceptos.map((c, j) => (
-                          <li key={j} className="flex items-center justify-between gap-4 text-sm">
-                            <span className="flex items-center gap-2">
-                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${estadoColor(c.estado)}`}>
-                                {c.estado}
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow className="bg-gray-50">
+                    <TableCell className="!font-semibold !text-gray-500 !text-xs !uppercase !px-4 !py-3 !text-left">Estudiante</TableCell>
+                    <TableCell className="!font-semibold !text-gray-500 !text-xs !uppercase !px-4 !py-3 !text-center">Documento</TableCell>
+                    <TableCell className="!font-semibold !text-gray-500 !text-xs !uppercase !px-4 !py-3 !text-right">Total deuda</TableCell>
+                    <TableCell className="!font-semibold !text-gray-500 !text-xs !uppercase !px-4 !py-3 !text-center">Días mora</TableCell>
+                    <TableCell className="!font-semibold !text-gray-500 !text-xs !uppercase !px-4 !py-3 !text-left">Conceptos</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody className="bg-white">
+                  {estudiantes.map((e, i) => (
+                    <TableRow key={e.estudiante?._id || i}>
+                      <TableCell className="!px-4 !py-3 !text-sm !font-medium !text-gray-900">
+                        {e.estudiante?.nombres ? `${e.estudiante.nombres} ${e.estudiante.apellidos}` : '—'}
+                      </TableCell>
+                      <TableCell className="!px-4 !py-3 !text-sm !text-center !text-gray-600">{e.estudiante?.documento}</TableCell>
+                      <TableCell className="!px-4 !py-3 !text-sm !text-right !font-bold !text-red-700">
+                        <FormatMoney value={e.totalDeuda} />
+                      </TableCell>
+                      <TableCell className="!px-4 !py-3 !text-sm !text-center">
+                        {e.diasMora > 0 ? (
+                          <span className="inline-flex items-center gap-1 bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-xs font-medium">
+                            <CalendarClock className="w-3.5 h-3.5" /> {e.diasMora}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="!px-4 !py-3">
+                        <ul className="space-y-1">
+                          {e.conceptos.map((c, j) => (
+                            <li key={j} className="flex items-center justify-between gap-4 text-sm">
+                              <span className="flex items-center gap-2">
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${estadoColor(c.estado)}`}>
+                                  {c.estado}
+                                </span>
+                                <span className="text-gray-700">{c.concepto}</span>
+                                <span className="text-gray-400 text-xs">
+                                  {c.fechaVencimiento ? new Date(c.fechaVencimiento).toLocaleDateString('es-CO') : ''}
+                                </span>
                               </span>
-                              <span className="text-gray-700">{c.concepto}</span>
-                              <span className="text-gray-400 text-xs">
-                                {c.fechaVencimiento ? new Date(c.fechaVencimiento).toLocaleDateString('es-CO') : ''}
-                              </span>
-                            </span>
-                            <span className="font-medium text-gray-800"><FormatMoney value={c.valor} /></span>
-                          </li>
-                        ))}
-                      </ul>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                              <span className="font-medium text-gray-800"><FormatMoney value={c.valor} /></span>
+                            </li>
+                          ))}
+                        </ul>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </div>
         )}
       </div>

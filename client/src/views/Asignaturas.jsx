@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import CrudTable from '../components/CrudTable'
-import api from '../services/api'
-import { useAuth } from '../context/AuthContext'
-import { useSede } from '../context/SedeContext'
+import CrudTable from '../components/Tables/CrudTable'
+import api from '../services/api.service'
+import { useAuth } from '../store/Auth'
+import { useSede } from '../store/General'
 
 export default function Asignaturas() {
   const { usuario } = useAuth()
