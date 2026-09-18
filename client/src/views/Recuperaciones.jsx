@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Search, CheckCircle2 } from 'lucide-react'
-import api from '../services/api'
+import { Select, MenuItem, Button, TextField, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material'
+import api from '../services/api.service'
 
 export default function Recuperaciones() {
   const [anios, setAnios] = useState([])
@@ -123,41 +124,36 @@ export default function Recuperaciones() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Año Académico</label>
-            <select value={filtros.anioAcademicoId} onChange={(e) => cambiarAnio(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm">
-              <option value="">Seleccionar...</option>
-              {anios.map(a => <option key={a._id} value={a._id}>Año {a.anio}</option>)}
-            </select>
+            <Select value={filtros.anioAcademicoId || ''} onChange={(e) => cambiarAnio(e.target.value)} size="small" fullWidth displayEmpty>
+              <MenuItem value="">Seleccionar...</MenuItem>
+              {anios.map(a => <MenuItem key={a._id} value={a._id}>Año {a.anio}</MenuItem>)}
+            </Select>
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Grupo</label>
-            <select value={filtros.grupoId} onChange={(e) => setFiltros({ ...filtros, grupoId: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm">
-              <option value="">Seleccionar...</option>
-              {grupos.map(g => <option key={g._id} value={g._id}>{g.nombre} (Grado {g.grado})</option>)}
-            </select>
+            <Select value={filtros.grupoId || ''} onChange={(e) => setFiltros({ ...filtros, grupoId: e.target.value })} size="small" fullWidth displayEmpty>
+              <MenuItem value="">Seleccionar...</MenuItem>
+              {grupos.map(g => <MenuItem key={g._id} value={g._id}>{g.nombre} (Grado {g.grado})</MenuItem>)}
+            </Select>
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Asignatura</label>
-            <select value={filtros.asignaturaId} onChange={(e) => setFiltros({ ...filtros, asignaturaId: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm">
-              <option value="">Seleccionar...</option>
-              {asignaturas.map(a => <option key={a._id} value={a._id}>{a.nombre}</option>)}
-            </select>
+            <Select value={filtros.asignaturaId || ''} onChange={(e) => setFiltros({ ...filtros, asignaturaId: e.target.value })} size="small" fullWidth displayEmpty>
+              <MenuItem value="">Seleccionar...</MenuItem>
+              {asignaturas.map(a => <MenuItem key={a._id} value={a._id}>{a.nombre}</MenuItem>)}
+            </Select>
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Período</label>
-            <select value={filtros.periodo} onChange={(e) => setFiltros({ ...filtros, periodo: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm">
-              <option value="">Período...</option>
-              {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
+            <Select value={filtros.periodo || ''} onChange={(e) => setFiltros({ ...filtros, periodo: e.target.value })} size="small" fullWidth displayEmpty>
+              <MenuItem value="">Período...</MenuItem>
+              {[1, 2, 3, 4, 5].map(n => <MenuItem key={n} value={n}>{n}</MenuItem>)}
+            </Select>
           </div>
           <div className="flex items-end">
-            <button onClick={cargarCalificaciones} disabled={loading}
-              className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg flex items-center gap-1 text-sm disabled:opacity-50">
-              <Search className="w-4 h-4" /> Cargar
-            </button>
+            <Button onClick={cargarCalificaciones} disabled={loading} variant="contained" color="primary" startIcon={<Search className="w-4 h-4" />}>
+              Cargar
+            </Button>
           </div>
         </div>
         <p className="text-xs text-gray-500 mt-2">Nota mínima para aprobar: <strong>{notaMinima}</strong></p>
@@ -175,62 +171,83 @@ export default function Recuperaciones() {
             <span className="text-sm text-gray-500">{calificaciones.length} calificaciones</span>
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Estudiante</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Nota actual</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Tipo</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Nota (0-5)</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Acción</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {calificaciones.map(c => {
-                  const esBaja = c.nota != null && c.nota < notaMinima
-                  return (
-                    <tr key={c._id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                        {c.estudianteId ? `${c.estudianteId.nombres} ${c.estudianteId.apellidos}` : '—'}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${esBaja ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                          {c.nota ?? '—'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-2">
-                          <button type="button"
-                            onClick={() => seleccionarTipo(c._id, 'recuperacion')}
-                            className={`px-2 py-1 text-xs rounded-lg border ${activas[`${c._id}_tipo`] === 'recuperacion' ? 'bg-primary-600 text-white border-primary-600' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}>
-                            Recuperación
-                          </button>
-                          <button type="button"
-                            onClick={() => seleccionarTipo(c._id, 'habilitacion')}
-                            className={`px-2 py-1 text-xs rounded-lg border ${activas[`${c._id}_tipo`] === 'habilitacion' ? 'bg-amber-500 text-white border-amber-500' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}>
-                            Habilitación
-                          </button>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 w-32">
-                        <input type="number" step="0.1" min="0" max="5" value={valores[c._id]}
-                          onChange={(e) => setValores({ ...valores, [c._id]: e.target.value })}
-                          disabled={!activas[c._id]}
-                          placeholder="0.0" className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg text-sm disabled:opacity-50" />
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {activas[c._id] && (
-                          <button onClick={() => aplicar(c)} disabled={procesando}
-                            className="text-emerald-600 hover:text-emerald-800 text-sm font-medium inline-flex items-center gap-1">
-                            <CheckCircle2 className="w-4 h-4" /> Aplicar
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell className="!font-semibold !text-gray-500 !text-xs !uppercase !tracking-wider whitespace-nowrap">Estudiante</TableCell>
+                    <TableCell className="!font-semibold !text-gray-500 !text-xs !uppercase !tracking-wider whitespace-nowrap" align="center">Nota actual</TableCell>
+                    <TableCell className="!font-semibold !text-gray-500 !text-xs !uppercase !tracking-wider whitespace-nowrap" align="center">Tipo</TableCell>
+                    <TableCell className="!font-semibold !text-gray-500 !text-xs !uppercase !tracking-wider whitespace-nowrap">Nota (0-5)</TableCell>
+                    <TableCell className="!font-semibold !text-gray-500 !text-xs !uppercase !tracking-wider whitespace-nowrap" align="right">Acción</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {calificaciones.map(c => {
+                    const esBaja = c.nota != null && c.nota < notaMinima
+                    return (
+                      <TableRow key={c._id} hover>
+                        <TableCell className="!text-sm !text-gray-900 !py-3 whitespace-nowrap">
+                          {c.estudianteId ? `${c.estudianteId.nombres} ${c.estudianteId.apellidos}` : '—'}
+                        </TableCell>
+                        <TableCell className="!py-3" align="center">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${esBaja ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                            {c.nota ?? '—'}
+                          </span>
+                        </TableCell>
+                        <TableCell className="!py-3">
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              size="small"
+                              variant={activas[`${c._id}_tipo`] === 'recuperacion' ? 'contained' : 'outlined'}
+                              color="primary"
+                              onClick={() => seleccionarTipo(c._id, 'recuperacion')}
+                            >
+                              Recuperación
+                            </Button>
+                            <Button
+                              type="button"
+                              size="small"
+                              variant={activas[`${c._id}_tipo`] === 'habilitacion' ? 'contained' : 'outlined'}
+                              color="warning"
+                              onClick={() => seleccionarTipo(c._id, 'habilitacion')}
+                            >
+                              Habilitación
+                            </Button>
+                          </div>
+                        </TableCell>
+                        <TableCell className="!py-3" sx={{ width: 128 }}>
+                          <TextField
+                            type="number"
+                            size="small"
+                            value={valores[c._id]}
+                            onChange={(e) => setValores({ ...valores, [c._id]: e.target.value })}
+                            disabled={!activas[c._id]}
+                            placeholder="0.0"
+                            slotProps={{ htmlInput: { step: '0.1', min: 0, max: 5 } }}
+                            sx={{ width: 96 }}
+                          />
+                        </TableCell>
+                        <TableCell className="!py-3" align="right">
+                          {activas[c._id] && (
+                            <Button
+                              size="small"
+                              onClick={() => aplicar(c)}
+                              disabled={procesando}
+                              startIcon={<CheckCircle2 className="w-4 h-4" />}
+                              color="success"
+                            >
+                              Aplicar
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </div>
         </div>
       )}

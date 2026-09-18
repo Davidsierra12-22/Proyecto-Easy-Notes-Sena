@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { RefreshCw, Save, Search } from 'lucide-react'
-import api from '../services/api'
-import { useAuth } from '../context/AuthContext'
-import { useSede } from '../context/SedeContext'
+import { TextField, Select, MenuItem, Button, IconButton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, FormControl, InputLabel } from '@mui/material'
+import api from '../services/api.service'
+import { useAuth } from '../store/Auth'
+import { useSede } from '../store/General'
 
 const ESCALA_DEFECTO = [
   { orden: 1, valor: 'Superior', rangoMin: 4.6, rangoMax: 5.0 },
@@ -190,13 +191,15 @@ export default function Calificaciones() {
 
   const InputNota = ({ valor, onChange, ligaBajo, extraClass }) => (
     <div className="relative">
-      <input
-        type="number" step="0.1" min="0" max="5"
+      <TextField
+        type="number"
+        size="small"
         value={valor ?? ''}
         onChange={onChange}
         disabled={!puedeGestionar}
-        className={`w-full px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary-500 text-sm text-center ${extraClass || 'border-gray-300'}`}
         placeholder="0.0"
+        inputProps={{ step: 0.1, min: 0, max: 5, style: { textAlign: 'center' } }}
+        sx={{ width: '100%', '& input[type=number]::-webkit-inner-spin-button': { opacity: 1 }, ...(extraClass === 'border-amber-300' ? { '& fieldset': { borderColor: '#fcd34d' } } : extraClass === 'border-red-300' ? { '& fieldset': { borderColor: '#fca5a5' } } : {}) }}
       />
       {ligaBajo}
     </div>
@@ -210,49 +213,44 @@ export default function Calificaciones() {
             <h1 className="text-xl font-bold text-gray-900">Calificaciones</h1>
             <p className="text-sm text-gray-500">Registro de notas, recuperaciones, habilitaciones y desempeños por período</p>
           </div>
-          <button onClick={cargarDependencias} aria-label="Recargar listas" title="Recargar listas" className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 self-start">
+          <IconButton onClick={cargarDependencias} aria-label="Recargar listas" title="Recargar listas" size="small" className="self-start">
             <RefreshCw className="w-4 h-4" />
-          </button>
+          </IconButton>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Año Académico</label>
-            <select value={filtros.anioAcademicoId} onChange={(e) => setFiltros({ ...filtros, anioAcademicoId: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm">
-              <option value="">Seleccionar...</option>
-              {anios.map(a => <option key={a._id} value={a._id}>Año {a.anio} ({a.estado})</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Grupo</label>
-            <select value={filtros.grupoId} onChange={(e) => setFiltros({ ...filtros, grupoId: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm">
-              <option value="">Seleccionar...</option>
-              {grupos.map(g => <option key={g._id} value={g._id}>{g.nombre} (Grado {g.grado})</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Asignatura</label>
-            <select value={filtros.asignaturaId} onChange={(e) => setFiltros({ ...filtros, asignaturaId: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm">
-              <option value="">Seleccionar...</option>
-              {asignaturas.map(a => <option key={a._id} value={a._id}>{a.nombre}</option>)}
-            </select>
-          </div>
+          <FormControl size="small" fullWidth>
+            <InputLabel id="anio-label">Año Académico</InputLabel>
+            <Select labelId="anio-label" value={filtros.anioAcademicoId} onChange={(e) => setFiltros({ ...filtros, anioAcademicoId: e.target.value })} label="Año Académico">
+              <MenuItem value="">Seleccionar...</MenuItem>
+              {anios.map(a => <MenuItem key={a._id} value={a._id}>Año {a.anio} ({a.estado})</MenuItem>)}
+            </Select>
+          </FormControl>
+          <FormControl size="small" fullWidth>
+            <InputLabel id="grupo-label">Grupo</InputLabel>
+            <Select labelId="grupo-label" value={filtros.grupoId} onChange={(e) => setFiltros({ ...filtros, grupoId: e.target.value })} label="Grupo">
+              <MenuItem value="">Seleccionar...</MenuItem>
+              {grupos.map(g => <MenuItem key={g._id} value={g._id}>{g.nombre} (Grado {g.grado})</MenuItem>)}
+            </Select>
+          </FormControl>
+          <FormControl size="small" fullWidth>
+            <InputLabel id="asig-label">Asignatura</InputLabel>
+            <Select labelId="asig-label" value={filtros.asignaturaId} onChange={(e) => setFiltros({ ...filtros, asignaturaId: e.target.value })} label="Asignatura">
+              <MenuItem value="">Seleccionar...</MenuItem>
+              {asignaturas.map(a => <MenuItem key={a._id} value={a._id}>{a.nombre}</MenuItem>)}
+            </Select>
+          </FormControl>
           <div className="flex items-end gap-2">
-            <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-600 mb-1">Período</label>
-              <select value={filtros.periodo} onChange={(e) => setFiltros({ ...filtros, periodo: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm">
-                <option value="">Período...</option>
-                {Array.from({ length: siee.numeroPeriodos || 4 }, (_, i) => i + 1).map(n => <option key={n} value={n}>{n}</option>)}
-              </select>
-            </div>
-            <button onClick={cargarEstudiantes} disabled={!filtros.grupoId}
-              className="bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg flex items-center gap-1 text-sm">
-              <Search className="w-4 h-4" /> Cargar
-            </button>
+            <FormControl size="small" fullWidth>
+              <InputLabel id="periodo-label">Período</InputLabel>
+              <Select labelId="periodo-label" value={filtros.periodo} onChange={(e) => setFiltros({ ...filtros, periodo: e.target.value })} label="Período">
+                <MenuItem value="">Período...</MenuItem>
+                {Array.from({ length: siee.numeroPeriodos || 4 }, (_, i) => i + 1).map(n => <MenuItem key={n} value={n}>{n}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <Button variant="contained" color="primary" onClick={cargarEstudiantes} disabled={!filtros.grupoId} startIcon={<Search className="w-4 h-4" />}>
+              Cargar
+            </Button>
           </div>
         </div>
 
@@ -270,77 +268,79 @@ export default function Calificaciones() {
           </div>
           <form onSubmit={guardar}>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Estudiante</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Documento</th>
-                    <th className="px-4 py-3 w-20 text-center text-xs font-semibold text-gray-500 uppercase">Nota (0-5)</th>
-                    <th className="px-4 py-3 w-20 text-center text-xs font-semibold text-gray-500 uppercase">Recuperación</th>
-                    <th className="px-4 py-3 w-20 text-center text-xs font-semibold text-gray-500 uppercase">Habilitación</th>
-                    <th className="px-4 py-3 w-28 text-center text-xs font-semibold text-gray-500 uppercase">Desempeño</th>
-                    <th className="px-4 py-3 w-56 text-left text-xs font-semibold text-gray-500 uppercase">Observaciones</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {estudiantes.map(s => {
-                    const f = filas[s._id] || filaVacia()
-                    const notaNum = f.nota !== '' ? Number(f.nota) : NaN
-                    const muestraRecup = !isNaN(notaNum) && notaNum < siee.notaMinima
-                    const muestraHab = !isNaN(notaNum) && notaNum < siee.notaMinima && f.recuperacion !== '' && Number(f.recuperacion) < siee.notaMinima
-                    const efectiva = f.habilitacion !== '' ? Number(f.habilitacion) : (f.recuperacion !== '' ? Number(f.recuperacion) : notaNum)
-                    const d = desempeno(efectiva, siee.niveles)
-                    return (
-                      <tr key={s._id} className="hover:bg-gray-50">
-                        <td className="px-4 py-2.5 text-sm font-medium text-gray-900">{s.nombres} {s.apellidos}</td>
-                        <td className="px-4 py-2.5 text-sm text-gray-700">{s.documento}</td>
-                        <td className="px-4 py-2.5">
-                          <InputNota valor={f.nota} onChange={(e) => setCampo(s._id, 'nota', e.target.value)} />
-                        </td>
-                        <td className="px-4 py-2.5">
-                          {muestraRecup ? (
-                            <InputNota
-                              valor={f.recuperacion}
-                              onChange={(e) => setCampo(s._id, 'recuperacion', e.target.value)}
-                              extraClass="border-amber-300"
+              <TableContainer>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow className="bg-gray-50">
+                      <TableCell className="!font-semibold !text-gray-500 !text-xs !uppercase !px-4 !py-3 !text-left">Estudiante</TableCell>
+                      <TableCell className="!font-semibold !text-gray-500 !text-xs !uppercase !px-4 !py-3 !text-left">Documento</TableCell>
+                      <TableCell className="!font-semibold !text-gray-500 !text-xs !uppercase !px-4 !py-3 !w-20 !text-center">Nota (0-5)</TableCell>
+                      <TableCell className="!font-semibold !text-gray-500 !text-xs !uppercase !px-4 !py-3 !w-20 !text-center">Recuperación</TableCell>
+                      <TableCell className="!font-semibold !text-gray-500 !text-xs !uppercase !px-4 !py-3 !w-20 !text-center">Habilitación</TableCell>
+                      <TableCell className="!font-semibold !text-gray-500 !text-xs !uppercase !px-4 !py-3 !w-28 !text-center">Desempeño</TableCell>
+                      <TableCell className="!font-semibold !text-gray-500 !text-xs !uppercase !px-4 !py-3 !w-56 !text-left">Observaciones</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody className="bg-white">
+                    {estudiantes.map(s => {
+                      const f = filas[s._id] || filaVacia()
+                      const notaNum = f.nota !== '' ? Number(f.nota) : NaN
+                      const muestraRecup = !isNaN(notaNum) && notaNum < siee.notaMinima
+                      const muestraHab = !isNaN(notaNum) && notaNum < siee.notaMinima && f.recuperacion !== '' && Number(f.recuperacion) < siee.notaMinima
+                      const efectiva = f.habilitacion !== '' ? Number(f.habilitacion) : (f.recuperacion !== '' ? Number(f.recuperacion) : notaNum)
+                      const d = desempeno(efectiva, siee.niveles)
+                      return (
+                        <TableRow key={s._id} hover>
+                          <TableCell className="!px-4 !py-2.5 !text-sm !font-medium !text-gray-900">{s.nombres} {s.apellidos}</TableCell>
+                          <TableCell className="!px-4 !py-2.5 !text-sm !text-gray-700">{s.documento}</TableCell>
+                          <TableCell className="!px-4 !py-2.5">
+                            <InputNota valor={f.nota} onChange={(e) => setCampo(s._id, 'nota', e.target.value)} />
+                          </TableCell>
+                          <TableCell className="!px-4 !py-2.5">
+                            {muestraRecup ? (
+                              <InputNota
+                                valor={f.recuperacion}
+                                onChange={(e) => setCampo(s._id, 'recuperacion', e.target.value)}
+                                extraClass="border-amber-300"
+                              />
+                            ) : (
+                              <span className="block text-center text-gray-300 text-sm">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="!px-4 !py-2.5">
+                            {muestraHab ? (
+                              <InputNota
+                                valor={f.habilitacion}
+                                onChange={(e) => setCampo(s._id, 'habilitacion', e.target.value)}
+                                extraClass="border-red-300"
+                              />
+                            ) : (
+                              <span className="block text-center text-gray-300 text-sm">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="!px-4 !py-2.5 !text-center">
+                            {d ? (
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${d.color}`}>{d.valor}</span>
+                            ) : (
+                              <span className="text-gray-400 text-xs">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="!px-4 !py-2.5">
+                            <TextField
+                              size="small"
+                              fullWidth
+                              value={f.observacion || ''}
+                              onChange={(e) => setCampo(s._id, 'observacion', e.target.value)}
+                              disabled={!puedeGestionar}
+                              placeholder="Observación"
                             />
-                          ) : (
-                            <span className="block text-center text-gray-300 text-sm">—</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-2.5">
-                          {muestraHab ? (
-                            <InputNota
-                              valor={f.habilitacion}
-                              onChange={(e) => setCampo(s._id, 'habilitacion', e.target.value)}
-                              extraClass="border-red-300"
-                            />
-                          ) : (
-                            <span className="block text-center text-gray-300 text-sm">—</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-2.5 text-center">
-                          {d ? (
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${d.color}`}>{d.valor}</span>
-                          ) : (
-                            <span className="text-gray-400 text-xs">—</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <input
-                            type="text"
-                            value={f.observacion || ''}
-                            onChange={(e) => setCampo(s._id, 'observacion', e.target.value)}
-                            disabled={!puedeGestionar}
-                            placeholder="Observación"
-                            className="w-full px-3 py-1.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm"
-                          />
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             </div>
             <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
               <p className="text-xs text-gray-500">
@@ -351,10 +351,9 @@ export default function Calificaciones() {
                   .join(' · ')}
               </p>
               {puedeGestionar && (
-                <button type="submit" disabled={saving}
-                  className="bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium">
-                  <Save className="w-4 h-4" /> {saving ? 'Guardando...' : 'Guardar Calificaciones'}
-                </button>
+                <Button type="submit" variant="contained" color="primary" disabled={saving} startIcon={<Save className="w-4 h-4" />}>
+                  {saving ? 'Guardando...' : 'Guardar Calificaciones'}
+                </Button>
               )}
             </div>
           </form>

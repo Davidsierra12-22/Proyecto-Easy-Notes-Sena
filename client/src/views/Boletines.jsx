@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react'
+import {
+  Button, FormControl, IconButton, MenuItem, Select,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow
+} from '@mui/material'
 import { Download, Printer, RefreshCw, School } from 'lucide-react'
-import api from '../services/api'
-import { useAuth } from '../context/AuthContext'
-import { useSede } from '../context/SedeContext'
+import api from '../services/api.service'
+import { useAuth } from '../store/Auth'
+import { useSede } from '../store/General'
 
 const TIPOS = [
   { valor: 'acumulativo', label: 'Acumulativo', conPeriodo: false },
@@ -30,106 +34,106 @@ const NombreAsignatura = ({ a }) => (
 const TablaPeriodos = ({ asignaturas }) => {
   if (!asignaturas?.length) return null
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead>
-          <tr className="bg-gray-50">
-            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Asignatura</th>
+    <TableContainer className="overflow-x-auto">
+      <Table size="small" className="min-w-full divide-y divide-gray-200">
+        <TableHead>
+          <TableRow className="bg-gray-50">
+            <TableCell className="!px-4 !py-3 !text-left !text-xs !font-semibold !text-gray-500 !uppercase">Asignatura</TableCell>
             {Array.from({ length: MAX_PERIODOS }, (_, i) => i + 1).map(p => (
-              <th key={p} className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">P{p}</th>
+              <TableCell key={p} className="!px-4 !py-3 !text-center !text-xs !font-semibold !text-gray-500 !uppercase">P{p}</TableCell>
             ))}
-            <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Definitiva</th>
-            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Logro</th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+            <TableCell className="!px-4 !py-3 !text-center !text-xs !font-semibold !text-gray-500 !uppercase">Definitiva</TableCell>
+            <TableCell className="!px-4 !py-3 !text-left !text-xs !font-semibold !text-gray-500 !uppercase">Logro</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody className="bg-white divide-y divide-gray-200">
           {asignaturas.map((m, i) => (
-            <tr key={m.asignatura?._id || m.asignaturaId || i}>
-              <td className="px-4 py-3"><NombreAsignatura a={m} /></td>
+            <TableRow key={m.asignatura?._id || m.asignaturaId || i}>
+              <TableCell className="!px-4 !py-3"><NombreAsignatura a={m} /></TableCell>
               {Array.from({ length: MAX_PERIODOS }, (_, j) => j + 1).map(p => {
                 const per = (m.periodos || []).find(x => x.periodo === p)
                 const val = per ? per.notaVigente : null
                 return (
-                  <td key={p} className="px-4 py-3 text-sm text-center text-gray-700">
+                  <TableCell key={p} className="!px-4 !py-3 !text-sm !text-center !text-gray-700">
                     {val != null ? `${val}${per?.recuperada ? '*' : ''}` : '—'}
-                  </td>
+                  </TableCell>
                 )
               })}
-              <td className="px-4 py-3 text-sm text-center font-bold text-gray-900">
+              <TableCell className="!px-4 !py-3 !text-sm !text-center !font-bold !text-gray-900">
                 {m.promedioAnual ?? m.notaDefinitiva ?? '—'}
-              </td>
-              <td className="px-4 py-3 text-sm">
+              </TableCell>
+              <TableCell className="!px-4 !py-3 !text-sm">
                 {(m.logroFinal || m.logro) && (
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${logroColor(m.logroFinal || m.logro)}`}>
                     {m.logroFinal || m.logro}
                   </span>
                 )}
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </TableBody>
+      </Table>
+    </TableContainer>
   )
 }
 
 const TablaCorto = ({ asignaturas }) => {
   if (!asignaturas?.length) return null
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead>
-          <tr className="bg-gray-50">
-            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Asignatura</th>
-            <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Nota</th>
-            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Logro</th>
-            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Observación</th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+    <TableContainer className="overflow-x-auto">
+      <Table size="small" className="min-w-full divide-y divide-gray-200">
+        <TableHead>
+          <TableRow className="bg-gray-50">
+            <TableCell className="!px-4 !py-3 !text-left !text-xs !font-semibold !text-gray-500 !uppercase">Asignatura</TableCell>
+            <TableCell className="!px-4 !py-3 !text-center !text-xs !font-semibold !text-gray-500 !uppercase">Nota</TableCell>
+            <TableCell className="!px-4 !py-3 !text-left !text-xs !font-semibold !text-gray-500 !uppercase">Logro</TableCell>
+            <TableCell className="!px-4 !py-3 !text-left !text-xs !font-semibold !text-gray-500 !uppercase">Observación</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody className="bg-white divide-y divide-gray-200">
           {asignaturas.map((m, i) => (
-            <tr key={m.asignatura?._id || m.asignaturaId || i}>
-              <td className="px-4 py-3"><NombreAsignatura a={m} /></td>
-              <td className="px-4 py-3 text-sm text-center text-gray-700">
+            <TableRow key={m.asignatura?._id || m.asignaturaId || i}>
+              <TableCell className="!px-4 !py-3"><NombreAsignatura a={m} /></TableCell>
+              <TableCell className="!px-4 !py-3 !text-sm !text-center !text-gray-700">
                 {m.notaVigente != null ? `${m.notaVigente}${m.recuperada ? '*' : ''}` : '—'}
-              </td>
-              <td className="px-4 py-3 text-sm">
+              </TableCell>
+              <TableCell className="!px-4 !py-3 !text-sm">
                 {m.logro && <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${logroColor(m.logro)}`}>{m.logro}</span>}
-              </td>
-              <td className="px-4 py-3 text-sm text-gray-600">{m.observacion || '—'}</td>
-            </tr>
+              </TableCell>
+              <TableCell className="!px-4 !py-3 !text-sm !text-gray-600">{m.observacion || '—'}</TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </TableBody>
+      </Table>
+    </TableContainer>
   )
 }
 
 const TablaDescriptivo = ({ asignaturas }) => {
   if (!asignaturas?.length) return null
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead>
-          <tr className="bg-gray-50">
-            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Asignatura</th>
-            <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Nota</th>
-            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Logro</th>
-            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Indicadores</th>
-            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Observación</th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+    <TableContainer className="overflow-x-auto">
+      <Table size="small" className="min-w-full divide-y divide-gray-200">
+        <TableHead>
+          <TableRow className="bg-gray-50">
+            <TableCell className="!px-4 !py-3 !text-left !text-xs !font-semibold !text-gray-500 !uppercase">Asignatura</TableCell>
+            <TableCell className="!px-4 !py-3 !text-center !text-xs !font-semibold !text-gray-500 !uppercase">Nota</TableCell>
+            <TableCell className="!px-4 !py-3 !text-left !text-xs !font-semibold !text-gray-500 !uppercase">Logro</TableCell>
+            <TableCell className="!px-4 !py-3 !text-left !text-xs !font-semibold !text-gray-500 !uppercase">Indicadores</TableCell>
+            <TableCell className="!px-4 !py-3 !text-left !text-xs !font-semibold !text-gray-500 !uppercase">Observación</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody className="bg-white divide-y divide-gray-200">
           {asignaturas.map((m, i) => (
-            <tr key={m.asignatura?._id || m.asignaturaId || i}>
-              <td className="px-4 py-3"><NombreAsignatura a={m} /></td>
-              <td className="px-4 py-3 text-sm text-center text-gray-700">
+            <TableRow key={m.asignatura?._id || m.asignaturaId || i}>
+              <TableCell className="!px-4 !py-3"><NombreAsignatura a={m} /></TableCell>
+              <TableCell className="!px-4 !py-3 !text-sm !text-center !text-gray-700">
                 {m.notaVigente != null ? `${m.notaVigente}${m.recuperada ? '*' : ''}` : '—'}
-              </td>
-              <td className="px-4 py-3 text-sm">
+              </TableCell>
+              <TableCell className="!px-4 !py-3 !text-sm">
                 {m.logro && <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${logroColor(m.logro)}`}>{m.logro}</span>}
-              </td>
-              <td className="px-4 py-3 text-sm">
+              </TableCell>
+              <TableCell className="!px-4 !py-3 !text-sm">
                 {m.indicadores?.length ? (
                   <ul className="space-y-1">
                     {m.indicadores.map((ind, j) => (
@@ -142,43 +146,43 @@ const TablaDescriptivo = ({ asignaturas }) => {
                 ) : (
                   <span className="text-gray-400">—</span>
                 )}
-              </td>
-              <td className="px-4 py-3 text-sm text-gray-600">{m.observacion || '—'}</td>
-            </tr>
+              </TableCell>
+              <TableCell className="!px-4 !py-3 !text-sm !text-gray-600">{m.observacion || '—'}</TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </TableBody>
+      </Table>
+    </TableContainer>
   )
 }
 
 const TablaPreescolar = ({ asignaturas }) => {
   if (!asignaturas?.length) return null
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead>
-          <tr className="bg-gray-50">
-            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Asignatura</th>
-            <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Nivel</th>
-            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Descripción</th>
-            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Observación</th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+    <TableContainer className="overflow-x-auto">
+      <Table size="small" className="min-w-full divide-y divide-gray-200">
+        <TableHead>
+          <TableRow className="bg-gray-50">
+            <TableCell className="!px-4 !py-3 !text-left !text-xs !font-semibold !text-gray-500 !uppercase">Asignatura</TableCell>
+            <TableCell className="!px-4 !py-3 !text-center !text-xs !font-semibold !text-gray-500 !uppercase">Nivel</TableCell>
+            <TableCell className="!px-4 !py-3 !text-left !text-xs !font-semibold !text-gray-500 !uppercase">Descripción</TableCell>
+            <TableCell className="!px-4 !py-3 !text-left !text-xs !font-semibold !text-gray-500 !uppercase">Observación</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody className="bg-white divide-y divide-gray-200">
           {asignaturas.map((m, i) => (
-            <tr key={m.asignatura?._id || m.asignaturaId || i}>
-              <td className="px-4 py-3"><NombreAsignatura a={m} /></td>
-              <td className="px-4 py-3 text-sm text-center">
+            <TableRow key={m.asignatura?._id || m.asignaturaId || i}>
+              <TableCell className="!px-4 !py-3"><NombreAsignatura a={m} /></TableCell>
+              <TableCell className="!px-4 !py-3 !text-sm !text-center">
                 <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-primary-100 text-primary-800 font-bold">{m.nivelCualitativo}</span>
-              </td>
-              <td className="px-4 py-3 text-sm text-gray-600">{m.descripcion}</td>
-              <td className="px-4 py-3 text-sm text-gray-600">{m.observacion || '—'}</td>
-            </tr>
+              </TableCell>
+              <TableCell className="!px-4 !py-3 !text-sm !text-gray-600">{m.descripcion}</TableCell>
+              <TableCell className="!px-4 !py-3 !text-sm !text-gray-600">{m.observacion || '—'}</TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </TableBody>
+      </Table>
+    </TableContainer>
   )
 }
 
@@ -288,51 +292,54 @@ export default function Boletines() {
             <h1 className="text-xl font-bold text-gray-900">Boletines</h1>
             <p className="text-sm text-gray-500">Genera boletines acumulativo, corto, descriptivo, final o preescolar</p>
           </div>
-          <button onClick={cargarDependencias} aria-label="Recargar listas" title="Recargar listas" className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 self-start">
+          <IconButton onClick={cargarDependencias} aria-label="Recargar listas" title="Recargar listas" className="!text-gray-500 hover:!text-gray-700 hover:!bg-gray-100 self-start !p-2" size="small">
             <RefreshCw className="w-4 h-4" />
-          </button>
+          </IconButton>
         </div>
 
         <form onSubmit={cargarBoletin} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mt-4">
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Tipo de boletín</label>
-            <select value={filtros.tipo} onChange={(e) => setFiltros({ ...filtros, tipo: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm">
-              {TIPOS.map(t => <option key={t.valor} value={t.valor}>{t.label}</option>)}
-            </select>
+            <FormControl fullWidth size="small">
+              <Select value={filtros.tipo} onChange={(e) => setFiltros({ ...filtros, tipo: e.target.value })} className="text-sm">
+                {TIPOS.map(t => <MenuItem key={t.valor} value={t.valor}>{t.label}</MenuItem>)}
+              </Select>
+            </FormControl>
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Año Académico</label>
-            <select value={filtros.anioAcademicoId} onChange={(e) => setFiltros({ ...filtros, anioAcademicoId: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm">
-              <option value="">Seleccionar...</option>
-              {anios.map(a => <option key={a._id} value={a._id}>Año {a.anio}</option>)}
-            </select>
+            <FormControl fullWidth size="small">
+              <Select value={filtros.anioAcademicoId} onChange={(e) => setFiltros({ ...filtros, anioAcademicoId: e.target.value })} displayEmpty className="text-sm">
+                <MenuItem value="">Seleccionar...</MenuItem>
+                {anios.map(a => <MenuItem key={a._id} value={a._id}>Año {a.anio}</MenuItem>)}
+              </Select>
+            </FormControl>
           </div>
           {puedeElegirEstudiante && (
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Estudiante</label>
-              <select value={filtros.estudianteId} onChange={(e) => setFiltros({ ...filtros, estudianteId: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm">
-                <option value="">Seleccionar...</option>
-                {estudiantes.map(s => <option key={s._id} value={s._id}>{s.nombres} {s.apellidos} - {s.documento}</option>)}
-              </select>
+              <FormControl fullWidth size="small">
+                <Select value={filtros.estudianteId} onChange={(e) => setFiltros({ ...filtros, estudianteId: e.target.value })} displayEmpty className="text-sm">
+                  <MenuItem value="">Seleccionar...</MenuItem>
+                  {estudiantes.map(s => <MenuItem key={s._id} value={s._id}>{s.nombres} {s.apellidos} - {s.documento}</MenuItem>)}
+                </Select>
+              </FormControl>
             </div>
           )}
           {tipoActual.conPeriodo && (
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Periodo</label>
-              <select value={filtros.periodo} onChange={(e) => setFiltros({ ...filtros, periodo: Number(e.target.value) })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm">
-                {[1, 2, 3, 4, 5].map(p => <option key={p} value={p}>Periodo {p}</option>)}
-              </select>
+              <FormControl fullWidth size="small">
+                <Select value={filtros.periodo} onChange={(e) => setFiltros({ ...filtros, periodo: Number(e.target.value) })} className="text-sm">
+                  {[1, 2, 3, 4, 5].map(p => <MenuItem key={p} value={p}>Periodo {p}</MenuItem>)}
+                </Select>
+              </FormControl>
             </div>
           )}
           <div className="flex items-end">
-            <button type="submit" disabled={loading}
-              className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 w-full">
+            <Button type="submit" disabled={loading} variant="contained" color="primary" fullWidth className="!normal-case !py-2.5 text-sm font-medium">
               {loading ? 'Generando...' : 'Generar Boletín'}
-            </button>
+            </Button>
           </div>
         </form>
 
@@ -354,12 +361,12 @@ export default function Boletines() {
                   <p className="text-sm opacity-90">{estudianteSel ? `${estudianteSel.nombres} ${estudianteSel.apellidos}` : 'Estudiante'}</p>
                 </div>
               </div>
-              <button onClick={descargarPdf} className="text-white border border-white/60 rounded-lg px-3 py-1.5 text-sm flex items-center gap-1 print:hidden bg-white/10 hover:bg-white/20">
-                <Download className="w-4 h-4" /> Descargar PDF
-              </button>
-              <button onClick={() => window.print()} className="text-white border border-white/60 rounded-lg px-3 py-1.5 text-sm flex items-center gap-1 print:hidden bg-white/10 hover:bg-white/20">
-                <Printer className="w-4 h-4" /> Imprimir
-              </button>
+              <Button onClick={descargarPdf} variant="outlined" className="!text-white !border-white/60 !bg-white/10 hover:!bg-white/20 !normal-case text-sm !px-3 !py-1.5 print:hidden" startIcon={<Download className="w-4 h-4" />}>
+                Descargar PDF
+              </Button>
+              <Button onClick={() => window.print()} variant="outlined" className="!text-white !border-white/60 !bg-white/10 hover:!bg-white/20 !normal-case text-sm !px-3 !py-1.5 print:hidden" startIcon={<Printer className="w-4 h-4" />}>
+                Imprimir
+              </Button>
             </div>
           </div>
 
