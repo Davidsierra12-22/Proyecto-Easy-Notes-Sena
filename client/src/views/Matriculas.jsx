@@ -323,7 +323,7 @@ export default function Matriculas() {
                             startIcon={<TrendingUp className="w-4 h-4" />}>
                             Promover
                           </Button>
-                          <Button onClick={nomPromover} title="Marcar como repitente"
+                          <Button onClick={() => nomPromover(m)} title="Marcar como repitente"
                             className="!text-amber-600 hover:!text-amber-800 !normal-case text-sm font-medium mr-2" size="small"
                             startIcon={<TrendingDown className="w-4 h-4" />}>
                             Repite

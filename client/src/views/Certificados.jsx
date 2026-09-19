@@ -43,10 +43,8 @@ export default function Certificados() {
     setError('')
     setDoc(null)
     try {
-      const est = estudiantes.find(s => s._id === estudianteId)
       const r = await api.get(`/certificados/${estudianteId}/anio/${filtros.anioAcademicoId}`)
       setDoc(r.data.data)
-      setEstudianteSel(est || null)
     } catch (e) {
       setError(e.response?.data?.message || 'Error al generar certificado')
     } finally {

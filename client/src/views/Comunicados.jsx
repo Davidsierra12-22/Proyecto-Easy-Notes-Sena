@@ -101,7 +101,7 @@ export default function Comunicados() {
     }
   }
 
-  const yaLeido = (c) => c.leido?.some(l => l.usuarioId === usuario?.id)
+  const yaLeido = (c) => c.leido?.some(l => l.usuarioId === usuario?._id)
 
   return (
     <div className="space-y-4">

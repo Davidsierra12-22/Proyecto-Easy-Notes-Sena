@@ -127,7 +127,7 @@ export default function Promocion() {
     return Math.round((promedios.reduce((a, b) => a + b, 0) / promedios.length) * 10) / 10
   }
 
-  const totalPromovidos = matriculas.filter(m => evaluaciones[m._id]?.promovido !== false).length
+  const totalPromovidos = matriculas.filter(m => evaluaciones[m._id] && evaluaciones[m._id].promovido !== false).length
 
   return (
     <div className="space-y-4">
