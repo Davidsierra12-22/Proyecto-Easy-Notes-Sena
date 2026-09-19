@@ -204,8 +204,8 @@ export default function Layout() {
   )
 
   const renderMenu = (cerrarMobile = false) => (
-    <List className="!py-4 !px-2 !space-y-1 overflow-y-auto">
-      {menu.map((item) => (
+    <List sx={{ p: 1, flex: 1, overflowY: 'auto' }}>
+      {menu.map((item, i) => (
         <ListItemButton
           key={item.to}
           component={NavLink}
@@ -215,14 +215,14 @@ export default function Layout() {
           title={collapsed ? item.label : undefined}
           sx={{
             borderRadius: '8px',
-            mb: 0.5,
+            mt: i === 0 ? 0 : 0.5,
             color: '#d1d5db',
             '&.active': { bgcolor: 'primary.600', color: '#fff', '&:hover': { bgcolor: 'primary.600' } },
             '&:hover': { bgcolor: '#1e293b', color: '#fff' },
             justifyContent: collapsed ? 'center' : 'flex-start'
           }}
         >
-          <ListItemIcon sx={{ minWidth: collapsed ? '-moz-initial' : 40, mr: collapsed ? 0 : 1, color: 'inherit' }}>
+          <ListItemIcon sx={{ minWidth: collapsed ? 0 : 40, mr: collapsed ? 0 : 1, color: 'inherit' }}>
             <item.icon className="w-5 h-5 shrink-0" />
           </ListItemIcon>
           {!collapsed && <ListItemText primary={item.label} slotProps={{ primary: { color: 'inherit', fontSize: '0.875rem' } }} />}
@@ -236,18 +236,22 @@ export default function Layout() {
       position="static"
       color="inherit"
       elevation={0}
-      className="!bg-white !border-b !border-gray-200"
-      sx={{ zIndex: theme.zIndex.drawer + 1 }}
+      sx={{
+        bgcolor: '#fff',
+        borderBottom: '1px solid #e5e7eb',
+        zIndex: 'auto',
+        backgroundImage: 'none'
+      }}
     >
-      <Toolbar className="!min-h-16 !px-4 !lg:px-6 !flex !items-center !justify-between">
-        <Box className="!flex !items-center !gap-3">
-          <IconButton className="lg:hidden !text-gray-600" onClick={() => setMobileOpen(true)} edge="start">
+      <Toolbar sx={{ minHeight: '72px !important', px: { xs: 2, lg: 3 }, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <IconButton sx={{ display: { lg: 'none' }, color: '#4b5563' }} onClick={() => setMobileOpen(true)} edge="start">
             <MenuIcon className="w-6 h-6" />
           </IconButton>
-          <Typography variant="h6" className="!font-semibold !text-gray-800">Panel de Control</Typography>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: '#1f2937' }}>Panel de Control</Typography>
         </Box>
 
-        <Box className="!flex !items-center !gap-3">
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           {sedes.length > 0 && (
             <Box className="hidden sm:block">
               <Select
@@ -369,12 +373,23 @@ export default function Layout() {
         open
         sx={{
           width: collapsed ? DRAWER_COLLAPSED : DRAWER_FULL,
-          '& .MuiPaper-root': { bgcolor: '#0f172a', color: '#fff', width: collapsed ? DRAWER_COLLAPSED : DRAWER_FULL, transition: 'width 0.3s', overflowX: 'hidden' },
           display: { xs: 'none', lg: 'block' },
-          '& .MuiDrawer-paper': { position: 'relative', border: 'none' }
+          '& .MuiDrawer-paper': {
+            bgcolor: '#0f172a',
+            color: '#fff',
+            width: collapsed ? DRAWER_COLLAPSED : DRAWER_FULL,
+            transition: 'width 0.3s',
+            overflowX: 'hidden',
+            overflowY: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            position: 'relative',
+            border: 'none',
+            boxSizing: 'border-box'
+          }
         }}
       >
-        <Box className="!h-16 !border-b !border-slate-700 flex items-center justify-center !px-2" sx={{ justifyContent: collapsed ? 'center' : 'space-between' }}>
+        <Box sx={{ height: 72, minHeight: 72, flexShrink: 0, display: 'flex', alignItems: 'center', px: collapsed ? 1 : 2, borderBottom: '1px solid #334155', justifyContent: collapsed ? 'center' : 'space-between' }}>
           {!collapsed && logo()}
           <IconButton
             onClick={() => setCollapsed(!collapsed)}
@@ -394,10 +409,18 @@ export default function Layout() {
         onClose={() => setMobileOpen(false)}
         ModalProps={{ keepMounted: true }}
         sx={{
-          '& .MuiDrawer-paper': { bgcolor: '#0f172a', color: '#fff', width: DRAWER_FULL }
+          '& .MuiDrawer-paper': {
+            bgcolor: '#0f172a',
+            color: '#fff',
+            width: DRAWER_FULL,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            boxSizing: 'border-box'
+          }
         }}
       >
-        <Box className="flex items-center justify-between px-4 h-16 border-b border-slate-700">
+        <Box className="flex items-center justify-between px-4 h-16 border-b border-slate-700" sx={{ flexShrink: 0 }}>
           {logo()}
           <IconButton onClick={() => setMobileOpen(false)} className="!text-gray-400 hover:!text-white">
             <X className="w-6 h-6" />

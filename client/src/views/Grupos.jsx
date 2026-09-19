@@ -155,7 +155,7 @@ export default function Grupos() {
             <p className="text-center text-red-600 py-8">{estError}</p>
           ) : estLista && estLista.length === 0 ? (
             <p className="text-center text-gray-500 py-8">No hay estudiantes matriculados en este grado.</p>
-          ) : (
+          ) : estLista ? (
             <TableContainer>
               <Table size="small">
                 <TableHead>
@@ -186,7 +186,7 @@ export default function Grupos() {
                 </TableBody>
               </Table>
             </TableContainer>
-          )}
+          ) : null}
         </div>
       </Dialog>
     </>
