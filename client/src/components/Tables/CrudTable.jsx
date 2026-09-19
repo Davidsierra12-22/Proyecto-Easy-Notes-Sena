@@ -36,7 +36,8 @@ export default function CrudTable({
   parametrosForzados,
   onAfterSave,
   renderAcciones,
-  transformDatos
+  transformDatos,
+  validate
 }) {
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
@@ -46,6 +47,7 @@ export default function CrudTable({
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState({})
   const [error, setError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState({})
   const [saving, setSaving] = useState(false)
   const [pagina, setPagina] = useState(1)
   const [paginacion, setPaginacion] = useState(null)
@@ -94,6 +96,7 @@ export default function CrudTable({
     setEditing(null)
     setModal(true)
     setError('')
+    setFieldErrors({})
   }
 
   const abrirEditar = (item) => {
@@ -103,13 +106,23 @@ export default function CrudTable({
     setEditing(item)
     setModal(true)
     setError('')
+    setFieldErrors({})
   }
 
   const guardar = async (e) => {
     e.preventDefault()
     setSaving(true)
     setError('')
+    setFieldErrors({})
     try {
+      if (validate) {
+        const errores = validate(form)
+        if (errores && Object.keys(errores).length > 0) {
+          setFieldErrors(errores)
+          setSaving(false)
+          return
+        }
+      }
       let creado = null
       const payload = { ...parametrosForzados, ...form }
       if (editing) {
@@ -309,7 +322,7 @@ export default function CrudTable({
                   {campo.type === 'multiSelect' ? (
                     <>
                       <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
-                        {campo.options?.map(op => (
+                        {(campo.getOptions ? campo.getOptions(form) : campo.options)?.map(op => (
                           <label key={op.value} className="flex items-center gap-2 text-sm text-gray-700">
                             <input
                               type="checkbox"
@@ -321,6 +334,7 @@ export default function CrudTable({
                                   ? [...actual, op.value]
                                   : actual.filter(v => v !== op.value)
                                 setForm({ ...form, [campo.name]: nuevo })
+                                if (fieldErrors[campo.name]) setFieldErrors(prev => ({ ...prev, [campo.name]: '' }))
                               }}
                               className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                             />
@@ -331,34 +345,66 @@ export default function CrudTable({
                       {campo.hint && (
                         <p className="text-xs text-gray-400 mt-1.5">{campo.hint}</p>
                       )}
+                      {fieldErrors[campo.name] && (
+                        <p className="text-xs text-red-500 mt-1">{fieldErrors[campo.name]}</p>
+                      )}
                     </>
                   ) : campo.type === 'select' ? (
-                    <TextField
-                      select
-                      value={form[campo.name] || ''}
-                      onChange={(e) => setForm({ ...form, [campo.name]: e.target.value })}
-                      label={campo.label}
-                      required={campo.required}
-                      fullWidth
-                    >
-                      <MenuItem value="">Seleccionar...</MenuItem>
-                      {campo.options?.map(op => (
-                        <MenuItem key={op.value} value={op.value}>{op.label}</MenuItem>
-                      ))}
-                    </TextField>
+                    <>
+                      <TextField
+                        select
+                        value={form[campo.name] || ''}
+                        onChange={(e) => {
+                          setForm({ ...form, [campo.name]: e.target.value })
+                          if (fieldErrors[campo.name]) setFieldErrors(prev => ({ ...prev, [campo.name]: '' }))
+                          const dependents = campos.filter(c => c.dependsOn === campo.name)
+                          if (dependents.length) {
+                            const patch = {}
+                            dependents.forEach(d => { patch[d.name] = d.type === 'multiSelect' ? [] : '' })
+                            setForm(prev => ({ ...prev, [campo.name]: e.target.value, ...patch }))
+                          }
+                        }}
+                        label={campo.label}
+                        fullWidth
+                        error={Boolean(fieldErrors[campo.name])}
+                      >
+                        <MenuItem value="">Seleccionar...</MenuItem>
+                        {campo.options?.map(op => (
+                          <MenuItem key={op.value} value={op.value}>{op.label}</MenuItem>
+                        ))}
+                      </TextField>
+                      {fieldErrors[campo.name] && (
+                        <p className="text-xs text-red-500 mt-1">{fieldErrors[campo.name]}</p>
+                      )}
+                    </>
                   ) : (
-                    <TextField
-                      type={campo.type || 'text'}
-                      value={form[campo.name] || ''}
-                      onChange={(e) => {
-                        const v = e.target.value
-                        setForm({ ...form, [campo.name]: campo.type === 'number' && v !== '' ? Number(v) : v })
-                      }}
-                      label={campo.label}
-                      required={campo.required}
-                      placeholder={campo.placeholder}
-                      fullWidth
-                    />
+                    <>
+                      <TextField
+                        type={campo.type || 'text'}
+                        value={form[campo.name] || ''}
+                        onChange={(e) => {
+                          const v = e.target.value
+                          setForm({ ...form, [campo.name]: campo.type === 'number' && v !== '' ? Number(v) : v })
+                          if (fieldErrors[campo.name]) setFieldErrors(prev => ({ ...prev, [campo.name]: '' }))
+                        }}
+                        label={campo.label}
+                        placeholder={campo.placeholder}
+                        fullWidth
+                        error={Boolean(fieldErrors[campo.name])}
+                        slotProps={{
+                          htmlInput: {
+                            inputMode: campo.inputMode,
+                            pattern: campo.pattern,
+                            minLength: campo.minLength,
+                            maxLength: campo.maxLength
+                          },
+                          ...(campo.type === 'date' ? { inputLabel: { shrink: true } } : {})
+                        }}
+                      />
+                      {fieldErrors[campo.name] && (
+                        <p className="text-xs text-red-500 mt-1">{fieldErrors[campo.name]}</p>
+                      )}
+                    </>
                   )}
                 </FormControl>
               ))}

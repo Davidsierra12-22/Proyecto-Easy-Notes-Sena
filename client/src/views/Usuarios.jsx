@@ -77,11 +77,11 @@ const columnas = [
 
 const campos = [
   { name: 'tipoDocumento', label: 'Tipo Documento', type: 'select', options: TIPOS_DOC, required: true },
-  { name: 'documento', label: 'N° Documento', required: true, placeholder: 'Ej: 123456789' },
+  { name: 'documento', label: 'N° Documento', required: true, placeholder: 'Ej: 123456789', inputMode: 'numeric', pattern: '[0-9]{6,12}' },
   { name: 'nombres', label: 'Nombres', required: true },
   { name: 'apellidos', label: 'Apellidos', required: true },
   { name: 'tipoPerfil', label: 'Rol principal', type: 'select', options: ROLES, required: true },
-  { name: 'roles', label: 'Roles (multi-perfil)', type: 'multiSelect', options: ROLES, colSpan: 2, max: 1, hint: 'Solo puedes elegir 1 perfil adicional (máximo 2 en total)' },
+  { name: 'roles', label: 'Roles (multi-perfil)', type: 'multiSelect', options: ROLES, getOptions: (form) => rolesSecundariosPara(form.tipoPerfil), colSpan: 2, max: 1, dependsOn: 'tipoPerfil', hint: 'Solo puedes elegir 1 perfil adicional (máximo 2 en total)' },
   { name: 'email', label: 'Email', type: 'email' },
   { name: 'celular', label: 'Celular' },
   { name: 'telefono', label: 'Teléfono' },
@@ -93,6 +93,88 @@ const campos = [
 ]
 
 const ROL_LABEL = Object.fromEntries(ROLES.map(r => [r.value, r.label]))
+
+const ROLES_SECUNDARIOS_PERMITIDOS = {
+  super_admin: ['admin', 'rector', 'coordinador', 'docente', 'secretaria'],
+  admin: ['rector', 'coordinador', 'docente', 'secretaria'],
+  rector: ['admin', 'coordinador', 'docente', 'secretaria'],
+  coordinador: ['rector', 'docente'],
+  docente: ['coordinador', 'acudiente'],
+  estudiante: [],
+  acudiente: [],
+  secretaria: []
+}
+
+const rolesSecundariosPara = (tipoPerfil) => {
+  const permitidos = ROLES_SECUNDARIOS_PERMITIDOS[tipoPerfil] || []
+  return ROLES.filter(r => permitidos.includes(r.value))
+}
+
+const validarUsuario = (form) => {
+  const errores = {}
+
+  if (!form.tipoDocumento) errores.tipoDocumento = 'Selecciona el tipo de documento'
+
+  if (!form.documento || !form.documento.toString().trim()) {
+    errores.documento = 'El número de documento es obligatorio'
+  } else if (!/^\d{6,12}$/.test(form.documento.toString().trim())) {
+    errores.documento = 'El documento debe tener entre 6 y 12 dígitos numéricos'
+  }
+
+  if (!form.nombres || !form.nombres.trim()) {
+    errores.nombres = 'Los nombres son obligatorios'
+  } else if (form.nombres.trim().length < 2) {
+    errores.nombres = 'Los nombres deben tener al menos 2 caracteres'
+  } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(form.nombres.trim())) {
+    errores.nombres = 'Los nombres solo pueden contener letras y espacios'
+  }
+
+  if (!form.apellidos || !form.apellidos.trim()) {
+    errores.apellidos = 'Los apellidos son obligatorios'
+  } else if (form.apellidos.trim().length < 2) {
+    errores.apellidos = 'Los apellidos deben tener al menos 2 caracteres'
+  } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(form.apellidos.trim())) {
+    errores.apellidos = 'Los apellidos solo pueden contener letras y espacios'
+  }
+
+  if (!form.tipoPerfil) errores.tipoPerfil = 'Selecciona el rol principal'
+
+  if (form.email && form.email.trim()) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      errores.email = 'Ingresa un correo electrónico válido'
+    }
+  }
+
+  if (form.celular && form.celular.trim()) {
+    if (!/^\d{7,10}$/.test(form.celular.trim())) {
+      errores.celular = 'El celular debe tener entre 7 y 10 dígitos'
+    }
+  }
+
+  if (form.telefono && form.telefono.trim()) {
+    if (!/^\d{7,10}$/.test(form.telefono.trim())) {
+      errores.telefono = 'El teléfono debe tener entre 7 y 10 dígitos'
+    }
+  }
+
+  if (form.estrato !== undefined && form.estrato !== '' && form.estrato !== null) {
+    const est = Number(form.estrato)
+    if (isNaN(est) || est < 1 || est > 6) {
+      errores.estrato = 'El estrato debe ser un número entre 1 y 6'
+    }
+  }
+
+  if (form.fechaNacimiento) {
+    const fecha = new Date(form.fechaNacimiento)
+    if (isNaN(fecha.getTime())) {
+      errores.fechaNacimiento = 'Fecha inválida'
+    } else if (fecha > new Date()) {
+      errores.fechaNacimiento = 'La fecha de nacimiento no puede ser en el futuro'
+    }
+  }
+
+  return errores
+}
 
 export default function Usuarios() {
   const { usuario } = useAuth()
@@ -282,6 +364,7 @@ export default function Usuarios() {
         puedeGestionar={puedeGestionar}
         puedeDesactivar={['super_admin', 'admin'].includes(rolActual)}
         transformDatos={marcarProtegidos}
+        validate={validarUsuario}
         onAfterSave={(creado) => {
           if (creado) {
             setEnvioMsg(null)
