@@ -17,6 +17,7 @@ export default function Recuperaciones() {
   const [error, setError] = useState('')
   const [exito, setExito] = useState('')
   const [procesando, setProcesando] = useState(false)
+  const [numeroPeriodos, setNumeroPeriodos] = useState(5)
 
   const cargarDependencias = async () => {
     try {
@@ -32,6 +33,7 @@ export default function Recuperaciones() {
       if (activo) {
         setFiltros(prev => ({ ...prev, anioAcademicoId: activo._id }))
         setNotaMinima(activo.configuracion?.notaMinima ?? 3.0)
+        if (activo.configuracion?.numeroPeriodos) setNumeroPeriodos(activo.configuracion.numeroPeriodos)
       }
     } catch (e) {
       setError(e.response?.data?.message || 'Error al cargar')
@@ -43,7 +45,10 @@ export default function Recuperaciones() {
   const cambiarAnio = (id) => {
     setFiltros(prev => ({ ...prev, anioAcademicoId: id }))
     const a = anios.find(x => x._id === id)
-    if (a) setNotaMinima(a.configuracion?.notaMinima ?? 3.0)
+    if (a) {
+      setNotaMinima(a.configuracion?.notaMinima ?? 3.0)
+      if (a.configuracion?.numeroPeriodos) setNumeroPeriodos(a.configuracion.numeroPeriodos)
+    }
   }
 
   const cargarCalificaciones = async () => {
@@ -147,7 +152,7 @@ export default function Recuperaciones() {
             <label className="block text-xs font-medium text-gray-600 mb-1">Período</label>
             <Select value={filtros.periodo || ''} onChange={(e) => setFiltros({ ...filtros, periodo: e.target.value })} size="small" fullWidth displayEmpty>
               <MenuItem value="">Período...</MenuItem>
-              {[1, 2, 3, 4, 5].map(n => <MenuItem key={n} value={n}>{n}</MenuItem>)}
+              {Array.from({ length: numeroPeriodos }, (_, i) => i + 1).map(n => <MenuItem key={n} value={n}>{n}</MenuItem>)}
             </Select>
           </div>
           <div className="flex items-end">

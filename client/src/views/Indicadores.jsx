@@ -22,6 +22,7 @@ export default function Indicadores() {
   const [form, setForm] = useState({})
   const [editing, setEditing] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [numeroPeriodos, setNumeroPeriodos] = useState(5)
 
   const cargarDependencias = async () => {
     try {
@@ -32,7 +33,10 @@ export default function Indicadores() {
       setAnios(resAnio.data.data)
       setAsignaturas(resAsig.data.data)
       const activo = resAnio.data.data.find(a => a.estado === 'activo')
-      if (activo) setFiltros(prev => ({ ...prev, anioAcademicoId: activo._id }))
+      if (activo) {
+        setFiltros(prev => ({ ...prev, anioAcademicoId: activo._id }))
+        if (activo.configuracion?.numeroPeriodos) setNumeroPeriodos(activo.configuracion.numeroPeriodos)
+      }
     } catch (e) {
       setError(e.response?.data?.message || 'Error al cargar')
     }
@@ -146,7 +150,7 @@ export default function Indicadores() {
                 <InputLabel id="periodo-label">Período</InputLabel>
                 <Select labelId="periodo-label" value={filtros.periodo} onChange={(e) => setFiltros({ ...filtros, periodo: e.target.value })} label="Período">
                   <MenuItem value="">Período...</MenuItem>
-                  {[1, 2, 3, 4, 5].map(n => <MenuItem key={n} value={n}>{n}</MenuItem>)}
+                  {Array.from({ length: numeroPeriodos }, (_, i) => i + 1).map(n => <MenuItem key={n} value={n}>{n}</MenuItem>)}
                 </Select>
               </FormControl>
             </div>

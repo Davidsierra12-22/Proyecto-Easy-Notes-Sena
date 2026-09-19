@@ -18,6 +18,7 @@ export default function MisNotas() {
   const [materias, setMaterias] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [numeroPeriodos, setNumeroPeriodos] = useState(4)
 
   const anioId = matricula?.anioAcademicoId
 
@@ -28,8 +29,15 @@ export default function MisNotas() {
       setLoading(true)
       setError('')
       try {
-        const r = await api.get(`/calificaciones/estudiante/${usuario._id}/anio/${anioId}`)
-        if (activo) setMaterias(r.data.data || [])
+        const [resCalif, resAnio] = await Promise.all([
+          api.get(`/calificaciones/estudiante/${usuario._id}/anio/${anioId}`),
+          api.get('/anios-academicos')
+        ])
+        if (activo) {
+          setMaterias(resCalif.data.data || [])
+          const anio = resAnio.data.data.find(a => a._id === anioId)
+          if (anio?.configuracion?.numeroPeriodos) setNumeroPeriodos(anio.configuracion.numeroPeriodos)
+        }
       } catch (e) {
         if (activo) setError(e.response?.data?.message || 'No se pudieron cargar tus notas')
       } finally {
@@ -40,7 +48,7 @@ export default function MisNotas() {
     return () => { activo = false }
   }, [anioId, usuario?._id])
 
-  const periodos = [1, 2, 3, 4]
+  const periodos = Array.from({ length: numeroPeriodos }, (_, i) => i + 1)
 
   return (
     <div className="space-y-4">

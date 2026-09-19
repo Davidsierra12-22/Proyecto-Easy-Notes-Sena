@@ -46,6 +46,7 @@ export default function Actividades() {
   const [form, setForm] = useState({ tipo: 'tarea', porcentaje: 0 })
   const [editing, setEditing] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [numeroPeriodos, setNumeroPeriodos] = useState(5)
 
   const cargarDependencias = async () => {
     try {
@@ -58,7 +59,10 @@ export default function Actividades() {
       setGrupos(resGrupos.data.data)
       setAsignaturas(resAsig.data.data)
       const activo = resAnio.data.data.find(a => a.estado === 'activo')
-      if (activo) setFiltros(prev => ({ ...prev, anioAcademicoId: activo._id }))
+      if (activo) {
+        setFiltros(prev => ({ ...prev, anioAcademicoId: activo._id }))
+        if (activo.configuracion?.numeroPeriodos) setNumeroPeriodos(activo.configuracion.numeroPeriodos)
+      }
     } catch (e) {
       setError(e.response?.data?.message || 'Error al cargar')
     }
@@ -206,7 +210,7 @@ export default function Actividades() {
             <Select value={filtros.periodo || ''} onChange={(e) => setFiltros({ ...filtros, periodo: e.target.value })}
               size="small" fullWidth displayEmpty className="text-sm">
               <MenuItem value="">Todos</MenuItem>
-              {[1, 2, 3, 4, 5].map(n => <MenuItem key={n} value={n}>{n}</MenuItem>)}
+              {Array.from({ length: numeroPeriodos }, (_, i) => i + 1).map(n => <MenuItem key={n} value={n}>{n}</MenuItem>)}
             </Select>
           </div>
           <div className="flex items-end gap-2">
