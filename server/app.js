@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
 const path = require('path');
+const fs = require('fs');
 const {
   sanitizeInput,
   preventHpp,
@@ -58,7 +59,12 @@ app.get('/api/health', (req, res) => {
 });
 
 // 9. Archivos estáticos (uploads)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+try {
+  const uploadsPath = path.join(__dirname, 'uploads');
+  if (fs.existsSync(uploadsPath)) {
+    app.use('/uploads', express.static(uploadsPath));
+  }
+} catch (_) {}
 
 app.use('/api', require('./src/routes/index'));
 
