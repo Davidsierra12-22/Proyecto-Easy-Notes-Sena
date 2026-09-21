@@ -2,23 +2,32 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-const UPLOAD_DIR = path.join(__dirname, '..', '..', 'uploads', 'logos');
+const isVercel = !!process.env.VERCEL;
 
-// Asegurar que el directorio existe
-if (!fs.existsSync(UPLOAD_DIR)) {
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+function ensureDir(dir) {
+  try {
+    if (!isVercel && !fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+  } catch (_) {}
 }
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, UPLOAD_DIR);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    const nombre = `institucion_${req.usuario?.institucionId || 'default'}_${Date.now()}${ext}`;
-    cb(null, nombre);
-  }
-});
+const UPLOAD_DIR = path.join(__dirname, '..', '..', 'uploads', 'logos');
+const FOTO_DIR = path.join(__dirname, '..', '..', 'uploads', 'fotos');
+
+ensureDir(UPLOAD_DIR);
+ensureDir(FOTO_DIR);
+
+const storage = isVercel
+  ? multer.memoryStorage()
+  : multer.diskStorage({
+      destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+      filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase();
+        const nombre = `institucion_${req.usuario?.institucionId || 'default'}_${Date.now()}${ext}`;
+        cb(null, nombre);
+      }
+    });
 
 const fileFilter = (req, file, cb) => {
   const allowed = ['.png', '.jpg', '.jpeg', '.gif', '.svg'];
@@ -33,24 +42,19 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB máximo
+  limits: { fileSize: 5 * 1024 * 1024 }
 });
 
-// Subida de foto de perfil de usuarios (jpg/jpeg/png, máx 2MB)
-const FOTO_DIR = path.join(__dirname, '..', '..', 'uploads', 'fotos');
-
-if (!fs.existsSync(FOTO_DIR)) {
-  fs.mkdirSync(FOTO_DIR, { recursive: true });
-}
-
-const storageFoto = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, FOTO_DIR),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    const id = req.params.id || req.usuario?._id || 'u';
-    cb(null, `usuario_${id}_${Date.now()}${ext}`);
-  }
-});
+const storageFoto = isVercel
+  ? multer.memoryStorage()
+  : multer.diskStorage({
+      destination: (req, file, cb) => cb(null, FOTO_DIR),
+      filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase();
+        const id = req.params.id || req.usuario?._id || 'u';
+        cb(null, `usuario_${id}_${Date.now()}${ext}`);
+      }
+    });
 
 const fileFilterFoto = (req, file, cb) => {
   const ext = path.extname(file.originalname).toLowerCase();
@@ -64,7 +68,7 @@ const fileFilterFoto = (req, file, cb) => {
 const uploadFotoUsuario = multer({
   storage: storageFoto,
   fileFilter: fileFilterFoto,
-  limits: { fileSize: 2 * 1024 * 1024 } // 2MB máximo
+  limits: { fileSize: 2 * 1024 * 1024 }
 });
 
 module.exports = { upload, uploadFotoUsuario };

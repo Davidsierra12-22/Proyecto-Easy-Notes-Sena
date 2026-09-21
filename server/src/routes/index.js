@@ -4,6 +4,7 @@ const router = require('express').Router();
 router.use('/auth', require('./auth.routes'));
 router.use('/usuarios', require('./usuario.routes'));
 router.use('/bitacora', require('./bitacora.routes'));
+router.use('/notificaciones', require('./notificacion.routes'));
 
 // Sneider - Modulo Institucional
 router.use('/instituciones', require('./institucion.routes'));

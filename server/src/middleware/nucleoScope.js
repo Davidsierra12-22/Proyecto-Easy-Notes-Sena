@@ -8,7 +8,8 @@ const RUTAS_PERMITIDAS_NUCLEO = [
   '/api/nucleo',
   '/api/solicitudes-registro',
   '/api/instituciones',
-  '/api/upload'
+  '/api/upload',
+  '/api/notificaciones'
 ];
 
 const rutaPermitidaParaNucleo = (ruta) =>

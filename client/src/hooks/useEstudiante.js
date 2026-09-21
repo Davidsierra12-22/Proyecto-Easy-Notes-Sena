@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import api from '../services/api'
-import { useAuth } from '../context/AuthContext'
+import api from '../services/api.service'
+import { useAuth } from '../store/Auth'
 
 export function useEstudiante() {
   const { usuario } = useAuth()
