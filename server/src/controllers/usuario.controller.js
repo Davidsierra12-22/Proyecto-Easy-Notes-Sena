@@ -90,7 +90,8 @@ const create = async (req, res) => {
       mensaje: `${data.nombres} ${data.apellidos} (${data.tipoPerfil}) fue registrado en el sistema`,
       tipo: 'sistema',
       enlace: '/usuarios',
-      institucionId: data.institucionId
+      institucionId: data.institucionId,
+      excludeUserId: req.usuario?._id
     });
     res.status(201).json({ ok: true, data, message: 'Usuario creado correctamente' });
   } catch (error) {

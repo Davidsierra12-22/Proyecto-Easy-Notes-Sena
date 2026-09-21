@@ -35,7 +35,8 @@ const create = async (req, res) => {
       titulo: 'Nuevo núcleo registrado',
       mensaje: `Se creó el núcleo "${data.nombre}" en ${data.municipio || 'sin ubicación'}`,
       tipo: 'sistema',
-      enlace: '/nucleos'
+      enlace: '/nucleos',
+      excludeUserId: req.usuario?._id
     });
     res.status(201).json({ ok: true, data, message: 'Nucleo creado correctamente' });
   } catch (error) {

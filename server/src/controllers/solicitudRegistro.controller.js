@@ -37,7 +37,8 @@ const create = async (req, res) => {
       titulo: 'Solicitud de registro pendiente',
       mensaje: `${data.nombre} (NIT: ${data.nit}) solicitó registrar una institución`,
       tipo: 'alerta',
-      enlace: '/instituciones'
+      enlace: '/instituciones',
+      excludeUserId: req.usuario?._id
     });
     res.status(201).json({ ok: true, data, message: 'Solicitud creada correctamente' });
   } catch (error) {
@@ -102,7 +103,8 @@ const aprobar = async (req, res) => {
       titulo: 'Solicitud aprobada',
       mensaje: `La solicitud de "${solicitud.nombre}" fue aprobada. Institución creada.`,
       tipo: 'sistema',
-      enlace: '/instituciones'
+      enlace: '/instituciones',
+      excludeUserId: req.usuario?._id
     });
 
     res.json({

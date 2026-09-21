@@ -81,7 +81,8 @@ const create = async (req, res) => {
       mensaje: `Se creó el colegio "${data.nombre}" (NIT: ${data.nit})`,
       tipo: 'sistema',
       enlace: '/instituciones',
-      institucionId: data._id
+      institucionId: data._id,
+      excludeUserId: req.usuario?._id
     });
     res.status(201).json({ ok: true, data, message: 'Institucion creada correctamente' });
   } catch (error) {
