@@ -313,50 +313,52 @@ export default function Layout() {
             </Box>
           )}
 
-          <IconButton
-            className="!text-gray-500"
-            size="small"
-            onClick={(e) => setNotifEl(e.currentTarget)}
-          >
-            <Badge badgeContent={noLeidas} color="error" max={99}>
-              <Bell className="w-5 h-5" />
-            </Badge>
-          </IconButton>
-          <Menu
-            anchorEl={notifEl}
-            open={Boolean(notifEl)}
-            onClose={() => setNotifEl(null)}
-            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-            slotProps={{ paper: { sx: { width: 360, maxHeight: 480, overflow: 'hidden', display: 'flex', flexDirection: 'column' } } }}
-          >
-            <Box className="!px-4 !py-2 !border-b !border-gray-100 flex items-center justify-between">
-              <Typography className="!text-sm !font-semibold !text-gray-800">Notificaciones</Typography>
-              {noLeidas > 0 && (
-                <IconButton size="small" onClick={marcarTodasLeidas} title="Marcar todas como leídas">
-                  <CheckCheck className="!w-4 !h-4 !text-primary-600" />
-                </IconButton>
-              )}
-            </Box>
-            <Box sx={{ flex: 1, overflowY: 'auto' }}>
-              {notificaciones.length === 0 ? (
-                <Box className="!py-8 !text-center">
-                  <Typography className="!text-sm !text-gray-400">Sin notificaciones</Typography>
+          {['estudiante', 'acudiente', 'docente'].includes(usuario?.tipoPerfil) && (
+            <>
+              <IconButton
+                className="!text-gray-500"
+                size="small"
+                onClick={(e) => setNotifEl(e.currentTarget)}
+              >
+                <Badge badgeContent={noLeidas} color="error" max={99}>
+                  <Bell className="w-5 h-5" />
+                </Badge>
+              </IconButton>
+              <Menu
+                anchorEl={notifEl}
+                open={Boolean(notifEl)}
+                onClose={() => setNotifEl(null)}
+                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                slotProps={{ paper: { sx: { width: 360, maxHeight: 480, overflow: 'hidden', display: 'flex', flexDirection: 'column' } } }}
+              >
+                <Box className="!px-4 !py-2 !border-b !border-gray-100 flex items-center justify-between">
+                  <Typography className="!text-sm !font-semibold !text-gray-800">Notificaciones</Typography>
+                  {noLeidas > 0 && (
+                    <IconButton size="small" onClick={marcarTodasLeidas} title="Marcar todas como leídas">
+                      <CheckCheck className="!w-4 !h-4 !text-primary-600" />
+                    </IconButton>
+                  )}
                 </Box>
-              ) : (
-                notificaciones.map((n) => (
-                  <ListItem
-                    key={n._id}
-                    onClick={() => {
-                      marcarLeida(n._id)
-                      if (n.enlace) { navigate(n.enlace); setNotifEl(null) }
-                    }}
-                    sx={{
-                      cursor: 'pointer',
-                      bgcolor: n.leida ? 'transparent' : '#f0f7ff',
-                      '&:hover': { bgcolor: '#f3f4f6' },
-                      py: 1.5,
-                      borderBottom: '1px solid #f3f4f6'
+                <Box sx={{ flex: 1, overflowY: 'auto' }}>
+                  {notificaciones.length === 0 ? (
+                    <Box className="!py-8 !text-center">
+                      <Typography className="!text-sm !text-gray-400">Sin notificaciones</Typography>
+                    </Box>
+                  ) : (
+                    notificaciones.map((n) => (
+                      <ListItem
+                        key={n._id}
+                        onClick={() => {
+                          marcarLeida(n._id)
+                          if (n.enlace) { navigate(n.enlace); setNotifEl(null) }
+                        }}
+                        sx={{
+                          cursor: 'pointer',
+                          bgcolor: n.leida ? 'transparent' : '#f0f7ff',
+                          '&:hover': { bgcolor: '#f3f4f6' },
+                          py: 1.5,
+                          borderBottom: '1px solid #f3f4f6'
                     }}
                   >
                     <ListItemAvatar sx={{ minWidth: 40 }}>
@@ -382,6 +384,7 @@ export default function Layout() {
               )}
             </Box>
           </Menu>
+          </>
 
           {multiplosRoles && (
             <>

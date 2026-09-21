@@ -3,7 +3,6 @@ const { ROLES } = require('../config/constants');
 const crypto = require('crypto');
 const mailService = require('../services/mailService');
 const { paginarQuery } = require('../utils/paginacion');
-const { notificarSuperAdmins } = require('../utils/notificaciones');
 
 const CAMPOS_OCULTOS = '-credenciales.passwordHash -credenciales.tokenRecuperacion -credenciales.tokenRecuperacionExpira';
 
@@ -85,14 +84,6 @@ const create = async (req, res) => {
 
     const data = await Usuario.create(body);
     data.credenciales.passwordHash = undefined;
-    notificarSuperAdmins({
-      titulo: 'Nuevo usuario registrado',
-      mensaje: `${data.nombres} ${data.apellidos} (${data.tipoPerfil}) fue registrado en el sistema`,
-      tipo: 'sistema',
-      enlace: '/usuarios',
-      institucionId: data.institucionId,
-      excludeUserId: req.usuario?._id
-    });
     res.status(201).json({ ok: true, data, message: 'Usuario creado correctamente' });
   } catch (error) {
     if (error.code === 11000) {
