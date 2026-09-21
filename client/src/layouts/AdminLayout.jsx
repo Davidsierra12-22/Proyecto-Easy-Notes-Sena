@@ -1,19 +1,22 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import {
   AppBar, Toolbar, IconButton, Drawer, Box, List, ListItemButton,
   ListItemIcon, ListItemText, Typography, Menu, MenuItem, Avatar,
-  Select, OutlinedInput, InputAdornment, CircularProgress, Badge
+  Select, OutlinedInput, InputAdornment, CircularProgress, Badge,
+  ListItem, ListItemAvatar, Divider
 } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 import {
   LayoutDashboard, Users, GraduationCap, School, BookOpen, ClipboardList,
   CalendarDays, Calculator, FileText, MessageSquare, PawPrint, Stethoscope,
   CreditCard, Settings, LogOut, Bell, ChevronLeft, ChevronRight, Menu as MenuIcon, X,
-  Coins, RefreshCcw, Target, ClipboardCheck, Building, IdCard, FilePlus2, Trophy, ScrollText, User, Repeat, ChevronDown, Wallet
+  Coins, RefreshCcw, Target, ClipboardCheck, Building, IdCard, FilePlus2, Trophy, ScrollText, User, Repeat, ChevronDown, Wallet,
+  CheckCheck
 } from 'lucide-react'
 import { useAuth } from '../store/Auth'
 import { useSede } from '../store/General'
+import api from '../plugins/axios'
 
 const menuConfig = {
   super_admin: [
@@ -144,10 +147,45 @@ export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [roleMenuEl, setRoleMenuEl] = useState(null)
   const [userMenuEl, setUserMenuEl] = useState(null)
+  const [notifEl, setNotifEl] = useState(null)
+  const [notificaciones, setNotificaciones] = useState([])
+  const [noLeidas, setNoLeidas] = useState(0)
   const { usuario, logout, cambiarPerfil } = useAuth()
   const { sedes, sedeId, setSedeId, cambiandoSede } = useSede()
   const navigate = useNavigate()
   const theme = useTheme()
+
+  const cargarNotificaciones = useCallback(async () => {
+    try {
+      const res = await api.get('/notificaciones', { params: { limit: 15 } })
+      setNotificaciones(res.data.data || [])
+      setNoLeidas(res.data.noLeidas || 0)
+    } catch (_) { /* sin notificaciones */ }
+  }, [])
+
+  useEffect(() => {
+    if (usuario) {
+      cargarNotificaciones()
+      const interval = setInterval(cargarNotificaciones, 60000)
+      return () => clearInterval(interval)
+    }
+  }, [usuario, cargarNotificaciones])
+
+  const marcarLeida = async (id) => {
+    try {
+      await api.put(`/notificaciones/${id}/leer`)
+      setNotificaciones(prev => prev.map(n => n._id === id ? { ...n, leida: true } : n))
+      setNoLeidas(prev => Math.max(0, prev - 1))
+    } catch (_) {}
+  }
+
+  const marcarTodasLeidas = async () => {
+    try {
+      await api.put('/notificaciones/leer-todas')
+      setNotificaciones(prev => prev.map(n => ({ ...n, leida: true })))
+      setNoLeidas(0)
+    } catch (_) {}
+  }
 
   const cambiarSede = (id) => {
     setSedeId(id)
@@ -275,11 +313,75 @@ export default function Layout() {
             </Box>
           )}
 
-          <IconButton className="!text-gray-500" size="small">
-            <Badge variant="dot" color="error" overlap="circular">
+          <IconButton
+            className="!text-gray-500"
+            size="small"
+            onClick={(e) => setNotifEl(e.currentTarget)}
+          >
+            <Badge badgeContent={noLeidas} color="error" max={99}>
               <Bell className="w-5 h-5" />
             </Badge>
           </IconButton>
+          <Menu
+            anchorEl={notifEl}
+            open={Boolean(notifEl)}
+            onClose={() => setNotifEl(null)}
+            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+            slotProps={{ paper: { sx: { width: 360, maxHeight: 480, overflow: 'hidden', display: 'flex', flexDirection: 'column' } } }}
+          >
+            <Box className="!px-4 !py-2 !border-b !border-gray-100 flex items-center justify-between">
+              <Typography className="!text-sm !font-semibold !text-gray-800">Notificaciones</Typography>
+              {noLeidas > 0 && (
+                <IconButton size="small" onClick={marcarTodasLeidas} title="Marcar todas como leídas">
+                  <CheckCheck className="!w-4 !h-4 !text-primary-600" />
+                </IconButton>
+              )}
+            </Box>
+            <Box sx={{ flex: 1, overflowY: 'auto' }}>
+              {notificaciones.length === 0 ? (
+                <Box className="!py-8 !text-center">
+                  <Typography className="!text-sm !text-gray-400">Sin notificaciones</Typography>
+                </Box>
+              ) : (
+                notificaciones.map((n) => (
+                  <ListItem
+                    key={n._id}
+                    onClick={() => {
+                      marcarLeida(n._id)
+                      if (n.enlace) { navigate(n.enlace); setNotifEl(null) }
+                    }}
+                    sx={{
+                      cursor: 'pointer',
+                      bgcolor: n.leida ? 'transparent' : '#f0f7ff',
+                      '&:hover': { bgcolor: '#f3f4f6' },
+                      py: 1.5,
+                      borderBottom: '1px solid #f3f4f6'
+                    }}
+                  >
+                    <ListItemAvatar sx={{ minWidth: 40 }}>
+                      <Avatar sx={{
+                        width: 32, height: 32,
+                        bgcolor: n.tipo === 'alerta' ? '#ef4444' : n.tipo === 'calificacion' ? '#10b981' : n.tipo === 'pago' ? '#f59e0b' : '#6366f1'
+                      }}>
+                        <Bell className="!w-4 !h-4" />
+                      </Avatar>
+                    </ListItemAvatar>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography className="!text-xs !font-medium !text-gray-800 truncate">{n.titulo}</Typography>
+                      <Typography className="!text-xs !text-gray-500 truncate">{n.mensaje}</Typography>
+                      <Typography className="!text-[10px] !text-gray-400 mt-0.5">
+                        {new Date(n.createdAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      </Typography>
+                    </Box>
+                    {!n.leida && (
+                      <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#3b82f6', flexShrink: 0, ml: 1 }} />
+                    )}
+                  </ListItem>
+                ))
+              )}
+            </Box>
+          </Menu>
 
           {multiplosRoles && (
             <>

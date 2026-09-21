@@ -20,5 +20,6 @@ module.exports = {
   Elecciones: require('./Elecciones'),
   Prematricula: require('./Prematricula'),
   Comunicados: require('./Comunicados'),
-  SolicitudRegistro: require('./SolicitudRegistro')
+  SolicitudRegistro: require('./SolicitudRegistro'),
+  Notificacion: require('./Notificacion')
 };
