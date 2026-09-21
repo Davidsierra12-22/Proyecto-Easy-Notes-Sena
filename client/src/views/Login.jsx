@@ -112,11 +112,6 @@ export default function Login() {
         <p className="text-center text-gray-500 text-sm mt-4">
           © 2025 EasyNotes. Todos los derechos reservados.
         </p>
-        <p className="text-center mt-2">
-          <Link to="/prematricula" className="text-primary-600 hover:text-primary-700 text-sm underline underline-offset-2">
-            ¿Es estudiante nuevo? Realice su prematrícula online
-          </Link>
-        </p>
       </div>
     </div>
   )
