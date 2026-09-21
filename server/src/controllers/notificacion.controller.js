@@ -63,7 +63,7 @@ const crear = async (req, res) => {
   try {
     const notif = await Notificacion.create({
       institucionId: req.usuario.institucionId,
-      usuarioId: req.params.usuarioId,
+      usuarioId: req.body.usuarioId,
       titulo: req.body.titulo,
       mensaje: req.body.mensaje,
       tipo: req.body.tipo || 'sistema',
