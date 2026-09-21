@@ -1,4 +1,5 @@
 const DireccionNucleo = require('../models/DireccionNucleo');
+const { notificarSuperAdmins } = require('../utils/notificaciones');
 
 const getAll = async (req, res) => {
   try {
@@ -30,6 +31,12 @@ const getById = async (req, res) => {
 const create = async (req, res) => {
   try {
     const data = await DireccionNucleo.create(req.body);
+    notificarSuperAdmins({
+      titulo: 'Nuevo núcleo registrado',
+      mensaje: `Se creó el núcleo "${data.nombre}" en ${data.municipio || 'sin ubicación'}`,
+      tipo: 'sistema',
+      enlace: '/nucleos'
+    });
     res.status(201).json({ ok: true, data, message: 'Nucleo creado correctamente' });
   } catch (error) {
     res.status(400).json({ ok: false, message: 'Error al crear', error: error.message });

@@ -1,5 +1,6 @@
 const SolicitudRegistro = require('../models/SolicitudRegistro');
 const Institucion = require('../models/Institucion');
+const { notificarSuperAdmins } = require('../utils/notificaciones');
 
 const getAll = async (req, res) => {
   try {
@@ -32,6 +33,12 @@ const getById = async (req, res) => {
 const create = async (req, res) => {
   try {
     const data = await SolicitudRegistro.create(req.body);
+    notificarSuperAdmins({
+      titulo: 'Solicitud de registro pendiente',
+      mensaje: `${data.nombre} (NIT: ${data.nit}) solicitó registrar una institución`,
+      tipo: 'alerta',
+      enlace: '/instituciones'
+    });
     res.status(201).json({ ok: true, data, message: 'Solicitud creada correctamente' });
   } catch (error) {
     res.status(400).json({ ok: false, message: 'Error al crear', error: error.message });
@@ -90,6 +97,13 @@ const aprobar = async (req, res) => {
     solicitud.procesadoPor = req.usuario._id;
     solicitud.observaciones = req.body.observaciones || solicitud.observaciones;
     await solicitud.save();
+
+    notificarSuperAdmins({
+      titulo: 'Solicitud aprobada',
+      mensaje: `La solicitud de "${solicitud.nombre}" fue aprobada. Institución creada.`,
+      tipo: 'sistema',
+      enlace: '/instituciones'
+    });
 
     res.json({
       ok: true,

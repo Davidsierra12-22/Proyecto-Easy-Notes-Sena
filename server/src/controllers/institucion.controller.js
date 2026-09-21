@@ -1,6 +1,7 @@
 const Institucion = require('../models/Institucion');
 const Sede = require('../models/Sede');
 const { paginarQuery } = require('../utils/paginacion');
+const { notificarSuperAdmins } = require('../utils/notificaciones');
 
 const getAll = async (req, res) => {
   try {
@@ -75,6 +76,13 @@ const getById = async (req, res) => {
 const create = async (req, res) => {
   try {
     const data = await Institucion.create(req.body);
+    notificarSuperAdmins({
+      titulo: 'Nueva institución registrada',
+      mensaje: `Se creó el colegio "${data.nombre}" (NIT: ${data.nit})`,
+      tipo: 'sistema',
+      enlace: '/instituciones',
+      institucionId: data._id
+    });
     res.status(201).json({ ok: true, data, message: 'Institucion creada correctamente' });
   } catch (error) {
     if (error.code === 11000) {
