@@ -23,3 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Secretos: nunca versionar .env* (solo el .env.example)
+.env
+.env.*
+!.env.example

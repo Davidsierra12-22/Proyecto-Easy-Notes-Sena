@@ -1,5 +1,4 @@
 node_modules/
-.env
 dist/
 .DS_Store
 build/
@@ -7,3 +6,8 @@ server/uploads/
 SOLUCIONAR_GIT.txt
 SUBIR_YORMAN.txt
 docs/PLAN_FUTURO.md
+
+# Secretos: nunca versionar archivos .env (incluyen .env.production, .env.vercel)
+.env
+.env.*
+!.env.example
