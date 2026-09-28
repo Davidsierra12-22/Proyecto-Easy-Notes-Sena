@@ -31,7 +31,37 @@ const getById = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    const data = await SolicitudRegistro.create(req.body);
+    // Endpoint publico: solo se acepta lo que viene del formulario de
+    // solicitud. Aceptar el cuerpo tal cual permitia enviar estado
+    // 'aprobada' y un procesadoPor falso, es decir, autoaprobar la
+    // solicitud sin intervencion de la direccion de nucleo.
+    const {
+      nucleoId, nombre, nit, dane, municipio, direccion, telefono, email, contacto
+    } = req.body || {};
+
+    if (!nucleoId || !nombre || !nit || !contacto?.nombre || !contacto?.email) {
+      return res.status(400).json({
+        ok: false,
+        message: 'Nucleo, nombre, NIT y datos de contacto son obligatorios'
+      });
+    }
+
+    const data = await SolicitudRegistro.create({
+      nucleoId,
+      nombre,
+      nit,
+      dane: dane || undefined,
+      municipio: municipio || undefined,
+      direccion: direccion || undefined,
+      telefono: telefono || undefined,
+      contacto: {
+        nombre: contacto.nombre,
+        email: contacto.email,
+        telefono: contacto.telefono || undefined
+      },
+      // Toda solicitud entra pendiente y sin responsable de processing.
+      estado: 'pendiente'
+    });
     res.status(201).json({ ok: true, data, message: 'Solicitud creada correctamente' });
   } catch (error) {
     res.status(400).json({ ok: false, message: 'Error al crear', error: error.message });

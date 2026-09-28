@@ -8,6 +8,31 @@ const puedeGestionarFoto = (req) =>
   PERMISOS.DIRECCION.includes(req.usuario?.tipoPerfil) ||
   (req.usuario && req.params.id && req.usuario._id.toString() === req.params.id);
 
+/**
+ * Busca el usuario destino acotandolo a la institucion de quien hace la
+ * peticion. Sin este filtro, un admin de un colegio podria cambiar la foto
+ * o la firma de un usuario de otro colegio.
+ */
+const buscarUsuarioObjetivo = (req) => {
+  const filtro = { _id: req.params.id };
+  if (req.usuario?.institucionId) filtro.institucionId = req.usuario.institucionId;
+  return Usuario.findOne(filtro);
+};
+
+/**
+ * Resuelve la institucion objetivo. El id de la URL nunca gana sobre el
+ * actor: si un usuario con institucion pide el id de otra, la peticion se
+ * rechaza (no se escribe sobre su propia institucion por accidente).
+ * El super_admin no tiene institucion asignada y opera la del nucleo.
+ */
+const buscarInstitucionObjetivo = (req) => {
+  const propia = req.usuario?.institucionId;
+  const id = propia || req.params.id;
+  if (!id) return null;
+  if (propia && req.params.id && req.params.id.toString() !== propia.toString()) return null;
+  return Institucion.findById(id);
+};
+
 const archivoADataUri = (file) => {
   const mime = file.mimetype || 'image/jpeg';
   return `data:${mime};base64,${file.buffer.toString('base64')}`;
@@ -43,7 +68,7 @@ const subirFotoUsuario = async (req, res) => {
       return res.status(403).json({ ok: false, message: 'No tienes permisos para esta acción' });
     }
 
-    const usuario = await Usuario.findById(req.params.id);
+    const usuario = await buscarUsuarioObjetivo(req);
     if (!usuario) {
       return res.status(404).json({ ok: false, message: 'Usuario no encontrado' });
     }
@@ -64,7 +89,7 @@ const quitarFotoUsuario = async (req, res) => {
       return res.status(403).json({ ok: false, message: 'No tienes permisos para esta acción' });
     }
 
-    const usuario = await Usuario.findById(req.params.id);
+    const usuario = await buscarUsuarioObjetivo(req);
     if (!usuario) {
       return res.status(404).json({ ok: false, message: 'Usuario no encontrado' });
     }
@@ -84,12 +109,7 @@ const subirLogo = async (req, res) => {
       return res.status(400).json({ ok: false, message: 'No se envió ningún archivo' });
     }
 
-    const institucionId = req.params.id || req.usuario?.institucionId;
-    if (!institucionId) {
-      return res.status(400).json({ ok: false, message: 'institucionId requerido' });
-    }
-
-    const institucion = await Institucion.findById(institucionId);
+    const institucion = await buscarInstitucionObjetivo(req);
     if (!institucion) {
       return res.status(404).json({ ok: false, message: 'Institución no encontrada' });
     }
@@ -114,12 +134,7 @@ const subirFirmaRector = async (req, res) => {
       return res.status(400).json({ ok: false, message: 'No se envió ningún archivo' });
     }
 
-    const institucionId = req.params.id || req.usuario?.institucionId;
-    if (!institucionId) {
-      return res.status(400).json({ ok: false, message: 'institucionId requerido' });
-    }
-
-    const institucion = await Institucion.findById(institucionId);
+    const institucion = await buscarInstitucionObjetivo(req);
     if (!institucion) {
       return res.status(404).json({ ok: false, message: 'Institución no encontrada' });
     }
@@ -147,7 +162,7 @@ const subirFirmaUsuario = async (req, res) => {
       return res.status(403).json({ ok: false, message: 'No tienes permisos para esta acción' });
     }
 
-    const usuario = await Usuario.findById(req.params.id);
+    const usuario = await buscarUsuarioObjetivo(req);
     if (!usuario) {
       return res.status(404).json({ ok: false, message: 'Usuario no encontrado' });
     }
@@ -168,7 +183,7 @@ const quitarFirmaUsuario = async (req, res) => {
       return res.status(403).json({ ok: false, message: 'No tienes permisos para esta acción' });
     }
 
-    const usuario = await Usuario.findById(req.params.id);
+    const usuario = await buscarUsuarioObjetivo(req);
     if (!usuario) {
       return res.status(404).json({ ok: false, message: 'Usuario no encontrado' });
     }

@@ -91,7 +91,14 @@ const getByUsuario = async (req, res) => {
 
 const limpiar = async (req, res) => {
   try {
-    const meses = parseInt(req.query.meses, 10) || BITACORA.RETENCION_MESES;
+    // El valor se acota a un rango util. Sin este clamp, "meses=-1" movia la
+    // fecha de corte al futuro y deleteMany eliminaba el 100% de la bitacora
+    // de la institucion.
+    const solicitado = parseInt(req.query.meses, 10);
+    const meses = Number.isFinite(solicitado)
+      ? Math.min(Math.max(solicitado, 1), 120)
+      : BITACORA.RETENCION_MESES;
+
     const fechaLimite = new Date();
     fechaLimite.setMonth(fechaLimite.getMonth() - meses);
 

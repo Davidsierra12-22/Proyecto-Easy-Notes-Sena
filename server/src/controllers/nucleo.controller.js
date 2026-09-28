@@ -132,7 +132,7 @@ const getInstituciones = async (req, res) => {
 
 const crearInstitucion = async (req, res) => {
   try {
-    const { nombre, nit, dane, icfes, tipo, direccion, telefono, email, nucleoId } = req.body;
+    const { nombre, nit, dane, icfes, tipo, direccion, telefono, email } = req.body;
     if (!nombre || !nit) {
       return res.status(400).json({ ok: false, message: 'Nombre y NIT son obligatorios' });
     }
@@ -151,7 +151,10 @@ const crearInstitucion = async (req, res) => {
       direccion: direccion || undefined,
       telefono: telefono || undefined,
       email: email || undefined,
-      nucleoId: nucleoId || undefined,
+      // El nucleo lo hereda la direccion de nucleo que crea el colegio. Se
+      // ignora el nucleoId del cuerpo: aceptarlo permitiria colgar un colegio
+      // de otro nucleo y esquivar el aislamiento.
+      nucleoId: req.usuario?.nucleoId || undefined,
       estado: 'activo'
     });
 
@@ -163,7 +166,13 @@ const crearInstitucion = async (req, res) => {
 
 const crearAdminInicial = async (req, res) => {
   try {
-    const institucion = await Institucion.findById(req.params.id);
+    // El colegio tiene que pertenecer al núcleo del super_admin que llama.
+    // Sin este filtro, una dirección de núcleo podía crear administradores
+    // en colegios de otros núcleos.
+    const filtro = { _id: req.params.id };
+    if (req.usuario?.nucleoId) filtro.nucleoId = req.usuario.nucleoId;
+
+    const institucion = await Institucion.findOne(filtro);
     if (!institucion) return res.status(404).json({ ok: false, message: 'Colegio no encontrado' });
 
     const { tipoDocumento, documento, nombres, apellidos, email, telefono, usuario, password } = req.body;

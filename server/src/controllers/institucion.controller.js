@@ -70,9 +70,28 @@ const getAll = async (req, res) => {
   }
 };
 
+/**
+ * Resuelve que institucion puede ver el usuario en una ruta con :id.
+ * Devuelve null cuando el id solicitado no es el suyo: en ese caso el
+ * recurso no existe para el, y se responde 404.
+ *
+ * El super_admin no tiene institucion asignada y administra las de su
+ * nucleo, asi que para el cualquier id es valido.
+ */
+const institucionAccesible = (req) => {
+  const solicitada = req.params.id;
+  const propia = req.usuario?.institucionId;
+  if (!propia) return solicitada || null;
+  if (!solicitada) return propia;
+  return solicitada.toString() === propia.toString() ? solicitada : null;
+};
+
 const getById = async (req, res) => {
   try {
-    const data = await Institucion.findById(req.params.id)
+    const id = institucionAccesible(req);
+    if (!id) return res.status(404).json({ ok: false, message: 'No encontrado' });
+
+    const data = await Institucion.findById(id)
       .populate('nucleoId', 'nombre municipio departamento')
       .populate('rectorId', 'nombres apellidos documento')
       .populate('secretariaId', 'nombres apellidos documento');
@@ -117,7 +136,10 @@ const remove = async (req, res) => {
 
 const getConfiguracion = async (req, res) => {
   try {
-    const data = await Institucion.findById(req.params.id).select('configuracion nombre');
+    const id = institucionAccesible(req);
+    if (!id) return res.status(404).json({ ok: false, message: 'No encontrado' });
+
+    const data = await Institucion.findById(id).select('configuracion nombre');
     if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
     res.json({ ok: true, data: data.configuracion, message: 'Configuracion obtenida' });
   } catch (error) {

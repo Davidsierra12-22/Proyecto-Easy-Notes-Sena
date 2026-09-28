@@ -27,6 +27,10 @@ const reglas = {
   pagina: query('page').optional().isInt({ min: 1 }).withMessage('Pagina debe ser entero positivo'),
   busqueda: query('q').optional().isLength({ max: 50 }).withMessage('Busqueda maximo 50 caracteres'),
   nota: body('nota').optional().isFloat({ min: 0, max: 5 }).withMessage('Nota entre 0 y 5'),
+  // Rango de retencion de bitacora: sin esto, meses=-1 movia la fecha de
+  // corte al futuro y eliminaba el 100% del registro de auditoria.
+  mesesLimpieza: query('meses').optional().isInt({ min: 1, max: 120 }).withMessage('Meses entre 1 y 120'),
+  usuarioId: param('usuarioId').isMongoId().withMessage('Usuario invalido'),
   usuario: body('usuario').trim().notEmpty().withMessage('Usuario es requerido'),
   password: body('password').isLength({ min: 6 }).withMessage('Password minimo 6 caracteres')
 };

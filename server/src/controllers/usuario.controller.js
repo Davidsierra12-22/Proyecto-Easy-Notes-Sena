@@ -7,6 +7,30 @@ const { sanearFoto } = require('../utils/archivos');
 
 const CAMPOS_OCULTOS = '-credenciales.passwordHash -credenciales.tokenRecuperacion -credenciales.tokenRecuperacionExpira';
 
+// Perfiles que un admin/secundaria puede asignar. super_admin queda fuera a
+// proposito: concede acceso a todos los colegios del nucleo y solo debe
+// existir por intervencion de la direccion de nucleo.
+const PERFILES_ASIGNABLES = [
+  ROLES.ADMIN, ROLES.RECTOR, ROLES.COORDINADOR,
+  ROLES.DOCENTE, ROLES.ESTUDIANTE, ROLES.ACUDIENTE, ROLES.SECRETARIA
+];
+
+/**
+ * Impide la escalada de privilegios por mass assignment. Sin esto, cualquier
+ * admin podia enviar { tipoPerfil: 'super_admin' } y convertirse en el usuario
+ * con mas permisos de todo el sistema.
+ */
+const validarPerfiles = (body) => {
+  const solicitado = [body.tipoPerfil, ...(Array.isArray(body.roles) ? body.roles : [])]
+    .filter(Boolean);
+
+  const prohibidos = [...new Set(solicitado.filter(p => !PERFILES_ASIGNABLES.includes(p)))];
+  if (prohibidos.length > 0) {
+    return `No puedes asignar estos perfiles: ${prohibidos.join(', ')}`;
+  }
+  return null;
+};
+
 const getAll = async (req, res) => {
   try {
     const filter = {};
@@ -50,7 +74,10 @@ const getAll = async (req, res) => {
 
 const getById = async (req, res) => {
   try {
-    const data = await Usuario.findById(req.params.id).select(CAMPOS_OCULTOS);
+    const filtro = { _id: req.params.id };
+    if (req.usuario.institucionId) filtro.institucionId = req.usuario.institucionId;
+
+    const data = await Usuario.findOne(filtro).select(CAMPOS_OCULTOS);
     if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
     const resultado = { ...data.toObject(), foto: sanearFoto(data.foto) };
     res.json({ ok: true, data: resultado });
@@ -62,7 +89,16 @@ const getById = async (req, res) => {
 const create = async (req, res) => {
   try {
     const body = { ...req.body };
+
+    const errorPerfiles = validarPerfiles(body);
+    if (errorPerfiles) {
+      return res.status(403).json({ ok: false, message: errorPerfiles });
+    }
+
     if (req.usuario.institucionId) body.institucionId = req.usuario.institucionId;
+    // El usuario nunca decide en que colegio queda: se hereda del actor.
+    delete body.nucleoId;
+    delete body._id;
 
     if (!body.credenciales?.usuario) {
       body.credenciales = {
@@ -99,12 +135,27 @@ const create = async (req, res) => {
 
 const update = async (req, res) => {
   try {
-    const objetivo = await Usuario.findById(req.params.id);
+    const filtro = { _id: req.params.id };
+    if (req.usuario.institucionId) filtro.institucionId = req.usuario.institucionId;
+
+    const objetivo = await Usuario.findOne(filtro);
     if (!objetivo) return res.status(404).json({ ok: false, message: 'No encontrado' });
     if (objetivo.tipoPerfil === ROLES.SUPER_ADMIN && req.usuario.tipoPerfil !== ROLES.SUPER_ADMIN) {
       return res.status(403).json({ ok: false, message: 'No puedes gestionar un Super Admin' });
     }
     const body = { ...req.body };
+
+    const errorPerfiles = validarPerfiles({ tipoPerfil: body.tipoPerfil, roles: body.roles });
+    if (errorPerfiles) {
+      return res.status(403).json({ ok: false, message: errorPerfiles });
+    }
+
+    // Mover usuarios entre colegios no es una operacion de perfil: la
+    // institucion se hereda siempre del actor.
+    delete body.institucionId;
+    delete body.nucleoId;
+    delete body._id;
+
     if (objetivo._id.toString() === req.usuario._id.toString()) {
       const cambiaRol = body?.tipoPerfil && body.tipoPerfil !== objetivo.tipoPerfil;
       const cambiaEstado = body?.estado && body.estado !== objetivo.estado;
@@ -133,7 +184,12 @@ const update = async (req, res) => {
       return res.status(400).json({ ok: false, message: 'Un usuario puede tener máximo 2 perfiles' });
     }
 
-    const data = await Usuario.findByIdAndUpdate(req.params.id, body, { new: true, runValidators: true })
+    // findOneAndUpdate, no findByIdAndUpdate: este ultimo recibe un id, no un
+    // filtro, y en Mongoose 8 ignora en silencio las claves adicionales
+    // (si se le pasa { _id, institucionId }, escribe solo por _id y el scope
+    // de institucion se pierde). El filtro debe viajar en la escritura para
+    // que la proteccion no dependa unicamente de la guarda de arriba.
+    const data = await Usuario.findOneAndUpdate(filtro, body, { new: true, runValidators: true })
       .select(CAMPOS_OCULTOS);
     if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
     const resultado = { ...data.toObject(), foto: sanearFoto(data.foto) };
@@ -145,7 +201,10 @@ const update = async (req, res) => {
 
 const remove = async (req, res) => {
   try {
-    const objetivo = await Usuario.findById(req.params.id);
+    const filtro = { _id: req.params.id };
+    if (req.usuario.institucionId) filtro.institucionId = req.usuario.institucionId;
+
+    const objetivo = await Usuario.findOne(filtro);
     if (!objetivo) return res.status(404).json({ ok: false, message: 'No encontrado' });
     if (objetivo.tipoPerfil === ROLES.SUPER_ADMIN && req.usuario.tipoPerfil !== ROLES.SUPER_ADMIN) {
       return res.status(403).json({ ok: false, message: 'No puedes gestionar un Super Admin' });
@@ -153,7 +212,7 @@ const remove = async (req, res) => {
     if (objetivo._id.toString() === req.usuario._id.toString()) {
       return res.status(403).json({ ok: false, message: 'No puedes eliminar tu propio usuario' });
     }
-    const data = await Usuario.findByIdAndDelete(req.params.id);
+    const data = await Usuario.findOneAndDelete(filtro);
     if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
     res.json({ ok: true, message: 'Eliminado correctamente' });
   } catch (error) {
@@ -163,7 +222,10 @@ const remove = async (req, res) => {
 
 const misEstudiantes = async (req, res) => {
   try {
-    const data = await Usuario.findById(req.params.id).select('estudiantes');
+    const filtro = { _id: req.params.id };
+    if (req.usuario.institucionId) filtro.institucionId = req.usuario.institucionId;
+
+    const data = await Usuario.findOne(filtro).select('estudiantes');
     if (!data) return res.status(404).json({ ok: false, message: 'Usuario no encontrado' });
     res.json({ ok: true, data: data.estudiantes || [], message: 'Listado obtenido' });
   } catch (error) {
@@ -173,7 +235,10 @@ const misEstudiantes = async (req, res) => {
 
 const misAcudientes = async (req, res) => {
   try {
-    const data = await Usuario.findById(req.params.id).select('acudientes');
+    const filtro = { _id: req.params.id };
+    if (req.usuario.institucionId) filtro.institucionId = req.usuario.institucionId;
+
+    const data = await Usuario.findOne(filtro).select('acudientes');
     if (!data) return res.status(404).json({ ok: false, message: 'Usuario no encontrado' });
     res.json({ ok: true, data: data.acudientes || [], message: 'Listado obtenido' });
   } catch (error) {
@@ -204,7 +269,10 @@ const generarPasswordTemporal = (longitud = 8) => {
 
 const enviarCredenciales = async (req, res) => {
   try {
-    const objetivo = await Usuario.findById(req.params.id);
+    const filtro = { _id: req.params.id };
+    if (req.usuario.institucionId) filtro.institucionId = req.usuario.institucionId;
+
+    const objetivo = await Usuario.findOne(filtro);
     if (!objetivo) return res.status(404).json({ ok: false, message: 'Usuario no encontrado' });
     if (!objetivo.email) return res.status(400).json({ ok: false, message: 'El usuario no tiene email registrado' });
 
@@ -237,9 +305,17 @@ const enviarCredenciales = async (req, res) => {
       enviado = false;
     }
 
+    // La contraseña en claro solo se devuelve cuando el correo NO pudo
+    // enviarse: es el unico caso en que el administrador necesita leerla
+    // para entregarla a mano. Si el correo salio, no viaja en la respuesta.
     res.json({
       ok: true,
-      data: { usuario: objetivo.credenciales.usuario, password: String(password), email: objetivo.email, enviado },
+      data: {
+        usuario: objetivo.credenciales.usuario,
+        email: objetivo.email,
+        enviado,
+        ...(enviado ? {} : { password: String(password) })
+      },
       message: enviado
         ? 'Credenciales enviadas al correo del usuario'
         : 'No se pudo enviar el correo. Entrega las credenciales manualmente'
