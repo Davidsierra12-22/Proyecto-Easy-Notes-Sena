@@ -11,7 +11,10 @@ import {
 import api from '../services/api.service'
 import { useAuth } from '../store/Auth'
 import { useSede } from '../store/General'
+import { notificar } from '../store/notificacionStore'
 import PaginationBar from '../components/Tables/PaginationBar'
+import ConfirmDialog from '../components/ConfirmDialog'
+import PromptDialog from '../components/PromptDialog'
 
 const estadoBadge = (estado) => {
   const map = {
@@ -50,8 +53,29 @@ export default function Matriculas() {
   const [modalGrupo, setModalGrupo] = useState(false)
   const [formGrupo, setFormGrupo] = useState({})
   const [soloMatricula, setSoloMatricula] = useState(null)
+  const [fieldErrors, setFieldErrors] = useState({})
+  const [modalRetiro, setModalRetiro] = useState(false)
+  const [retiroMatricula, setRetiroMatricula] = useState(null)
+  const [retirando, setRetirando] = useState(false)
+  const [confirmPromover, setConfirmPromover] = useState(null)
+  const [promoviendo, setPromoviendo] = useState(false)
 
   const puedeGestionar = ['super_admin', 'admin', 'secretaria'].includes(usuario?.tipoPerfil)
+
+  const validateMatricula = () => {
+    const errs = {}
+    if (!form.anioAcademicoId) errs.anioAcademicoId = 'Este campo es obligatorio'
+    if (!form.estudianteId) errs.estudianteId = 'Este campo es obligatorio'
+    if (!form.grupoId) errs.grupoId = 'Este campo es obligatorio'
+    if (!form.fechaMatricula) errs.fechaMatricula = 'Este campo es obligatorio'
+    return errs
+  }
+
+  const validateGrupo = () => {
+    const errs = {}
+    if (!formGrupo.grupoId) errs.grupoId = 'Este campo es obligatorio'
+    return errs
+  }
 
   const visibles = datos
 
@@ -68,6 +92,9 @@ export default function Matriculas() {
 
   const aplicarCambio = async (e) => {
     e.preventDefault()
+    const errs = validateGrupo()
+    if (Object.keys(errs).length > 0) { setFieldErrors(errs); return }
+    setFieldErrors({})
     setSaving(true)
     setError('')
     try {
@@ -78,7 +105,7 @@ export default function Matriculas() {
         fechaCambio: formGrupo.fechaCambio || undefined,
         observaciones: formGrupo.observaciones || undefined
       })
-      alert(r.data.message)
+      notificar(r.data.message)
       setModalGrupo(false)
       setSeleccion([])
       setSoloMatricula(null)
@@ -130,6 +157,9 @@ export default function Matriculas() {
 
   const crear = async (e) => {
     e.preventDefault()
+    const errs = validateMatricula()
+    if (Object.keys(errs).length > 0) { setFieldErrors(errs); return }
+    setFieldErrors({})
     setSaving(true)
     setError('')
     try {
@@ -150,34 +180,35 @@ export default function Matriculas() {
     }
   }
 
-  const retirar = async (m) => {
-    const obs = window.prompt('Motivo de retiro:')
-    if (obs === null) return
+  const retirar = async (obs, m) => {
+    setRetirando(true)
     try {
       await api.put(`/matriculas/${m._id}/retirar`, { observaciones: obs })
       await cargarMatriculas()
+      setModalRetiro(false)
+      setRetiroMatricula(null)
+      notificar('Estudiante retirado', 'success')
     } catch (e) {
-      alert(e.response?.data?.message || 'Error al retirar')
+      notificar(e.response?.data?.message || 'Error al retirar', 'error')
+    } finally {
+      setRetirando(false)
     }
   }
 
-  const promover = async (m) => {
-    if (!window.confirm(`¿Promover a ${m.estudianteId?.nombres} ${m.estudianteId?.apellidos} al siguiente grado?`)) return
-    try {
-      await api.put(`/matriculas/${m._id}/promover`, { promovido: true })
-      await cargarMatriculas()
-    } catch (e) {
-      alert(e.response?.data?.message || e.response?.data?.data?.message || 'Error al promover')
-    }
-  }
+  const pedirPromover = (m) => setConfirmPromover({ m, tipo: 'promover' })
 
-  const nomPromover = async (m) => {
-    if (!window.confirm(`¿Marcar a ${m.estudianteId?.nombres} ${m.estudianteId?.apellidos} como NO promovido (repitente)?`)) return
+  const ejecutarPromocion = async (m, tipo) => {
+    setPromoviendo(true)
     try {
-      await api.put(`/matriculas/${m._id}/promover`, { promovido: false })
+      await api.put(`/matriculas/${m._id}/promover`, { promovido: tipo === 'promover' })
       await cargarMatriculas()
+      setConfirmPromover(null)
+      notificar(tipo === 'promover' ? 'Estudiante promovido al siguiente grado' : 'Estudiante marcado como repitente', 'success')
     } catch (e) {
-      alert(e.response?.data?.message || 'Error')
+      setConfirmPromover(null)
+      notificar(e.response?.data?.message || e.response?.data?.data?.message || 'Error al actualizar', 'error')
+    } finally {
+      setPromoviendo(false)
     }
   }
 
@@ -297,13 +328,13 @@ export default function Matriculas() {
                 </TableRow>
               ) : (
                 visibles.map(m => (
-                  <TableRow key={m._id} hover>
+                  <TableRow key={m._id} hover className={m.estado !== 'activa' ? 'bg-gray-50' : ''}>
                     <TableCell className="!py-3">
                       {m.estado === 'activa' && puedeGestionar && (
                         <Checkbox size="small" color="primary" checked={seleccion.includes(m._id)} onChange={() => toggleSelect(m._id)} />
                       )}
                     </TableCell>
-                    <TableCell className="!text-sm !font-medium !text-gray-900 !py-3">{estudianteLabel(m)}</TableCell>
+                    <TableCell className={`!text-sm !font-medium !py-3 ${m.estado !== 'activa' ? '!text-gray-400' : '!text-gray-900'}`}>{estudianteLabel(m)}</TableCell>
                     <TableCell className="!text-sm !text-gray-700 !py-3">{m.estudianteId?.documento || '—'}</TableCell>
                     <TableCell className="!text-sm !text-gray-700 !py-3">{sedeLabel(m)}</TableCell>
                     <TableCell className="!text-sm !text-gray-700 !py-3">{grupoLabel(m)}</TableCell>
@@ -318,17 +349,17 @@ export default function Matriculas() {
                             startIcon={<ArrowLeftRight className="w-4 h-4" />}>
                             Grupo
                           </Button>
-                          <Button onClick={() => promover(m)} title="Promover al siguiente grado"
+                          <Button onClick={() => pedirPromover(m)} title="Promover al siguiente grado"
                             className="!text-emerald-600 hover:!text-emerald-800 !normal-case text-sm font-medium mr-2" size="small"
                             startIcon={<TrendingUp className="w-4 h-4" />}>
                             Promover
                           </Button>
-                          <Button onClick={() => nomPromover(m)} title="Marcar como repitente"
+                          <Button onClick={() => setConfirmPromover({ m, tipo: 'repitente' })} title="Marcar como repitente"
                             className="!text-amber-600 hover:!text-amber-800 !normal-case text-sm font-medium mr-2" size="small"
                             startIcon={<TrendingDown className="w-4 h-4" />}>
                             Repite
                           </Button>
-                          <Button onClick={() => retirar(m)} title="Retirar estudiante"
+                          <Button onClick={() => { setRetiroMatricula(m); setRetiroObs(''); setModalRetiro(true) }} title="Retirar estudiante"
                             className="!text-red-600 hover:!text-red-800 !normal-case text-sm font-medium" size="small"
                             startIcon={<LogOut className="w-4 h-4" />}>
                             Retirar
@@ -372,24 +403,27 @@ export default function Matriculas() {
             <div className="space-y-4">
               <div>
                 <TextField select label="Año Académico" value={form.anioAcademicoId}
-                  onChange={(e) => setForm({ ...form, anioAcademicoId: e.target.value })} required fullWidth>
+                  onChange={(e) => { setForm({ ...form, anioAcademicoId: e.target.value }); if (fieldErrors.anioAcademicoId) setFieldErrors(prev => ({ ...prev, anioAcademicoId: '' })) }} fullWidth>
                   <MenuItem value="">Seleccionar año...</MenuItem>
                   {anios.map(a => <MenuItem key={a._id} value={a._id}>Año {a.anio} ({a.estado})</MenuItem>)}
                 </TextField>
+                {fieldErrors.anioAcademicoId && <p className="text-xs text-red-500 mt-1">{fieldErrors.anioAcademicoId}</p>}
               </div>
               <div>
                 <TextField select label="Estudiante" value={form.estudianteId}
-                  onChange={(e) => setForm({ ...form, estudianteId: e.target.value })} required fullWidth>
+                  onChange={(e) => { setForm({ ...form, estudianteId: e.target.value }); if (fieldErrors.estudianteId) setFieldErrors(prev => ({ ...prev, estudianteId: '' })) }} fullWidth>
                   <MenuItem value="">Seleccionar estudiante...</MenuItem>
                   {estudiantes.map(s => <MenuItem key={s._id} value={s._id}>{s.nombres} {s.apellidos} - {s.documento}</MenuItem>)}
                 </TextField>
+                {fieldErrors.estudianteId && <p className="text-xs text-red-500 mt-1">{fieldErrors.estudianteId}</p>}
               </div>
               <div>
                 <TextField select label="Grupo" value={form.grupoId}
-                  onChange={(e) => setForm({ ...form, grupoId: e.target.value })} required fullWidth>
+                  onChange={(e) => { setForm({ ...form, grupoId: e.target.value }); if (fieldErrors.grupoId) setFieldErrors(prev => ({ ...prev, grupoId: '' })) }} fullWidth>
                   <MenuItem value="">Seleccionar grupo...</MenuItem>
                   {grupos.map(g => <MenuItem key={g._id} value={g._id}>{g.nombre} (Grado {g.grado})</MenuItem>)}
                 </TextField>
+                {fieldErrors.grupoId && <p className="text-xs text-red-500 mt-1">{fieldErrors.grupoId}</p>}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -400,8 +434,9 @@ export default function Matriculas() {
                 </div>
                 <div>
                   <TextField type="date" label="Fecha" value={form.fechaMatricula ? form.fechaMatricula.slice(0, 10) : ''}
-                    onChange={(e) => setForm({ ...form, fechaMatricula: e.target.value })} required fullWidth
+                    onChange={(e) => { setForm({ ...form, fechaMatricula: e.target.value }); if (fieldErrors.fechaMatricula) setFieldErrors(prev => ({ ...prev, fechaMatricula: '' })) }} fullWidth
                     slotProps={{ inputLabel: { shrink: true } }} />
+                  {fieldErrors.fechaMatricula && <p className="text-xs text-red-500 mt-1">{fieldErrors.fechaMatricula}</p>}
                 </div>
               </div>
               <div>
@@ -437,10 +472,11 @@ export default function Matriculas() {
               </div>
               <div>
                 <TextField select label="Grupo destino" value={formGrupo.grupoId}
-                  onChange={(e) => setFormGrupo({ ...formGrupo, grupoId: e.target.value })} required fullWidth>
+                  onChange={(e) => { setFormGrupo({ ...formGrupo, grupoId: e.target.value }); if (fieldErrors.grupoId) setFieldErrors(prev => ({ ...prev, grupoId: '' })) }} fullWidth>
                   <MenuItem value="">Seleccionar grupo...</MenuItem>
                   {grupos.map(g => <MenuItem key={g._id} value={g._id}>{g.nombre} (Grado {g.grado})</MenuItem>)}
                 </TextField>
+                {fieldErrors.grupoId && <p className="text-xs text-red-500 mt-1">{fieldErrors.grupoId}</p>}
               </div>
               <div>
                 <TextField type="date" label="Fecha del cambio" value={formGrupo.fechaCambio}
@@ -463,6 +499,35 @@ export default function Matriculas() {
           </DialogActions>
         </form>
       </Dialog>
+
+      <PromptDialog
+        open={modalRetiro}
+        title="Retirar estudiante"
+        message={`¿Retirar a ${retiroMatricula?.estudianteId?.nombres || ''} ${retiroMatricula?.estudianteId?.apellidos || ''}?`}
+        label="Motivo de retiro"
+        confirmText="Retirar"
+        cancelText="Cancelar"
+        color="error"
+        required
+        loading={retirando}
+        placeholder="Motivo de retiro"
+        onCancel={() => { setModalRetiro(false); setRetiroMatricula(null) }}
+        onConfirm={(obs) => retirar(obs, retiroMatricula) }
+      />
+
+      <ConfirmDialog
+        open={!!confirmPromover}
+        title={confirmPromover?.tipo === 'promover' ? 'Promover estudiante' : 'Marcar como repitente'}
+        message={confirmPromover?.m
+          ? `¿${confirmPromover.tipo === 'promover' ? 'Promover al siguiente grado a' : 'Marcar como NO promovido (repitente) a'} ${confirmPromover.m.estudianteId?.nombres || ''} ${confirmPromover.m.estudianteId?.apellidos || ''}?`
+          : ''}
+        confirmText={confirmPromover?.tipo === 'promover' ? 'Promover' : 'Marcar como repitente'}
+        cancelText="Cancelar"
+        color="primary"
+        loading={promoviendo}
+        onCancel={() => setConfirmPromover(null)}
+        onConfirm={() => confirmPromover && ejecutarPromocion(confirmPromover.m, confirmPromover.tipo)}
+      />
     </div>
   )
 }

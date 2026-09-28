@@ -62,6 +62,12 @@ const useSedeStore = create((set, get) => ({
   refrescarSedes: () => get().cargarSedes()
 }))
 
+// Cargar sedes si el usuario ya está logueado (page reload)
+const usuarioInicial = useAuthStore.getState().usuario
+if (usuarioInicial && ['admin', 'rector', 'coordinador', 'secretaria'].includes(usuarioInicial.tipoPerfil)) {
+  useSedeStore.getState().cargarSedes()
+}
+
 useAuthStore.subscribe((state, prev) => {
   if (state.usuario !== prev.usuario) {
     useSedeStore.getState().cargarSedes()

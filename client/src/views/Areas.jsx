@@ -1,6 +1,9 @@
+import { useState } from 'react'
+import { Button } from '@mui/material'
+import { FileUp } from 'lucide-react'
 import CrudTable from '../components/Tables/CrudTable'
+import CargaMasivaDialog from '../components/CargaMasivaDialog'
 import { useAuth } from '../store/Auth'
-import { useSede } from '../store/General'
 
 const columnas = [
   {
@@ -23,30 +26,50 @@ const campos = [
 
 export default function Areas() {
   const { usuario } = useAuth()
-  const { sedes, sedeId } = useSede()
   const puedeGestionar = ['super_admin', 'admin', 'secretaria'].includes(usuario?.tipoPerfil)
   const puedeControl = ['super_admin', 'admin'].includes(usuario?.tipoPerfil)
+  const esSuperAdmin = usuario?.tipoPerfil === 'super_admin'
+  const [cargaMasivaAbierta, setCargaMasivaAbierta] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
 
-  const cols = [
-    ...columnas,
-    {
-      key: 'sedeId', label: 'Sede',
-      render: (a) => {
-        const s = sedes.find(x => x._id === a.sedeId)
-        return s ? s.nombre : '—'
-      }
-    }
-  ]
+  const validar = (form) => {
+    const e = {}
+    if (!form.nombre?.trim()) e.nombre = 'El nombre del área es obligatorio'
+    return e
+  }
 
   return (
-    <CrudTable
-      titulo="Áreas Académicas"
-      baseURL="/areas"
-      columnas={cols}
-      campos={campos}
-      parametrosForzados={sedeId ? { sedeId } : {}}
-      puedeGestionar={puedeGestionar}
-      puedeDesactivar={puedeControl}
-    />
+    <>
+      <CrudTable
+        titulo="Áreas Académicas"
+        baseURL="/areas"
+        columnas={columnas}
+        campos={campos}
+        validate={validar}
+        puedeGestionar={puedeGestionar}
+        puedeDesactivar={puedeControl}
+        refreshKey={refreshKey}
+        extraBotones={puedeGestionar && !esSuperAdmin && (
+          <Button
+            onClick={() => setCargaMasivaAbierta(true)}
+            variant="outlined"
+            color="primary"
+            className="!normal-case !text-primary-700 !border-primary-300 hover:!bg-primary-50"
+            startIcon={<FileUp className="w-4 h-4" />}
+          >
+            Carga masiva
+          </Button>
+        )}
+      />
+
+      <CargaMasivaDialog
+        open={cargaMasivaAbierta}
+        onClose={() => setCargaMasivaAbierta(false)}
+        titulo="Carga masiva de áreas"
+        entidad="areas"
+        endpoint="/carga-masiva/areas"
+        onCompletado={() => setRefreshKey(k => k + 1)}
+      />
+    </>
   )
 }

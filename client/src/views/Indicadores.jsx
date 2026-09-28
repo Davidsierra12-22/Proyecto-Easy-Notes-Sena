@@ -7,6 +7,7 @@ import {
 } from '@mui/material'
 import api from '../services/api.service'
 import { useAuth } from '../store/Auth'
+import { notificar } from '../store/notificacionStore'
 
 export default function Indicadores() {
   const { usuario } = useAuth()
@@ -23,6 +24,7 @@ export default function Indicadores() {
   const [editing, setEditing] = useState(null)
   const [saving, setSaving] = useState(false)
   const [numeroPeriodos, setNumeroPeriodos] = useState(5)
+  const [fieldErrors, setFieldErrors] = useState({})
 
   const cargarDependencias = async () => {
     try {
@@ -64,6 +66,7 @@ export default function Indicadores() {
   const abrirCrear = () => {
     setForm({ anioAcademicoId: filtros.anioAcademicoId, asignaturaId: filtros.asignaturaId, periodo: Number(filtros.periodo), peso: 0, orden: 0 })
     setEditing(null)
+    setFieldErrors({})
     setModal(true)
     setError('')
   }
@@ -79,12 +82,19 @@ export default function Indicadores() {
       orden: item.orden || 0
     })
     setEditing(item)
+    setFieldErrors({})
     setModal(true)
     setError('')
   }
 
   const guardar = async (e) => {
     e.preventDefault()
+    const errors = validate()
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
+      return
+    }
+    setFieldErrors({})
     setSaving(true)
     setError('')
     try {
@@ -107,8 +117,14 @@ export default function Indicadores() {
       await api.put(`/indicadores/${item._id}`, { estado: item.estado === 'activo' ? 'inactivo' : 'activo' })
       await cargar()
     } catch (e) {
-      alert(e.response?.data?.message || 'Error al cambiar estado')
+      notificar(e.response?.data?.message || 'Error al cambiar estado', 'error')
     }
+  }
+
+  const validate = () => {
+    const errors = {}
+    if (!form.descripcion?.trim()) errors.descripcion = 'La descripción es obligatoria'
+    return errors
   }
 
   const nombreAsig = (id) => asignaturas.find(a => a._id === id)?.nombre || '—'
@@ -196,8 +212,8 @@ export default function Indicadores() {
                   </TableRow>
                 ) : (
                   indicadores.map(i => (
-                    <TableRow key={i._id} hover>
-                      <TableCell className="!text-sm !font-medium !text-gray-900">
+                    <TableRow key={i._id} hover className={i.estado !== 'activo' ? 'bg-gray-50' : ''}>
+                      <TableCell className={`!text-sm !font-medium ${i.estado !== 'activo' ? '!text-gray-400' : '!text-gray-900'}`}>
                         {i.codigo || '—'}
                         <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${i.estado === 'activo' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>{i.estado}</span>
                       </TableCell>
@@ -237,8 +253,11 @@ export default function Indicadores() {
         <form onSubmit={guardar}>
           <DialogContent className="!pt-2">
             <div className="space-y-4">
-              <TextField value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} required
-                label="Descripción" placeholder="Ej: Resuelve problemas con números enteros" multiline minRows={3} fullWidth size="small" />
+              <TextField value={form.descripcion} onChange={(e) => {
+                if (fieldErrors.descripcion) setFieldErrors(prev => ({ ...prev, descripcion: '' }))
+                setForm({ ...form, descripcion: e.target.value })
+              }}
+                label="Descripción" placeholder="Ej: Resuelve problemas con números enteros" multiline minRows={3} fullWidth size="small" error={!!fieldErrors.descripcion} helperText={fieldErrors.descripcion && <span className="text-xs text-red-500">{fieldErrors.descripcion}</span>} />
               <TextField type="text" value={form.codigo} onChange={(e) => setForm({ ...form, codigo: e.target.value })}
                 label="Código" placeholder="Ej: MT-1-01" fullWidth size="small" />
               <div className="grid grid-cols-2 gap-4">

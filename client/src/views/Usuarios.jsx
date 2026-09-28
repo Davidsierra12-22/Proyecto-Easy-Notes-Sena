@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
 import CrudTable from '../components/Tables/CrudTable'
+import CargaMasivaDialog from '../components/CargaMasivaDialog'
 import { useAuth } from '../store/Auth'
 import { useSede } from '../store/General'
 import api from '../services/api.service'
-import { KeyRound, X, ImagePlus, Trash2, Mail, Loader2 } from 'lucide-react'
+import { KeyRound, X, ImagePlus, Trash2, Mail, Loader2, FileUp } from 'lucide-react'
 import { Button, IconButton, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Alert } from '@mui/material'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 const ROLES = [
   { value: 'admin', label: 'Administrador' },
@@ -67,7 +69,7 @@ const columnas = [
     key: 'estado', label: 'Estado',
     render: (u) => (
       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-        u.estado === 'activo' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+        u.estado === 'activo' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
       }`}>
         {u.estado}
       </span>
@@ -185,6 +187,8 @@ export default function Usuarios() {
   const esSuperAdmin = rolActual === 'super_admin'
 
   const [instituciones, setInstituciones] = useState([])
+  const [cargaMasivaAbierta, setCargaMasivaAbierta] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
     api.get('/instituciones').then(r => {
@@ -216,6 +220,7 @@ export default function Usuarios() {
   const [fotoPreview, setFotoPreview] = useState(null)
   const [fotoSubiendo, setFotoSubiendo] = useState(false)
   const [fotoError, setFotoError] = useState('')
+  const [confirmarQuitarFoto, setConfirmarQuitarFoto] = useState(false)
 
   const abrirFoto = (u) => {
     setFotoUser(u)
@@ -256,14 +261,15 @@ export default function Usuarios() {
   }
 
   const quitarFoto = async () => {
-    if (!window.confirm(`¿Quitar la foto de ${fotoUser.nombres} ${fotoUser.apellidos}?`)) return
     setFotoSubiendo(true)
     setFotoError('')
     try {
       await api.delete(`/usuarios/${fotoUser._id}/foto`)
+      setConfirmarQuitarFoto(false)
       setFotoUser(null)
       setFotoPreview(null)
     } catch (e) {
+      setConfirmarQuitarFoto(false)
       setFotoError(e.response?.data?.message || 'Error al quitar la foto')
     } finally {
       setFotoSubiendo(false)
@@ -365,6 +371,18 @@ export default function Usuarios() {
         puedeDesactivar={['super_admin', 'admin'].includes(rolActual)}
         transformDatos={marcarProtegidos}
         validate={validarUsuario}
+        refreshKey={refreshKey}
+        extraBotones={puedeGestionar && !esSuperAdmin && (
+          <Button
+            onClick={() => setCargaMasivaAbierta(true)}
+            variant="outlined"
+            color="primary"
+            className="!normal-case !text-primary-700 !border-primary-300 hover:!bg-primary-50"
+            startIcon={<FileUp className="w-4 h-4" />}
+          >
+            Carga masiva
+          </Button>
+        )}
         onAfterSave={(creado) => {
           if (creado) {
             setEnvioMsg(null)
@@ -446,7 +464,7 @@ export default function Usuarios() {
               </Button>
               {fotoUser?.foto && (
                 <Button
-                  onClick={quitarFoto}
+                  onClick={() => setConfirmarQuitarFoto(true)}
                   disabled={fotoSubiendo}
                   variant="text"
                   color="error"
@@ -587,6 +605,27 @@ export default function Usuarios() {
           </>
         )}
       </Dialog>
+
+      <CargaMasivaDialog
+        open={cargaMasivaAbierta}
+        onClose={() => setCargaMasivaAbierta(false)}
+        titulo="Carga masiva de usuarios"
+        entidad="usuarios"
+        endpoint="/carga-masiva/usuarios"
+        onCompletado={() => setRefreshKey(k => k + 1)}
+      />
+
+      <ConfirmDialog
+        open={confirmarQuitarFoto}
+        title="Quitar foto de perfil"
+        message={`¿Quitar la foto de ${fotoUser?.nombres || ''} ${fotoUser?.apellidos || ''}?`}
+        confirmText="Quitar"
+        cancelText="Cancelar"
+        color="error"
+        loading={fotoSubiendo}
+        onCancel={() => setConfirmarQuitarFoto(false)}
+        onConfirm={quitarFoto}
+      />
     </>
   )
 }

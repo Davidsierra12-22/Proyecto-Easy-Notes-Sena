@@ -26,6 +26,8 @@ const Actividades = lazy(() => import('../views/Actividades'))
 const MisClases = lazy(() => import('../views/MisClases'))
 const MisNotas = lazy(() => import('../views/MisNotas'))
 const Horario = lazy(() => import('../views/Horario'))
+const Observador = lazy(() => import('../views/Observador'))
+const MisHijos = lazy(() => import('../views/MisHijos'))
 const MisExcusas = lazy(() => import('../views/MisExcusas'))
 const Sedes = lazy(() => import('../views/Sedes'))
 const Carnets = lazy(() => import('../views/Carnets'))
@@ -33,6 +35,7 @@ const Prematriculas = lazy(() => import('../views/Prematriculas'))
 const PrematriculaOnline = lazy(() => import('../views/PrematriculaOnline'))
 const Promocion = lazy(() => import('../views/Promocion'))
 const Certificados = lazy(() => import('../views/Certificados'))
+const Informacion = lazy(() => import('../views/Informacion'))
 const Configuracion = lazy(() => import('../views/Configuracion'))
 const Perfil = lazy(() => import('../views/Perfil'))
 const RecuperarPassword = lazy(() => import('../views/RecuperarPassword'))
@@ -46,6 +49,14 @@ export function RutaProtegida({ children }) {
   const { token, debeCambiarPassword } = useAuth()
   if (!token) return <Navigate to="/login" replace />
   if (debeCambiarPassword) return <Navigate to="/cambiar-password" replace />
+  return children
+}
+
+export function RutaPagosProtegida({ children }) {
+  const { usuario } = useAuth()
+  if (usuario?.institucion?.tipo === 'publico') {
+    return <Navigate to="/" replace />
+  }
   return children
 }
 
@@ -82,9 +93,9 @@ export default function Rutas() {
         <Route path="matriculas" element={<Matriculas />} />
         <Route path="calificaciones" element={<Calificaciones />} />
         <Route path="boletines" element={<Boletines />} />
-        <Route path="conceptos-contables" element={<ConceptosContables />} />
-        <Route path="pagos" element={<Pagos />} />
-        <Route path="cartera" element={<Cartera />} />
+        <Route path="conceptos-contables" element={<RutaPagosProtegida><ConceptosContables /></RutaPagosProtegida>} />
+        <Route path="pagos" element={<RutaPagosProtegida><Pagos /></RutaPagosProtegida>} />
+        <Route path="cartera" element={<RutaPagosProtegida><Cartera /></RutaPagosProtegida>} />
         <Route path="bitacora" element={<Bitacora />} />
         <Route path="comunicados" element={<Comunicados />} />
         <Route path="recuperaciones" element={<Recuperaciones />} />
@@ -94,11 +105,14 @@ export default function Rutas() {
         <Route path="mis-notas" element={<MisNotas />} />
         <Route path="horario" element={<Horario />} />
         <Route path="mis-excusas" element={<MisExcusas />} />
+        <Route path="observador" element={<Observador />} />
+        <Route path="mis-hijos" element={<MisHijos />} />
         <Route path="sedes" element={<Sedes />} />
         <Route path="carnets" element={<Carnets />} />
         <Route path="prematriculas" element={<Prematriculas />} />
         <Route path="promocion" element={<Promocion />} />
         <Route path="certificados" element={<Certificados />} />
+        <Route path="informacion" element={<Informacion />} />
         <Route path="configuracion" element={<Configuracion />} />
         <Route path="perfil" element={<Perfil />} />
         <Route path="*" element={<Dashboard />} />

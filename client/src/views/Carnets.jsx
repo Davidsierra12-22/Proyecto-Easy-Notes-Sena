@@ -232,7 +232,7 @@ export default function Carnets() {
                 size="small" fullWidth displayEmpty className="text-sm">
                 <MenuItem value="">Todos los grados</MenuItem>
                 {grados.map(g => (
-                  <MenuItem key={g} value={g}>{nombreGrado(g) ? `${nombreGrado(g)} · Grado ${g}` : `Grado ${g}`}</MenuItem>
+                  <MenuItem key={g} value={g}>{nombreGrado(g) || `Grado ${g}`}</MenuItem>
                 ))}
               </Select>
             </div>

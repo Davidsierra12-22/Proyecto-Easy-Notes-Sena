@@ -15,7 +15,7 @@ const columnas = [
   {
     key: 'estado', label: 'Estado',
     render: (c) => (
-      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${c.estado === 'activo' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${c.estado === 'activo' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>
         {c.estado}
       </span>
     )
@@ -48,12 +48,20 @@ export default function ConceptosContables() {
   const { usuario } = useAuth()
   const puedeGestionar = ['super_admin', 'admin', 'secretaria'].includes(usuario?.tipoPerfil)
 
+  const validar = (form) => {
+    const e = {}
+    if (!form.nombre?.trim()) e.nombre = 'El nombre del concepto es obligatorio'
+    if (!form.tipo) e.tipo = 'Debe seleccionar un tipo'
+    return e
+  }
+
   return (
     <CrudTable
       titulo="Conceptos Contables"
       baseURL="/conceptos-contables"
       columnas={columnas}
       campos={campos}
+      validate={validar}
       puedeGestionar={puedeGestionar}
       puedeDesactivar={['super_admin', 'admin'].includes(usuario?.tipoPerfil)}
     />

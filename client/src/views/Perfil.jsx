@@ -15,12 +15,18 @@ const ROL_LABEL = {
   secretaria: 'Secretaría'
 }
 
+const USUARIOS_CON_FIRMA = ['rector', 'secretaria']
+
 export default function Perfil() {
   const { usuario, actualizarUsuario } = useAuth()
   const fileRef = useRef(null)
+  const firmaRef = useRef(null)
   const [preview, setPreview] = useState(null)
+  const [firmaPreview, setFirmaPreview] = useState(null)
   const [subiendo, setSubiendo] = useState(false)
+  const [subiendoFirma, setSubiendoFirma] = useState(false)
   const [confirmando, setConfirmando] = useState(false)
+  const [confirmandoFirma, setConfirmandoFirma] = useState(false)
   const [error, setError] = useState('')
   const [exito, setExito] = useState('')
 
@@ -73,6 +79,58 @@ export default function Perfil() {
       setError(e.response?.data?.message || 'Error al quitar la foto')
     } finally {
       setSubiendo(false)
+    }
+  }
+
+  const seleccionarFirma = (e) => {
+    setError('')
+    setExito('')
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 2 * 1024 * 1024) {
+      setFirmaPreview(null)
+      setError('La imagen supera el tamaño máximo permitido (2MB)')
+      if (firmaRef.current) firmaRef.current.value = ''
+      return
+    }
+    setFirmaPreview(URL.createObjectURL(file))
+  }
+
+  const subirFirma = async () => {
+    const file = firmaRef.current?.files?.[0]
+    if (!file) return
+    setSubiendoFirma(true)
+    setError('')
+    setExito('')
+    try {
+      const form = new FormData()
+      form.append('archivo', file)
+      const res = await api.post(`/usuarios/${usuario.id}/firma`, form, {
+        headers: { 'Content-Type': undefined }
+      })
+      actualizarUsuario({ firma: res.data.data.firma })
+      setFirmaPreview(null)
+      if (firmaRef.current) firmaRef.current.value = ''
+      setExito('Firma actualizada correctamente')
+    } catch (e) {
+      setError(e.response?.data?.message || 'Error al subir la firma')
+    } finally {
+      setSubiendoFirma(false)
+    }
+  }
+
+  const quitarFirma = async () => {
+    setSubiendoFirma(true)
+    setError('')
+    setExito('')
+    try {
+      await api.delete(`/usuarios/${usuario.id}/firma`)
+      actualizarUsuario({ firma: null })
+      setExito('Firma eliminada correctamente')
+    } catch (e) {
+      setError(e.response?.data?.message || 'Error al quitar la firma')
+    } finally {
+      setSubiendoFirma(false)
     }
   }
 
@@ -194,6 +252,107 @@ export default function Perfil() {
           </div>
         </div>
       </div>
+
+      {USUARIOS_CON_FIRMA.includes(usuario?.tipoPerfil) && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-1">Firma en documentos</h2>
+          <p className="text-sm text-gray-500 mb-4">
+            Esta firma se mostrará automáticamente en los certificados y boletines. Sube tu firma con fondo transparente si es posible.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <div className="w-56 h-24 rounded-lg border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center overflow-hidden">
+              {firmaPreview || usuario?.firma ? (
+                <img
+                  src={firmaPreview || usuario.firma}
+                  alt="Firma"
+                  className="max-h-full max-w-full object-contain p-2"
+                />
+              ) : (
+                <span className="text-sm text-gray-400">Sin firma</span>
+              )}
+            </div>
+
+            <div className="flex-1 w-full">
+              <div className="flex flex-wrap gap-2">
+                <input
+                  ref={firmaRef}
+                  type="file"
+                  accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                  onChange={seleccionarFirma}
+                  className="hidden"
+                />
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => firmaRef.current?.click()}
+                  startIcon={<Camera className="w-4 h-4" />}
+                >
+                  {usuario?.firma ? 'Cambiar firma' : 'Subir firma'}
+                </Button>
+                {firmaPreview ? (
+                  <>
+                    <Button
+                      variant="contained"
+                      color="success"
+                      onClick={subirFirma}
+                      disabled={subiendoFirma}
+                      startIcon={subiendoFirma ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+                    >
+                      Guardar
+                    </Button>
+                    <Button
+                      variant="contained"
+                      onClick={() => { setFirmaPreview(null); if (firmaRef.current) firmaRef.current.value = '' }}
+                      className="!bg-gray-100 !text-gray-700 hover:!bg-gray-200"
+                      startIcon={<X className="w-4 h-4" />}
+                    >
+                      Cancelar
+                    </Button>
+                  </>
+                ) : (
+                  usuario?.firma && (
+                    confirmandoFirma ? (
+                      <>
+                        <Button
+                          variant="contained"
+                          color="error"
+                          onClick={quitarFirma}
+                          disabled={subiendoFirma}
+                          startIcon={subiendoFirma ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                        >
+                          Confirmar
+                        </Button>
+                        <Button
+                          variant="contained"
+                          onClick={() => setConfirmandoFirma(false)}
+                          disabled={subiendoFirma}
+                          className="!bg-gray-100 !text-gray-700 hover:!bg-gray-200"
+                          startIcon={<X className="w-4 h-4" />}
+                        >
+                          Cancelar
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        variant="contained"
+                        color="error"
+                        onClick={() => setConfirmandoFirma(true)}
+                        disabled={subiendoFirma}
+                        className="!bg-red-50 !text-red-600 hover:!bg-red-100"
+                        startIcon={<Trash2 className="w-4 h-4" />}
+                      >
+                        Quitar firma
+                      </Button>
+                    )
+                  )
+                )}
+              </div>
+              <p className="text-xs text-gray-400 mt-3">Formatos: JPG o PNG con transparencia · Máximo 2MB.</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Datos de contacto</h2>

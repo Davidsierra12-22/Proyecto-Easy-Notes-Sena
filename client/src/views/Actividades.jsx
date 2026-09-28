@@ -7,6 +7,8 @@ import {
 } from '@mui/material'
 import api from '../services/api.service'
 import { useAuth } from '../store/Auth'
+import { notificar } from '../store/notificacionStore'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 const TIPOS = [
   { value: 'tarea', label: 'Tarea' },
@@ -46,7 +48,10 @@ export default function Actividades() {
   const [form, setForm] = useState({ tipo: 'tarea', porcentaje: 0 })
   const [editing, setEditing] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState({})
   const [numeroPeriodos, setNumeroPeriodos] = useState(5)
+  const [confirmandoCerrar, setConfirmandoCerrar] = useState(null)
+  const [cerrarLoading, setCerrarLoading] = useState(false)
 
   const cargarDependencias = async () => {
     try {
@@ -123,8 +128,18 @@ export default function Actividades() {
     setError('')
   }
 
+  const validate = () => {
+    const errors = {}
+    if (!form.titulo) errors.titulo = 'El título es obligatorio'
+    if (!form.indicadorId) errors.indicadorId = 'El indicador es obligatorio'
+    return errors
+  }
+
   const guardar = async (e) => {
     e.preventDefault()
+    const errors = validate()
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return }
+    setFieldErrors({})
     setSaving(true)
     setError('')
     try {
@@ -154,17 +169,21 @@ export default function Actividades() {
       await api.put(`/actividades/${item._id}`, { estado: item.estado === 'activo' ? 'inactivo' : 'activo' })
       await cargar()
     } catch (err) {
-      alert(err.response?.data?.message || 'Error al cambiar estado')
+      notificar(err.response?.data?.message || 'Error al cambiar estado', 'error')
     }
   }
 
   const cerrar = async (item) => {
-    if (!window.confirm('¿Cerrar esta actividad? Ya no se podrá calificar.')) return
+    setCerrarLoading(true)
     try {
       await api.put(`/actividades/${item._id}`, { estado: 'cerrado' })
       await cargar()
+      setConfirmandoCerrar(null)
     } catch (e) {
-      alert(e.response?.data?.message || 'Error')
+      setConfirmandoCerrar(null)
+      setError(e.response?.data?.message || 'Error')
+    } finally {
+      setCerrarLoading(false)
     }
   }
 
@@ -256,8 +275,8 @@ export default function Actividades() {
                   </TableRow>
                 ) : (
                   actividades.map(a => (
-                    <TableRow key={a._id} hover>
-                      <TableCell className="!text-sm !font-medium !text-gray-900 !py-3">{a.titulo}</TableCell>
+                    <TableRow key={a._id} hover className={a.estado !== 'activo' ? 'bg-gray-50' : ''}>
+                      <TableCell className={`!text-sm !font-medium !py-3 ${a.estado !== 'activo' ? '!text-gray-400' : '!text-gray-900'}`}>{a.titulo}</TableCell>
                       <TableCell className="!py-3">{tipoBadge(a.tipo)}</TableCell>
                       <TableCell className="!text-sm !text-gray-700 !py-3">
                         {a.indicadorId ? (a.indicadorId.codigo ? `${a.indicadorId.codigo} - ` : '') + (a.indicadorId.descripcion || '') : '—'}
@@ -271,7 +290,7 @@ export default function Actividades() {
                         {puedeGestionar && a.estado === 'activo' && (
                           <>
                             <Button size="small" color="primary" onClick={() => abrirEditar(a)} className="!normal-case !text-sm !font-medium mr-3" startIcon={<Pencil className="w-4 h-4" />}>Editar</Button>
-                            <Button size="small" color="warning" onClick={() => cerrar(a)} className="!normal-case !text-sm !font-medium mr-3" startIcon={<CheckCircle2 className="w-4 h-4" />}>Cerrar</Button>
+                            <Button size="small" color="warning" onClick={() => setConfirmandoCerrar(a)} className="!normal-case !text-sm !font-medium mr-3" startIcon={<CheckCircle2 className="w-4 h-4" />}>Cerrar</Button>
                             <Button size="small" color="warning" onClick={() => cambiarEstado(a)} className="!normal-case !text-sm !font-medium" startIcon={<Power className="w-4 h-4" />}>Desactivar</Button>
                           </>
                         )}
@@ -301,17 +320,19 @@ export default function Actividades() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Título <span className="text-red-500">*</span></label>
-                <TextField value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} required
-                  placeholder="Ej: Taller de fracciones" fullWidth size="small" />
+                <TextField value={form.titulo} onChange={(e) => { setForm({ ...form, titulo: e.target.value }); if (fieldErrors.titulo) setFieldErrors(prev => ({ ...prev, titulo: '' })) }}
+                  placeholder="Ej: Taller de fracciones" fullWidth size="small" error={!!fieldErrors.titulo} />
+              {fieldErrors.titulo && <p className="text-xs text-red-500 mt-1">{fieldErrors.titulo}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Indicador <span className="text-red-500">*</span></label>
                 <FormControl fullWidth size="small">
-                  <Select value={form.indicadorId || ''} onChange={(e) => setForm({ ...form, indicadorId: e.target.value })} required displayEmpty>
+                  <Select value={form.indicadorId || ''} onChange={(e) => { setForm({ ...form, indicadorId: e.target.value }); if (fieldErrors.indicadorId) setFieldErrors(prev => ({ ...prev, indicadorId: '' })) }} displayEmpty error={!!fieldErrors.indicadorId}>
                     <MenuItem value="">Seleccionar indicador...</MenuItem>
                     {indicadores.map(i => <MenuItem key={i._id} value={i._id}>{i.codigo ? `${i.codigo} - ` : ''}{i.descripcion}</MenuItem>)}
                   </Select>
                 </FormControl>
+              {fieldErrors.indicadorId && <p className="text-xs text-red-500 mt-1">{fieldErrors.indicadorId}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
@@ -349,6 +370,18 @@ export default function Actividades() {
           </DialogActions>
         </form>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!confirmandoCerrar}
+        title="Cerrar actividad"
+        message="¿Cerrar esta actividad? Ya no se podrá calificar."
+        confirmText="Cerrar"
+        cancelText="Cancelar"
+        color="warning"
+        loading={cerrarLoading}
+        onCancel={() => setConfirmandoCerrar(null)}
+        onConfirm={() => confirmandoCerrar && cerrar(confirmandoCerrar)}
+      />
     </div>
   )
 }

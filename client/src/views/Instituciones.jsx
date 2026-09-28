@@ -85,6 +85,25 @@ function VistaNucleo() {
   const [logoError, setLogoError] = useState('')
   const logoRef = useRef(null)
 
+  const [fieldErrors, setFieldErrors] = useState({})
+
+  const validarColegio = (form) => {
+    const e = {}
+    if (!form.nombre?.trim()) e.nombre = 'El nombre del colegio es obligatorio'
+    if (!form.nucleoId) e.nucleoId = 'Debe seleccionar un núcleo'
+    return e
+  }
+
+  const validarAdmin = (form) => {
+    const e = {}
+    if (!form.nombres?.trim()) e.nombres = 'El nombre es obligatorio'
+    if (!form.apellidos?.trim()) e.apellidos = 'El apellido es obligatorio'
+    if (!form.documento?.trim()) e.documento = 'El documento es obligatorio'
+    if (!form.email?.trim()) e.email = 'El email es obligatorio'
+    else if (!form.email.includes('@')) e.email = 'El email debe contener @'
+    return e
+  }
+
   const cargar = async () => {
     setLoading(true)
     try {
@@ -104,11 +123,18 @@ function VistaNucleo() {
   const abrirCrear = () => {
     setFormColegio({ tipo: 'privado', nucleoId: nucleos[0]?._id || '' })
     setCrearError('')
+    setFieldErrors({})
     setCrearAbierto(true)
   }
 
   const crearColegio = async (e) => {
     e.preventDefault()
+    const errores = validarColegio(formColegio)
+    if (Object.keys(errores).length > 0) {
+      setFieldErrors(errores)
+      return
+    }
+    setFieldErrors({})
     setCreando(true)
     setCrearError('')
     try {
@@ -130,6 +156,12 @@ function VistaNucleo() {
   const crearAdmin = async (e) => {
     e.preventDefault()
     if (!adminDe?._id) return
+    const errores = validarAdmin(formAdmin)
+    if (Object.keys(errores).length > 0) {
+      setFieldErrors(errores)
+      return
+    }
+    setFieldErrors({})
     setCreandoAdmin(true)
     setAdminError('')
     try {
@@ -184,8 +216,14 @@ function VistaNucleo() {
     }
   }
 
-  const setC = (k) => (e) => setFormColegio({ ...formColegio, [k]: e.target.value })
-  const setA = (k) => (e) => setFormAdmin({ ...formAdmin, [k]: e.target.value })
+  const setC = (k) => (e) => {
+    setFormColegio({ ...formColegio, [k]: e.target.value })
+    setFieldErrors(prev => ({ ...prev, [k]: undefined }))
+  }
+  const setA = (k) => (e) => {
+    setFormAdmin({ ...formAdmin, [k]: e.target.value })
+    setFieldErrors(prev => ({ ...prev, [k]: undefined }))
+  }
 
   return (
     <>
@@ -260,7 +298,7 @@ function VistaNucleo() {
                           <div className="flex items-center gap-3">
                             <Button
                               size="small"
-                              onClick={() => { setAdminDe(c); setFormAdmin({ tipoDocumento: 'CC' }); setAdminResultado(null); setAdminError('') }}
+                              onClick={() => { setAdminDe(c); setFormAdmin({ tipoDocumento: 'CC' }); setAdminResultado(null); setAdminError(''); setFieldErrors({}) }}
                               title="Crear admin inicial del colegio"
                               startIcon={<UserPlus className="w-4 h-4" />}
                             >
@@ -301,16 +339,15 @@ function VistaNucleo() {
                 value={formColegio.nombre || ''}
                 onChange={setC('nombre')}
                 placeholder="Ej: Institución Educativa San José"
-                required
                 fullWidth
               />
+              {fieldErrors.nombre && <p className="text-xs text-red-500 mt-1">{fieldErrors.nombre}</p>}
               <div className="grid grid-cols-2 gap-4">
                 <TextField
                   label="NIT"
                   value={formColegio.nit || ''}
                   onChange={setC('nit')}
                   placeholder="Ej: 900123456"
-                  required
                   fullWidth
                 />
                 <TextField
@@ -332,6 +369,7 @@ function VistaNucleo() {
                     {nucleos.map(n => <MenuItem key={n._id} value={n._id}>{n.nombre}</MenuItem>)}
                   </Select>
                 </FormControl>
+                {fieldErrors.nucleoId && <p className="text-xs text-red-500 mt-1">{fieldErrors.nucleoId}</p>}
               </div>
               <TextField
                 label="Dirección"
@@ -396,25 +434,25 @@ function VistaNucleo() {
                     label="Documento"
                     value={formAdmin.documento || ''}
                     onChange={setA('documento')}
-                    required
                     fullWidth
                   />
+                  {fieldErrors.documento && <p className="text-xs text-red-500 mt-1">{fieldErrors.documento}</p>}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <TextField
                     label="Nombres"
                     value={formAdmin.nombres || ''}
                     onChange={setA('nombres')}
-                    required
                     fullWidth
                   />
+                  {fieldErrors.nombres && <p className="text-xs text-red-500 mt-1">{fieldErrors.nombres}</p>}
                   <TextField
                     label="Apellidos"
                     value={formAdmin.apellidos || ''}
                     onChange={setA('apellidos')}
-                    required
                     fullWidth
                   />
+                  {fieldErrors.apellidos && <p className="text-xs text-red-500 mt-1">{fieldErrors.apellidos}</p>}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <TextField
@@ -424,6 +462,7 @@ function VistaNucleo() {
                     onChange={setA('email')}
                     fullWidth
                   />
+                  {fieldErrors.email && <p className="text-xs text-red-500 mt-1">{fieldErrors.email}</p>}
                   <TextField
                     label="Teléfono"
                     value={formAdmin.telefono || ''}
@@ -524,12 +563,20 @@ export default function Instituciones() {
 
   if (esNucleo) return <VistaNucleo />
 
+  const validar = (form) => {
+    const e = {}
+    if (!form.nombre?.trim()) e.nombre = 'El nombre del colegio es obligatorio'
+    if (!form.nit?.trim()) e.nit = 'El NIT es obligatorio'
+    return e
+  }
+
   return (
     <CrudTable
       titulo="Colegios (Instituciones)"
       baseURL="/instituciones"
       columnas={columnas}
       campos={campos}
+      validate={validar}
       puedeGestionar={false}
     />
   )

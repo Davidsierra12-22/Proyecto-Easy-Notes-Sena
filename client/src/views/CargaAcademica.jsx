@@ -8,6 +8,8 @@ import {
 import api from '../services/api.service'
 import { useAuth } from '../store/Auth'
 import { useSede } from '../store/General'
+import { notificar } from '../store/notificacionStore'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 export default function CargaAcademica() {
   const { usuario } = useAuth()
@@ -27,9 +29,21 @@ export default function CargaAcademica() {
   const [form, setForm] = useState({})
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState({})
+  const [eliminando, setEliminando] = useState(null)
+  const [eliminarLoading, setEliminarLoading] = useState(false)
 
   const puedeGestionar = ['super_admin', 'admin', 'secretaria'].includes(usuario?.tipoPerfil)
   const puedeEliminar = ['super_admin', 'admin'].includes(usuario?.tipoPerfil)
+
+  const validate = () => {
+    const errs = {}
+    if (!form.docenteId) errs.docenteId = 'Este campo es obligatorio'
+    if (!form.anioAcademicoId) errs.anioAcademicoId = 'Este campo es obligatorio'
+    if (!form.grupoId) errs.grupoId = 'Este campo es obligatorio'
+    if (!form.asignaturaId) errs.asignaturaId = 'Este campo es obligatorio'
+    return errs
+  }
 
   const cargarTodo = async () => {
     setLoading(true)
@@ -112,6 +126,9 @@ export default function CargaAcademica() {
 
   const guardar = async (e) => {
     e.preventDefault()
+    const errs = validate()
+    if (Object.keys(errs).length > 0) { setFieldErrors(errs); return }
+    setFieldErrors({})
     setSaving(true)
     setError('')
     try {
@@ -131,12 +148,16 @@ export default function CargaAcademica() {
   }
 
   const eliminar = async (c) => {
-    if (!confirm(`¿Eliminar la carga de ${docenteLabel(c.docenteId)} en ${grupoLabel(c.grupoId)}?`)) return
+    setEliminarLoading(true)
     try {
       await api.delete(`/carga-academica/${c._id}`)
+      setEliminando(null)
       await cargarTodo()
     } catch (err) {
-      alert(err.response?.data?.message || 'Error al eliminar')
+      setEliminando(null)
+      notificar(err.response?.data?.message || 'Error al eliminar', 'error')
+    } finally {
+      setEliminarLoading(false)
     }
   }
 
@@ -239,8 +260,8 @@ export default function CargaAcademica() {
                   </TableRow>
                 ) : (
                   visibles.map(c => (
-                    <TableRow key={c._id} hover>
-                      <TableCell className="!text-sm !font-medium !text-gray-900 !py-3">{docenteLabel(c.docenteId)}</TableCell>
+                    <TableRow key={c._id} hover className={c.estado !== 'activo' ? 'bg-gray-50' : ''}>
+                      <TableCell className={`!text-sm !font-medium !py-3 ${c.estado !== 'activo' ? '!text-gray-400' : '!text-gray-900'}`}>{docenteLabel(c.docenteId)}</TableCell>
                       <TableCell className="!text-sm !text-gray-700 !py-3">{asignaturaLabel(c.asignaturaId)}</TableCell>
                       <TableCell className="!text-sm !text-gray-700 !py-3">{grupoLabel(c.grupoId)}</TableCell>
                       <TableCell className="!text-sm !text-gray-700 !py-3">{anioLabel(c.anioAcademicoId)}</TableCell>
@@ -257,7 +278,7 @@ export default function CargaAcademica() {
                           </Button>
                         )}
                         {puedeEliminar && (
-                          <Button size="small" color="error" onClick={() => eliminar(c)} className="!normal-case !text-sm !font-medium" startIcon={<Trash2 className="w-3.5 h-3.5" />}>
+                          <Button size="small" color="error" onClick={() => setEliminando(c)} className="!normal-case !text-sm !font-medium" startIcon={<Trash2 className="w-3.5 h-3.5" />}>
                             Eliminar
                           </Button>
                         )}
@@ -283,46 +304,50 @@ export default function CargaAcademica() {
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Profesor <span className="text-red-500">*</span></label>
-                <FormControl fullWidth size="small">
-                  <Select value={form.docenteId || ''} onChange={(e) => setForm({ ...form, docenteId: e.target.value })} required displayEmpty>
+                <FormControl fullWidth size="small" error={!!fieldErrors.docenteId}>
+                  <Select value={form.docenteId || ''} onChange={(e) => { setForm({ ...form, docenteId: e.target.value }); if (fieldErrors.docenteId) setFieldErrors(prev => ({ ...prev, docenteId: '' })) }} displayEmpty>
                     <MenuItem value="">Seleccionar...</MenuItem>
                     {docentes.map(d => (
                       <MenuItem key={d._id} value={d._id}>{d.nombres} {d.apellidos}</MenuItem>
                     ))}
                   </Select>
+                  {fieldErrors.docenteId && <p className="text-xs text-red-500 mt-1">{fieldErrors.docenteId}</p>}
                 </FormControl>
               </div>
               <div className="col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Año Académico <span className="text-red-500">*</span></label>
-                <FormControl fullWidth size="small">
-                  <Select value={form.anioAcademicoId || ''} onChange={(e) => setForm({ ...form, anioAcademicoId: e.target.value, grupoId: '' })} required displayEmpty>
+                <FormControl fullWidth size="small" error={!!fieldErrors.anioAcademicoId}>
+                  <Select value={form.anioAcademicoId || ''} onChange={(e) => { setForm({ ...form, anioAcademicoId: e.target.value, grupoId: '' }); if (fieldErrors.anioAcademicoId) setFieldErrors(prev => ({ ...prev, anioAcademicoId: '' })) }} displayEmpty>
                     <MenuItem value="">Seleccionar...</MenuItem>
                     {anios.map(a => (
                       <MenuItem key={a._id} value={a._id}>Año {a.anio}</MenuItem>
                     ))}
                   </Select>
+                  {fieldErrors.anioAcademicoId && <p className="text-xs text-red-500 mt-1">{fieldErrors.anioAcademicoId}</p>}
                 </FormControl>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Grupo (grado) <span className="text-red-500">*</span></label>
-                <FormControl fullWidth size="small">
-                  <Select value={form.grupoId || ''} onChange={(e) => setForm({ ...form, grupoId: e.target.value })} required displayEmpty>
+                <FormControl fullWidth size="small" error={!!fieldErrors.grupoId}>
+                  <Select value={form.grupoId || ''} onChange={(e) => { setForm({ ...form, grupoId: e.target.value }); if (fieldErrors.grupoId) setFieldErrors(prev => ({ ...prev, grupoId: '' })) }} displayEmpty>
                     <MenuItem value="">Seleccionar...</MenuItem>
                     {gruposAnio.map(g => (
                       <MenuItem key={g._id} value={g._id}>{g.nombre} · Grado {g.grado}</MenuItem>
                     ))}
                   </Select>
+                  {fieldErrors.grupoId && <p className="text-xs text-red-500 mt-1">{fieldErrors.grupoId}</p>}
                 </FormControl>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Asignatura <span className="text-red-500">*</span></label>
-                <FormControl fullWidth size="small">
-                  <Select value={form.asignaturaId || ''} onChange={(e) => setForm({ ...form, asignaturaId: e.target.value })} required displayEmpty>
+                <FormControl fullWidth size="small" error={!!fieldErrors.asignaturaId}>
+                  <Select value={form.asignaturaId || ''} onChange={(e) => { setForm({ ...form, asignaturaId: e.target.value }); if (fieldErrors.asignaturaId) setFieldErrors(prev => ({ ...prev, asignaturaId: '' })) }} displayEmpty>
                     <MenuItem value="">Seleccionar...</MenuItem>
                     {asignaturas.map(a => (
                       <MenuItem key={a._id} value={a._id}>{a.nombre}</MenuItem>
                     ))}
                   </Select>
+                  {fieldErrors.asignaturaId && <p className="text-xs text-red-500 mt-1">{fieldErrors.asignaturaId}</p>}
                 </FormControl>
               </div>
               <div>
@@ -364,6 +389,18 @@ export default function CargaAcademica() {
           </DialogActions>
         </form>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!eliminando}
+        title="Eliminar carga académica"
+        message={eliminando ? `¿Eliminar la carga de ${docenteLabel(eliminando.docenteId)} en ${grupoLabel(eliminando.grupoId)}?` : ''}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        color="error"
+        loading={eliminarLoading}
+        onCancel={() => setEliminando(null)}
+        onConfirm={() => eliminando && eliminar(eliminando)}
+      />
     </div>
   )
 }

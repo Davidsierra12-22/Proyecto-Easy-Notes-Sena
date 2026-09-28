@@ -43,6 +43,7 @@ const menuConfig = {
     { to: '/actividades', icon: ClipboardCheck, label: 'Actividades' },
     { to: '/boletines', icon: FileText, label: 'Boletines' },
     { to: '/promocion', icon: Trophy, label: 'Promoción' },
+    { to: '/informacion', icon: Trophy, label: 'Información' },
     { to: '/certificados', icon: ScrollText, label: 'Certificados' },
     { to: '/conceptos-contables', icon: Coins, label: 'Conceptos' },
     { to: '/pagos', icon: CreditCard, label: 'Pagos' },
@@ -68,6 +69,7 @@ const menuConfig = {
     { to: '/actividades', icon: ClipboardCheck, label: 'Actividades' },
     { to: '/boletines', icon: FileText, label: 'Boletines' },
     { to: '/promocion', icon: Trophy, label: 'Promoción' },
+    { to: '/informacion', icon: Trophy, label: 'Información' },
     { to: '/certificados', icon: ScrollText, label: 'Certificados' },
     { to: '/cartera', icon: Wallet, label: 'Cartera' },
     { to: '/bitacora', icon: FileText, label: 'Bitácora' }
@@ -87,6 +89,7 @@ const menuConfig = {
     { to: '/actividades', icon: ClipboardCheck, label: 'Actividades' },
     { to: '/boletines', icon: FileText, label: 'Boletines' },
     { to: '/promocion', icon: Trophy, label: 'Promoción' },
+    { to: '/informacion', icon: Trophy, label: 'Información' },
     { to: '/certificados', icon: ScrollText, label: 'Certificados' }
   ],
   docente: [
@@ -138,6 +141,8 @@ const rolLabels = {
   acudiente: 'Acudiente',
   secretaria: 'Secretaría'
 }
+
+const RUTAS_PAGOS = ['/pagos', '/cartera', '/conceptos-contables']
 
 const DRAWER_COLLAPSED = 80
 const DRAWER_FULL = 256
@@ -212,9 +217,17 @@ export default function Layout() {
     } catch (_) { /* error en contexto */ }
   }
 
+  const colegioPublico = usuario?.institucion?.tipo === 'publico'
+
   const menu = sinSede
-    ? (menuConfig[usuario?.tipoPerfil] || menuConfig.admin).filter(item => ['Sedes', 'Configuración'].includes(item.label))
-    : (menuConfig[usuario?.tipoPerfil] || menuConfig.admin)
+    ? (menuConfig[usuario?.tipoPerfil] || menuConfig.admin).map(item => ({
+        ...item,
+        desactivado: colegioPublico && RUTAS_PAGOS.includes(item.to)
+      })).filter(item => ['Sedes', 'Configuración'].includes(item.label))
+    : (menuConfig[usuario?.tipoPerfil] || menuConfig.admin).map(item => ({
+        ...item,
+        desactivado: colegioPublico && RUTAS_PAGOS.includes(item.to)
+      }))
   const rolLabel = rolLabels[usuario?.tipoPerfil] || usuario?.tipoPerfil
 
   const handleLogout = () => {
@@ -246,18 +259,18 @@ export default function Layout() {
       {menu.map((item, i) => (
         <ListItemButton
           key={item.to}
-          component={NavLink}
-          to={item.to}
-          end={item.to === '/'}
-          onClick={() => cerrarMobile && setMobileOpen(false)}
-          title={collapsed ? item.label : undefined}
+          component={item.desactivado ? 'div' : NavLink}
+          to={item.desactivado ? undefined : item.to}
+          disabled={item.desactivado}
+          title={item.desactivado ? 'Desactivado para colegios públicos' : collapsed ? item.label : undefined}
           sx={{
             borderRadius: '8px',
             mt: i === 0 ? 0 : 0.5,
-            color: '#d1d5db',
+            color: item.desactivado ? '#64748b' : '#d1d5db',
             '&.active': { bgcolor: 'primary.600', color: '#fff', '&:hover': { bgcolor: 'primary.600' } },
-            '&:hover': { bgcolor: '#1e293b', color: '#fff' },
-            justifyContent: collapsed ? 'center' : 'flex-start'
+            '&:hover': item.desactivado ? { bgcolor: 'transparent', color: '#64748b', cursor: 'not-allowed' } : { bgcolor: '#1e293b', color: '#fff' },
+            justifyContent: collapsed ? 'center' : 'flex-start',
+            opacity: item.desactivado ? 0.5 : 1
           }}
         >
           <ListItemIcon sx={{ minWidth: collapsed ? 0 : 40, mr: collapsed ? 0 : 1, color: 'inherit' }}>

@@ -7,6 +7,7 @@ import {
 } from '@mui/material'
 import api from '../services/api.service'
 import { useAuth } from '../store/Auth'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 const estadoBadge = (estado) => {
   const map = {
@@ -25,8 +26,18 @@ export default function AniosAcademicos() {
   const [form, setForm] = useState({ anio: new Date().getFullYear(), numeroPeriodos: 4, notaMinima: 3.0 })
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState({})
+  const [confirmacion, setConfirmacion] = useState(null)
+  const [confirmLoading, setConfirmLoading] = useState(false)
 
   const puedeGestionar = ['super_admin', 'admin', 'secretaria'].includes(usuario?.tipoPerfil)
+
+  const validate = () => {
+    const errs = {}
+    if (!form.anio) errs.anio = 'Este campo es obligatorio'
+    else if (Number(form.anio) < 2020) errs.anio = 'El año debe ser mayor o igual a 2020'
+    return errs
+  }
 
   const cargar = async () => {
     setLoading(true)
@@ -44,6 +55,9 @@ export default function AniosAcademicos() {
 
   const crear = async (e) => {
     e.preventDefault()
+    const errs = validate()
+    if (Object.keys(errs).length > 0) { setFieldErrors(errs); return }
+    setFieldErrors({})
     setSaving(true)
     setError('')
     try {
@@ -63,14 +77,23 @@ export default function AniosAcademicos() {
     }
   }
 
-  const accion = async (id, endpoint, msgOk) => {
-    if (!window.confirm(msgOk)) return
+  const accion = async (id, endpoint) => {
+    setConfirmLoading(true)
+    setError('')
     try {
       await api.put(`/anios-academicos/${id}/${endpoint}`)
       await cargar()
+      setConfirmacion(null)
     } catch (e) {
-      alert(e.response?.data?.message || 'Error')
+      setConfirmacion(null)
+      setError(e.response?.data?.message || 'Error')
+    } finally {
+      setConfirmLoading(false)
     }
+  }
+
+  const pedirConfirmacion = (id, endpoint, msgOk) => {
+    setConfirmacion({ id, endpoint, msgOk })
   }
 
   return (
@@ -122,8 +145,8 @@ export default function AniosAcademicos() {
                   </TableRow>
                 ) : (
                   datos.map(a => (
-                    <TableRow key={a._id} hover>
-                      <TableCell className="!text-sm !font-medium !text-gray-900">{a.anio}</TableCell>
+                    <TableRow key={a._id} hover className={a.estado !== 'activo' ? 'bg-gray-50' : ''}>
+                      <TableCell className={`!text-sm !font-medium ${a.estado !== 'activo' ? '!text-gray-400' : '!text-gray-900'}`}>{a.anio}</TableCell>
                       <TableCell>{estadoBadge(a.estado)}</TableCell>
                       <TableCell className="!text-sm !text-gray-700">{a.configuracion?.numeroPeriodos ?? 4}</TableCell>
                       <TableCell className="!text-sm !text-gray-700">{a.configuracion?.notaMinima ?? 3.0}</TableCell>
@@ -134,18 +157,18 @@ export default function AniosAcademicos() {
                       </TableCell>
                       <TableCell className="!text-right whitespace-nowrap">
                         {a.estado !== 'activo' && (
-                          <Button onClick={() => accion(a._id, 'activar', `¿Activar el año ${a.anio} como año lectivo vigente?`)}
+                          <Button onClick={() => pedirConfirmacion(a._id, 'activar', `¿Activar el año ${a.anio} como año lectivo vigente?`)}
                             size="small" className="!text-emerald-600 hover:!text-emerald-800 !normal-case !font-medium mr-3" startIcon={<PlayCircle className="w-4 h-4" />}>
                             Activar
                           </Button>
                         )}
                         {a.estado === 'activo' && (
-                          <Button onClick={() => accion(a._id, 'cerrar', `¿Cerrar el año ${a.anio}?`)}
+                          <Button onClick={() => pedirConfirmacion(a._id, 'cerrar', `¿Cerrar el año ${a.anio}?`)}
                             size="small" className="!text-amber-600 hover:!text-amber-800 !normal-case !font-medium mr-3" startIcon={<XCircle className="w-4 h-4" />}>
                             Cerrar
                           </Button>
                         )}
-                        <Button onClick={() => accion(a._id, 'cerrar-migracion', `¿Cerrar ${a.anio} y migrar estudiantes al siguiente año? Debes crear el año destino primero.`)}
+                        <Button onClick={() => pedirConfirmacion(a._id, 'cerrar-migracion', `¿Cerrar ${a.anio} y migrar estudiantes al siguiente año? Debes crear el año destino primero.`)}
                           size="small" className="!text-primary-600 hover:!text-primary-800 !normal-case !font-medium" startIcon={<ArrowRight className="w-4 h-4" />}>
                           Cerrar + Migrar
                         </Button>
@@ -169,8 +192,9 @@ export default function AniosAcademicos() {
         <form onSubmit={crear}>
           <DialogContent className="!pt-2">
             <div className="space-y-4">
-              <TextField type="number" value={form.anio} onChange={(e) => setForm({ ...form, anio: e.target.value })} required
+              <TextField type="number" value={form.anio} onChange={(e) => { setForm({ ...form, anio: e.target.value }); if (fieldErrors.anio) setFieldErrors(prev => ({ ...prev, anio: '' })) }}
                 label="Año lectivo" fullWidth size="small" />
+              {fieldErrors.anio && <p className="text-xs text-red-500 mt-1">{fieldErrors.anio}</p>}
               <TextField
                 select
                 value={form.numeroPeriodos}
@@ -194,6 +218,17 @@ export default function AniosAcademicos() {
           </DialogActions>
         </form>
       </Dialog>
+    <ConfirmDialog
+        open={!!confirmacion}
+        title="Confirmar acción"
+        message={confirmacion?.msgOk || ''}
+        confirmText="Confirmar"
+        cancelText="Cancelar"
+        color="primary"
+        loading={confirmLoading}
+        onCancel={() => setConfirmacion(null)}
+        onConfirm={() => confirmacion && accion(confirmacion.id, confirmacion.endpoint)}
+      />
     </div>
   )
 }

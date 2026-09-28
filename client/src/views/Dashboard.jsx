@@ -174,9 +174,10 @@ export default function Dashboard() {
     { label: 'Indicadores', icon: Target, to: '/indicadores', visible: ['admin', 'rector', 'coordinador', 'docente'] },
     { label: 'Actividades', icon: ClipboardCheck, to: '/actividades', visible: ['admin', 'rector', 'coordinador', 'docente'] },
     { label: 'Promoción', icon: Trophy, to: '/promocion', visible: ['admin', 'rector', 'coordinador'] },
+    { label: 'Información', icon: Trophy, to: '/informacion', visible: ['admin', 'rector', 'coordinador'] },
     { label: 'Certificados', icon: ScrollText, to: '/certificados', visible: ['admin', 'rector', 'coordinador', 'secretaria'] },
     { label: 'Carnets', icon: IdCard, to: '/carnets', visible: ['admin', 'rector', 'coordinador', 'secretaria'] },
-    { label: 'Pagos', icon: CreditCard, to: '/pagos', visible: ['admin', 'rector', 'secretaria', 'acudiente'] }
+    { label: 'Pagos', icon: CreditCard, to: '/pagos', visible: ['admin', 'rector', 'secretaria', 'acudiente'], desactivado: usuario?.institucion?.tipo === 'publico' }
   ]
 
   return (
@@ -225,14 +226,25 @@ export default function Dashboard() {
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Accesos Rápidos</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {accesosRapidos.filter(a => a.visible.includes(rol)).map((acc) => (
-                <Link
-                  key={acc.to}
-                  to={acc.to}
-                  className="flex flex-col items-center gap-2 p-4 bg-gray-50 rounded-xl hover:bg-primary-50 hover:border-primary-200 border border-transparent transition-colors"
-                >
-                  <acc.icon className="w-6 h-6 text-primary-600" />
-                  <span className="text-sm text-gray-700 text-center">{acc.label}</span>
-                </Link>
+                acc.desactivado ? (
+                  <div
+                    key={acc.to}
+                    title="Desactivado para colegios públicos"
+                    className="flex flex-col items-center gap-2 p-4 bg-gray-50 rounded-xl border border-transparent opacity-50 cursor-not-allowed"
+                  >
+                    <acc.icon className="w-6 h-6 text-gray-400" />
+                    <span className="text-sm text-gray-500 text-center">{acc.label}</span>
+                  </div>
+                ) : (
+                  <Link
+                    key={acc.to}
+                    to={acc.to}
+                    className="flex flex-col items-center gap-2 p-4 bg-gray-50 rounded-xl hover:bg-primary-50 hover:border-primary-200 border border-transparent transition-colors"
+                  >
+                    <acc.icon className="w-6 h-6 text-primary-600" />
+                    <span className="text-sm text-gray-700 text-center">{acc.label}</span>
+                  </Link>
+                )
               ))}
             </div>
           </div>
@@ -313,7 +325,9 @@ export default function Dashboard() {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Tu espacio</h2>
           <p className="text-gray-600">
             {rol === 'docente' && 'Consulta tus clases, calificaciones y actividades académicas.'}
-            {rol === 'acudiente' && 'Sigue el rendimiento académico de tus hijos y gestiona pagos.'}
+            {rol === 'acudiente' && (usuario?.institucion?.tipo === 'publico'
+              ? 'Sigue el rendimiento académico de tus hijos.'
+              : 'Sigue el rendimiento académico de tus hijos y gestiona pagos.')}
           </p>
         </div>
       )}

@@ -27,6 +27,7 @@ export default function MisExcusas() {
   const [modal, setModal] = useState(false)
   const [form, setForm] = useState({})
   const [saving, setSaving] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState({})
 
   const grupoId = matricula?.grupoId
   const anioId = matricula?.anioAcademicoId
@@ -66,14 +67,30 @@ export default function MisExcusas() {
     }
   })
 
+  const validate = () => {
+    const errors = {}
+    if (!form.docenteId) errors.docenteId = 'Seleccioná un docente'
+    if (!form.fechaInicio) errors.fechaInicio = 'La fecha de inicio es obligatoria'
+    if (!form.fechaFin) errors.fechaFin = 'La fecha de fin es obligatoria'
+    if (!form.motivo?.trim()) errors.motivo = 'El motivo es obligatorio'
+    return errors
+  }
+
   const abrirCrear = () => {
     setForm({ fechaInicio: new Date().toISOString().slice(0, 10), fechaFin: new Date().toISOString().slice(0, 10), motivo: '', sinSoporte: true, soporteDocumental: '', docenteId: '' })
+    setFieldErrors({})
     setError('')
     setModal(true)
   }
 
   const crear = async (e) => {
     e.preventDefault()
+    const errors = validate()
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
+      return
+    }
+    setFieldErrors({})
     setSaving(true)
     setError('')
     try {
@@ -162,25 +179,38 @@ export default function MisExcusas() {
               <div className="col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Docente <span className="text-red-500">*</span></label>
                 <FormControl fullWidth size="small">
-                  <Select value={form.docenteId || ''} onChange={(e) => setForm({ ...form, docenteId: e.target.value })} required displayEmpty className="text-sm">
+                  <Select value={form.docenteId || ''} onChange={(e) => {
+                    if (fieldErrors.docenteId) setFieldErrors(prev => ({ ...prev, docenteId: '' }))
+                    setForm({ ...form, docenteId: e.target.value })
+                  }} displayEmpty className="text-sm" error={!!fieldErrors.docenteId}>
                     <MenuItem value="">Seleccionar...</MenuItem>
                     {(misDocentes.length ? misDocentes : docentes).map(d => (
                       <MenuItem key={d._id} value={d._id}>{d.nombres} {d.apellidos}</MenuItem>
                     ))}
                   </Select>
+                  {fieldErrors.docenteId && <p className="text-xs text-red-500 mt-1">{fieldErrors.docenteId}</p>}
                 </FormControl>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Fecha inicio <span className="text-red-500">*</span></label>
-                <TextField type="date" value={form.fechaInicio || ''} onChange={(e) => setForm({ ...form, fechaInicio: e.target.value })} required fullWidth className="text-sm" />
+                <TextField type="date" value={form.fechaInicio || ''} onChange={(e) => {
+                    if (fieldErrors.fechaInicio) setFieldErrors(prev => ({ ...prev, fechaInicio: '' }))
+                    setForm({ ...form, fechaInicio: e.target.value })
+                  }} fullWidth className="text-sm" error={!!fieldErrors.fechaInicio} helperText={fieldErrors.fechaInicio && <span className="text-xs text-red-500">{fieldErrors.fechaInicio}</span>} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Fecha fin <span className="text-red-500">*</span></label>
-                <TextField type="date" value={form.fechaFin || ''} onChange={(e) => setForm({ ...form, fechaFin: e.target.value })} required fullWidth className="text-sm" />
+                <TextField type="date" value={form.fechaFin || ''} onChange={(e) => {
+                    if (fieldErrors.fechaFin) setFieldErrors(prev => ({ ...prev, fechaFin: '' }))
+                    setForm({ ...form, fechaFin: e.target.value })
+                  }} fullWidth className="text-sm" error={!!fieldErrors.fechaFin} helperText={fieldErrors.fechaFin && <span className="text-xs text-red-500">{fieldErrors.fechaFin}</span>} />
               </div>
               <div className="col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Motivo <span className="text-red-500">*</span></label>
-                <TextField value={form.motivo || ''} onChange={(e) => setForm({ ...form, motivo: e.target.value })} required multiline minRows={3} placeholder="Describe el motivo de la inasistencia" fullWidth className="text-sm" />
+                <TextField value={form.motivo || ''} onChange={(e) => {
+                    if (fieldErrors.motivo) setFieldErrors(prev => ({ ...prev, motivo: '' }))
+                    setForm({ ...form, motivo: e.target.value })
+                  }} multiline minRows={3} placeholder="Describe el motivo de la inasistencia" fullWidth className="text-sm" error={!!fieldErrors.motivo} helperText={fieldErrors.motivo && <span className="text-xs text-red-500">{fieldErrors.motivo}</span>} />
               </div>
               <div className="col-span-2">
                 <label className="flex items-center gap-2 text-sm text-gray-700">

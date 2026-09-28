@@ -200,15 +200,25 @@ export default function Certificados() {
 
               <div className="mt-16 grid grid-cols-2 gap-8">
                 <div className="text-center">
+                  {doc.firmantes?.rector?.firma && (
+                    <img src={doc.firmantes.rector.firma} alt="Firma del rector" className="max-h-16 object-contain mx-auto mb-2" />
+                  )}
                   <div className="border-t border-gray-400 pt-2">
-                    <p className="text-sm font-semibold text-gray-800">Rector</p>
-                    <p className="text-xs text-gray-500">{doc.institucion?.nombre || 'Institución'}</p>
+                    <p className="text-sm font-semibold text-gray-800">
+                      {doc.firmantes?.rector?.nombre || 'Rector'}
+                    </p>
+                    <p className="text-xs text-gray-500">Rector</p>
                   </div>
                 </div>
                 <div className="text-center">
+                  {doc.firmantes?.secretaria?.firma && (
+                    <img src={doc.firmantes.secretaria.firma} alt="Firma de la secretaría" className="max-h-16 object-contain mx-auto mb-2" />
+                  )}
                   <div className="border-t border-gray-400 pt-2">
-                    <p className="text-sm font-semibold text-gray-800">Secretaría Académica</p>
-                    <p className="text-xs text-gray-500">Firma y sello</p>
+                    <p className="text-sm font-semibold text-gray-800">
+                      {doc.firmantes?.secretaria?.nombre || 'Secretaría Académica'}
+                    </p>
+                    <p className="text-xs text-gray-500">Secretaría Académica</p>
                   </div>
                 </div>
               </div>

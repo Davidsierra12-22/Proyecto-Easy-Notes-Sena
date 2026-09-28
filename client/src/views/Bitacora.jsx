@@ -3,8 +3,9 @@ import { RefreshCw, Search, Trash2, ChevronLeft, ChevronRight } from 'lucide-rea
 import api from '../services/api.service'
 import { useAuth } from '../store/Auth'
 import {
-  Button, CircularProgress, FormControl, IconButton, InputLabel, MenuItem, Select,
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField
+  Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle,
+  FormControl, IconButton, InputLabel, MenuItem, Select, TextField,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow
 } from '@mui/material'
 
 const COLECCIONES = [
@@ -27,6 +28,9 @@ export default function Bitacora() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [exito, setExito] = useState('')
+  const [limpiarAbierto, setLimpiarAbierto] = useState(false)
+  const [limpiarMeses, setLimpiarMeses] = useState(3)
+  const [limpiando, setLimpiando] = useState(false)
 
   const cargar = async (page = 1) => {
     setLoading(true)
@@ -55,16 +59,23 @@ export default function Bitacora() {
     cargar(1)
   }
 
-  const limpiarBitacora = async () => {
-    const meses = window.prompt('¿Borrar registros de bitácora anteriores a cuántos meses? (por defecto 3):', '3')
-    if (meses === null) return
-    if (!window.confirm(`¿Seguro que deseas eliminar todos los registros de bitácora anteriores a ${meses} meses?`)) return
+  const ejecutarLimpiar = async () => {
+    if (!limpiarMeses || limpiarMeses < 1) {
+      setError('Indica una cantidad válida de meses')
+      return
+    }
+    setLimpiando(true)
+    setError('')
+    setExito('')
     try {
-      const r = await api.delete(`/bitacora/limpiar?meses=${meses}`)
+      const r = await api.delete(`/bitacora/limpiar?meses=${limpiarMeses}`)
       setExito(r.data.message)
+      setLimpiarAbierto(false)
       cargar(1)
     } catch (e) {
       setError(e.response?.data?.message || 'Error al limpiar bitácora')
+    } finally {
+      setLimpiando(false)
     }
   }
 
@@ -78,7 +89,7 @@ export default function Bitacora() {
           </div>
           <div className="flex items-center gap-2">
             {esAdmin && (
-              <Button onClick={limpiarBitacora} color="error" className="!normal-case text-sm font-medium !rounded-lg hover:!bg-red-50">
+              <Button onClick={() => { setLimpiarAbierto(true); setLimpiarMeses(3); setError('') }} color="error" className="!normal-case text-sm font-medium !rounded-lg hover:!bg-red-50">
                 <Trash2 className="w-4 h-4 mr-1" /> Limpiar
               </Button>
             )}
@@ -196,6 +207,30 @@ export default function Bitacora() {
           </div>
         )}
       </div>
+
+      <Dialog open={limpiarAbierto} onClose={() => setLimpiarAbierto(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Limpiar bitácora</DialogTitle>
+        <DialogContent>
+          <p className="text-sm text-gray-600 mb-3">
+            Se eliminarán todos los registros de bitácora anteriores a la cantidad de meses indicada. Esta acción no se puede deshacer.
+          </p>
+          <TextField
+            type="number"
+            label="Meses a conservar atrás"
+            value={limpiarMeses}
+            onChange={(e) => setLimpiarMeses(Number(e.target.value))}
+            fullWidth
+            size="small"
+            slotProps={{ htmlInput: { min: 1 } }}
+          />
+        </DialogContent>
+        <DialogActions className="!px-6 !pb-4">
+          <Button onClick={() => setLimpiarAbierto(false)} className="!text-gray-700 hover:!bg-gray-100">Cancelar</Button>
+          <Button onClick={ejecutarLimpiar} color="error" variant="contained" disabled={limpiando}>
+            {limpiando ? 'Limpiando...' : `Eliminar registros anteriores a ${limpiarMeses} meses`}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   )
 }

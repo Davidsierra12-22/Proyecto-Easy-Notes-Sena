@@ -65,12 +65,20 @@ export default function Sedes() {
 
   const filtros = esSuperAdmin ? [{ name: 'institucionId', label: 'Colegio', options: instituciones }] : undefined
 
+  const validar = (form) => {
+    const e = {}
+    if (esSuperAdmin && !form.institucionId) e.institucionId = 'Debe seleccionar un colegio'
+    if (!form.nombre?.trim()) e.nombre = 'El nombre de la sede es obligatorio'
+    return e
+  }
+
   return (
     <CrudTable
       titulo="Sedes"
       baseURL="/sedes"
       columnas={columnas}
       campos={campos}
+      validate={validar}
       filtros={filtros}
       filtroInicial={filtroInicial}
       puedeGestionar={puedeGestionar}

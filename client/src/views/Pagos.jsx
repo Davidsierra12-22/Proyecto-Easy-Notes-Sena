@@ -38,7 +38,10 @@ export default function Pagos() {
   const [modal, setModal] = useState(false)
   const [form, setForm] = useState({})
   const [registrando, setRegistrando] = useState(false)
+  const [pagoSeleccionado, setPagoSeleccionado] = useState(null)
+  const [metodoPago, setMetodoPago] = useState('efectivo')
   const [saving, setSaving] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState({})
   const [pagina, setPagina] = useState(1)
   const [paginacion, setPaginacion] = useState(null)
 
@@ -98,8 +101,20 @@ export default function Pagos() {
     setForm({ ...form, ...patch, valorFinal: valor - descuento + recargo })
   }
 
+  const validate = () => {
+    const errors = {}
+    if (!form.estudianteId) errors.estudianteId = 'El estudiante es obligatorio'
+    if (!form.conceptoId) errors.conceptoId = 'El concepto es obligatorio'
+    if (!form.anioAcademicoId) errors.anioAcademicoId = 'El año académico es obligatorio'
+    if (!form.valor || Number(form.valor) <= 0) errors.valor = 'El valor debe ser mayor a 0'
+    return errors
+  }
+
   const crear = async (e) => {
     e.preventDefault()
+    const errors = validate()
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return }
+    setFieldErrors({})
     setSaving(true)
     setError('')
     try {
@@ -124,13 +139,13 @@ export default function Pagos() {
     }
   }
 
-  const registrarPago = async (pago) => {
-    const metodo = window.prompt(`Registrar pago de $${Number(pago.valorFinal).toLocaleString('es-CO')}\n\nMétodo de pago (${METODOS.map(m => m.value).join(', ')}):`, 'efectivo')
-    if (!metodo) return
+  const registrarPago = async () => {
     setRegistrando(true)
     setError('')
     try {
-      await api.put(`/pagos/${pago._id}/registrar-pago`, { metodoPago: metodo.toLowerCase() })
+      await api.put(`/pagos/${pagoSeleccionado._id}/registrar-pago`, { metodoPago })
+      setPagoSeleccionado(null)
+      setMetodoPago('efectivo')
       await cargar()
       setExito('Pago registrado correctamente')
     } catch (e) {
@@ -224,7 +239,7 @@ export default function Pagos() {
                       <TableCell className="!px-4 !py-3">{estadoBadge(p.estado)}</TableCell>
                       <TableCell className="!px-4 !py-3 !text-right whitespace-nowrap">
                         {['pendiente', 'vencido'].includes(p.estado) && puedeGestionar && (
-                          <Button onClick={() => registrarPago(p)} disabled={registrando} color="success" size="small" startIcon={<HandCoins className="w-4 h-4" />}>
+                          <Button onClick={() => { setPagoSeleccionado(p); setMetodoPago('efectivo') }} disabled={registrando} color="success" size="small" startIcon={<HandCoins className="w-4 h-4" />}>
                             Registrar pago
                           </Button>
                         )}
@@ -258,31 +273,35 @@ export default function Pagos() {
         <form onSubmit={crear}>
           <DialogContent className="!pt-2">
             <div className="space-y-4">
-              <FormControl size="small" fullWidth required>
+              <FormControl size="small" fullWidth error={!!fieldErrors.estudianteId}>
                 <InputLabel id="estudiante-label">Estudiante *</InputLabel>
-                <Select labelId="estudiante-label" value={form.estudianteId} onChange={(e) => setForm({ ...form, estudianteId: e.target.value })} label="Estudiante *">
+                <Select labelId="estudiante-label" value={form.estudianteId} onChange={(e) => { setForm({ ...form, estudianteId: e.target.value }); if (fieldErrors.estudianteId) setFieldErrors(prev => ({ ...prev, estudianteId: '' })) }} label="Estudiante *">
                   <MenuItem value="">Seleccionar...</MenuItem>
                   {estudiantes.map(s => <MenuItem key={s._id} value={s._id}>{s.nombres} {s.apellidos} - {s.documento}</MenuItem>)}
                 </Select>
               </FormControl>
-              <FormControl size="small" fullWidth required>
+              {fieldErrors.estudianteId && <p className="text-xs text-red-500 mt-1">{fieldErrors.estudianteId}</p>}
+              <FormControl size="small" fullWidth error={!!fieldErrors.conceptoId}>
                 <InputLabel id="concepto-label">Concepto *</InputLabel>
-                <Select labelId="concepto-label" value={form.conceptoId} onChange={(e) => onSelectConcepto(e.target.value)} label="Concepto *">
+                <Select labelId="concepto-label" value={form.conceptoId} onChange={(e) => { onSelectConcepto(e.target.value); if (fieldErrors.conceptoId) setFieldErrors(prev => ({ ...prev, conceptoId: '' })) }} label="Concepto *">
                   <MenuItem value="">Seleccionar...</MenuItem>
                   {conceptos.filter(c => c.estado === 'activo').map(c => <MenuItem key={c._id} value={c._id}>{c.nombre} - ${Number(c.valor).toLocaleString('es-CO')}</MenuItem>)}
                 </Select>
               </FormControl>
-              <FormControl size="small" fullWidth required>
+              {fieldErrors.conceptoId && <p className="text-xs text-red-500 mt-1">{fieldErrors.conceptoId}</p>}
+              <FormControl size="small" fullWidth error={!!fieldErrors.anioAcademicoId}>
                 <InputLabel id="anio-label">Año Académico *</InputLabel>
-                <Select labelId="anio-label" value={form.anioAcademicoId} onChange={(e) => setForm({ ...form, anioAcademicoId: e.target.value })} label="Año Académico *">
+                <Select labelId="anio-label" value={form.anioAcademicoId} onChange={(e) => { setForm({ ...form, anioAcademicoId: e.target.value }); if (fieldErrors.anioAcademicoId) setFieldErrors(prev => ({ ...prev, anioAcademicoId: '' })) }} label="Año Académico *">
                   <MenuItem value="">Seleccionar...</MenuItem>
                   {anios.map(a => <MenuItem key={a._id} value={a._id}>Año {a.anio}</MenuItem>)}
                 </Select>
               </FormControl>
+              {fieldErrors.anioAcademicoId && <p className="text-xs text-red-500 mt-1">{fieldErrors.anioAcademicoId}</p>}
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Valor</label>
-                  <TextField type="number" size="small" fullWidth value={form.valor} onChange={(e) => recompute({ valor: e.target.value })} required />
+                  <TextField type="number" size="small" fullWidth value={form.valor} onChange={(e) => { recompute({ valor: e.target.value }); if (fieldErrors.valor) setFieldErrors(prev => ({ ...prev, valor: '' })) }} error={!!fieldErrors.valor} />
+                  {fieldErrors.valor && <p className="text-xs text-red-500 mt-1">{fieldErrors.valor}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Descuento</label>
@@ -311,6 +330,28 @@ export default function Pagos() {
             </Button>
           </DialogActions>
         </form>
+      </Dialog>
+
+      <Dialog open={!!pagoSeleccionado} onClose={() => setPagoSeleccionado(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Registrar pago</DialogTitle>
+        <DialogContent>
+          <p className="text-sm text-gray-600 mb-4">
+            Registrar pago de <span className="font-bold text-gray-900">${Number(pagoSeleccionado?.valorFinal || 0).toLocaleString('es-CO')}</span>
+          </p>
+          <FormControl size="small" fullWidth>
+            <InputLabel id="metodo-pago-label">Método de pago</InputLabel>
+            <Select labelId="metodo-pago-label" value={metodoPago} onChange={(e) => setMetodoPago(e.target.value)} label="Método de pago">
+              {METODOS.map(m => <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>)}
+            </Select>
+          </FormControl>
+          {error && <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-3 py-2 mt-3">{error}</div>}
+        </DialogContent>
+        <DialogActions className="!px-6 !pb-4">
+          <Button onClick={() => setPagoSeleccionado(null)}>Cancelar</Button>
+          <Button onClick={registrarPago} disabled={registrando} variant="contained" color="success">
+            {registrando ? 'Registrando...' : 'Confirmar pago'}
+          </Button>
+        </DialogActions>
       </Dialog>
     </div>
   )

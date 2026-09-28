@@ -29,6 +29,7 @@ export default function Comunicados() {
   const [modal, setModal] = useState(false)
   const [form, setForm] = useState({ destinatarios: [{ rol: 'estudiante' }], prioridad: 'normal' })
   const [saving, setSaving] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState({})
   const [detalle, setDetalle] = useState(null)
   const [pagina, setPagina] = useState(1)
   const [paginacion, setPaginacion] = useState(null)
@@ -60,8 +61,18 @@ export default function Comunicados() {
     setForm({ ...form, destinatarios: nuevos })
   }
 
+  const validate = () => {
+    const errors = {}
+    if (!form.asunto) errors.asunto = 'El asunto es obligatorio'
+    if (!form.mensaje) errors.mensaje = 'El mensaje es obligatorio'
+    return errors
+  }
+
   const enviar = async (e) => {
     e.preventDefault()
+    const errors = validate()
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return }
+    setFieldErrors({})
     setSaving(true)
     setError('')
     try {
@@ -186,10 +197,12 @@ export default function Comunicados() {
         <form onSubmit={enviar}>
           <DialogContent className="!pt-2">
             <div className="space-y-4">
-              <TextField type="text" value={form.asunto} onChange={(e) => setForm({ ...form, asunto: e.target.value })} required
-                label="Asunto" placeholder="Asunto del comunicado" fullWidth size="small" />
-              <TextField value={form.mensaje} onChange={(e) => setForm({ ...form, mensaje: e.target.value })} required
-                label="Mensaje" placeholder="Contenido del comunicado..." multiline minRows={4} fullWidth size="small" />
+              <TextField type="text" value={form.asunto} onChange={(e) => { setForm({ ...form, asunto: e.target.value }); if (fieldErrors.asunto) setFieldErrors(prev => ({ ...prev, asunto: '' })) }}
+                label="Asunto" placeholder="Asunto del comunicado" fullWidth size="small" error={!!fieldErrors.asunto} />
+              {fieldErrors.asunto && <p className="text-xs text-red-500 mt-1">{fieldErrors.asunto}</p>}
+              <TextField value={form.mensaje} onChange={(e) => { setForm({ ...form, mensaje: e.target.value }); if (fieldErrors.mensaje) setFieldErrors(prev => ({ ...prev, mensaje: '' })) }}
+                label="Mensaje" placeholder="Contenido del comunicado..." multiline minRows={4} fullWidth size="small" error={!!fieldErrors.mensaje} />
+              {fieldErrors.mensaje && <p className="text-xs text-red-500 mt-1">{fieldErrors.mensaje}</p>}
               <div className="grid grid-cols-2 gap-4">
                 <FormControl fullWidth size="small">
                   <InputLabel id="prioridad-label">Prioridad</InputLabel>

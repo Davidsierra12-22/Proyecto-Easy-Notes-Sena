@@ -37,7 +37,8 @@ export default function CrudTable({
   onAfterSave,
   renderAcciones,
   transformDatos,
-  validate
+  validate,
+  extraBotones
 }) {
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
@@ -202,6 +203,7 @@ export default function CrudTable({
             >
               <RefreshCw className="w-4 h-4" />
             </IconButton>
+            {extraBotones}
             {puedeGestionar && (
               <Button
                 onClick={abrirCrear}
@@ -250,10 +252,16 @@ export default function CrudTable({
                 </TableRow>
               ) : (
                 data.map((item) => (
-                  <TableRow key={item._id} hover>
+                  <TableRow
+                    key={item._id}
+                    hover
+                    className={item.estado === 'inactivo' ? 'bg-gray-50' : ''}
+                  >
                     {columnas.map(col => (
-                      <TableCell key={col.key} className="!text-sm !text-gray-700 !py-3 whitespace-nowrap">
-                        {col.render ? col.render(item) : (item[col.key] ?? '—')}
+                      <TableCell key={col.key} className={`!text-sm !py-3 whitespace-nowrap ${item.estado === 'inactivo' ? '!text-gray-400' : '!text-gray-700'}`}>
+                        <div className={item.estado === 'inactivo' ? 'opacity-60' : ''}>
+                          {col.render ? col.render(item) : (item[col.key] ?? '—')}
+                        </div>
                       </TableCell>
                     ))}
                     {puedeGestionar && (
@@ -278,8 +286,8 @@ export default function CrudTable({
                               size="small"
                               className={
                                 item.estado === 'activo'
-                                  ? '!text-amber-600 hover:!text-amber-800 disabled:!opacity-40'
-                                  : '!text-emerald-600 hover:!text-emerald-800 disabled:!opacity-40'
+                                  ? '!text-emerald-600 hover:!text-emerald-800 disabled:!opacity-40'
+                                  : '!text-red-500 hover:!text-red-700 disabled:!opacity-40'
                               }
                               disabled={item._protegido}
                             >

@@ -63,12 +63,19 @@ const aplanarContacto = (rows) =>
   }))
 
 export default function Nucleos() {
+  const validar = (form) => {
+    const e = {}
+    if (!form.nombre?.trim()) e.nombre = 'El nombre del núcleo es obligatorio'
+    return e
+  }
+
   return (
     <CrudTable
       titulo="Núcleos"
       baseURL="/nucleos"
       columnas={columnas}
       campos={campos}
+      validate={validar}
       transformDatos={aplanarContacto}
       puedeDesactivar
     />

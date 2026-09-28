@@ -6,6 +6,9 @@ import {
 } from '@mui/material'
 import api from '../services/api.service'
 import { useAuth } from '../store/Auth'
+import { notificar } from '../store/notificacionStore'
+import ConfirmDialog from '../components/ConfirmDialog'
+import PromptDialog from '../components/PromptDialog'
 
 export default function Promocion() {
   const { usuario } = useAuth()
@@ -22,6 +25,9 @@ export default function Promocion() {
   const [aniosDestino, setAniosDestino] = useState([])
   const [anioDestino, setAnioDestino] = useState('')
   const [cerrando, setCerrando] = useState(false)
+  const [manualAbierto, setManualAbierto] = useState(null)
+  const [manualLoading, setManualLoading] = useState(false)
+  const [confirmarCierre, setConfirmarCierre] = useState(false)
 
   const cargarDependencias = async () => {
     try {
@@ -87,24 +93,29 @@ export default function Promocion() {
     setEvaluaciones(acc)
   }
 
-  const promoverManual = async (m, reprobar) => {
-    const nombreEst = m.estudianteId?.nombres ? `${m.estudianteId.nombres} ${m.estudianteId.apellidos}` : 'un estudiante'
-    if (!window.confirm(`¿Promover manualmente a ${nombreEst}?`)) return
-    const obs = window.prompt('Justificación (consejo académico):')
-    if (obs === null) return
+  const pedirManual = (m, reprobar) => {
+    setManualAbierto({ m, reprobar })
+  }
+
+  const ejecutarPromoverManual = async (obs) => {
+    const { m, reprobar } = manualAbierto
+    if (!obs?.trim()) return
+    setManualLoading(true)
     try {
       await api.put(`/matriculas/${m._id}/promover`, { promovido: !reprobar, observaciones: obs })
-      setError('')
-      alert(reprobar ? 'Estudiante marcado como repitente' : 'Estudiante promovido manualmente')
+      setManualAbierto(null)
+      notificar(reprobar ? 'Estudiante marcado como repitente' : 'Estudiante promovido manualmente', 'success')
       await cargar()
     } catch (e) {
-      alert(e.response?.data?.message || 'Error')
+      setManualAbierto(null)
+      notificar(e.response?.data?.message || 'Error', 'error')
+    } finally {
+      setManualLoading(false)
     }
   }
 
-  const cerrarAnio = async () => {
+  const ejecutarCerrarAnio = async () => {
     if (!anioDestino) { setError('Selecciona el año destino'); return }
-    if (!window.confirm('¿Ejecutar el cierre del año académico? Se migrarán los estudiantes al año destino según su promoción.')) return
     setCerrando(true)
     setError('')
     try {
@@ -112,9 +123,11 @@ export default function Promocion() {
         anioOrigenId: filtros.anioAcademicoId,
         anioDestinoId: anioDestino
       })
-      alert(`${r.data.message}: ${r.data.data.estudiantesCopiados} migrados (${r.data.data.promovidos} promovidos, ${r.data.data.repitentes} repitentes)`)
+      notificar(`${r.data.message}: ${r.data.data.estudiantesCopiados} migrados (${r.data.data.promovidos} promovidos, ${r.data.data.repitentes} repitentes)`, 'success')
       setAnioDestino('')
+      setConfirmarCierre(false)
     } catch (e) {
+      setConfirmarCierre(false)
       setError(e.response?.data?.message || 'Error al cerrar año')
     } finally {
       setCerrando(false)
@@ -189,7 +202,7 @@ export default function Promocion() {
                 </Select>
               </FormControl>
             </div>
-            <Button onClick={cerrarAnio} disabled={cerrando} variant="contained" className="!bg-emerald-600 hover:!bg-emerald-700 !text-white disabled:!opacity-50">
+            <Button onClick={() => setConfirmarCierre(true)} disabled={cerrando} variant="contained" className="!bg-emerald-600 hover:!bg-emerald-700 !text-white disabled:!opacity-50">
               {cerrando ? 'Cerrando...' : 'Ejecutar cierre de año (PY-002)'}
             </Button>
           </div>
@@ -246,8 +259,8 @@ export default function Promocion() {
                             {puedeGestionar && (
                               <>
                                 <Button onClick={() => evaluar(m)} size="small" className="!text-primary-600 hover:!text-primary-800 !normal-case !font-medium mr-3">Evaluar</Button>
-                                <Button onClick={() => promoverManual(m, false)} size="small" className="!text-emerald-600 hover:!text-emerald-800 !normal-case !font-medium mr-3">Promover</Button>
-                                <Button onClick={() => promoverManual(m, true)} size="small" className="!text-red-600 hover:!text-red-800 !normal-case !font-medium">Reprobar</Button>
+                                <Button onClick={() => pedirManual(m, false)} size="small" className="!text-emerald-600 hover:!text-emerald-800 !normal-case !font-medium mr-3">Promover</Button>
+                                <Button onClick={() => pedirManual(m, true)} size="small" className="!text-red-600 hover:!text-red-800 !normal-case !font-medium">Reprobar</Button>
                               </>
                             )}
                           </TableCell>
@@ -267,6 +280,35 @@ export default function Promocion() {
           Selecciona un año y un grupo para evaluar la promoción.
         </div>
       )}
+
+      <PromptDialog
+        open={!!manualAbierto}
+        title={manualAbierto?.reprobar ? 'Reprobar (repitente)' : 'Promover manualmente'}
+        message={manualAbierto?.m?.estudianteId?.nombres
+          ? `${manualAbierto.reprobar ? 'Marcar como NO promovido (repitente) a' : '¿Promover manualmente a'} ${manualAbierto.m.estudianteId.nombres} ${manualAbierto.m.estudianteId.apellidos}?`
+          : ''}
+        label="Justificación (consejo académico)"
+        confirmText={manualAbierto?.reprobar ? 'Marcar como repitente' : 'Promover'}
+        cancelText="Cancelar"
+        color={manualAbierto?.reprobar ? 'error' : 'primary'}
+        required
+        placeholder="Justificación (consejo académico)"
+        onCancel={() => setManualAbierto(null)}
+        onConfirm={ejecutarPromoverManual}
+        loading={manualLoading}
+      />
+
+      <ConfirmDialog
+        open={confirmarCierre}
+        title="Cerrar año académico"
+        message="¿Ejecutar el cierre del año académico? Se migrarán los estudiantes al año destino según su promoción."
+        confirmText="Ejecutar cierre"
+        cancelText="Cancelar"
+        color="primary"
+        loading={cerrando}
+        onCancel={() => setConfirmarCierre(false)}
+        onConfirm={ejecutarCerrarAnio}
+      />
     </div>
   )
 }

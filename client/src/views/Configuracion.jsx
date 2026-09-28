@@ -6,21 +6,10 @@ import {
 } from '@mui/material'
 import api from '../services/api.service'
 import { useAuth } from '../store/Auth'
+import { notificar } from '../store/notificacionStore'
+import { GRADOS_ESTANDAR as GRADOS_ESTANDAR_LIST } from '../constants/grados'
 
-const GRADOS_ESTANDAR = [
-  { numero: 0, nombre: 'Preescolar' },
-  { numero: 1, nombre: 'Primero' },
-  { numero: 2, nombre: 'Segundo' },
-  { numero: 3, nombre: 'Tercero' },
-  { numero: 4, nombre: 'Cuarto' },
-  { numero: 5, nombre: 'Quinto' },
-  { numero: 6, nombre: 'Sexto' },
-  { numero: 7, nombre: 'Séptimo' },
-  { numero: 8, nombre: 'Octavo' },
-  { numero: 9, nombre: 'Noveno' },
-  { numero: 10, nombre: 'Décimo' },
-  { numero: 11, nombre: 'Once' }
-]
+const GRADOS_ESTANDAR = GRADOS_ESTANDAR_LIST
 
 const NIVELES_DEFECTO = [
   { orden: 1, valor: 'Superior', rangoMin: 4.6, rangoMax: 5.0 },
@@ -35,7 +24,6 @@ export default function Configuracion() {
   const [configuracion, setConfiguracion] = useState(null)
   const [datos, setDatos] = useState({ nombre: '', nit: '', dane: '', telefono: '', direccion: '', email: '' })
   const [grados, setGrados] = useState([])
-  const [nuevoNombre, setNuevoNombre] = useState('')
   const [siee, setSiee] = useState({ notaMinima: 3, numeroPeriodos: 4, pierdeAnoPor: 'areas', numPerdidas: 3, aproximaPromedio: true, niveles: NIVELES_DEFECTO })
   const [guardandoDatos, setGuardandoDatos] = useState(false)
   const [guardandoGrados, setGuardandoGrados] = useState(false)
@@ -107,18 +95,26 @@ export default function Configuracion() {
 
   const guardarGrados = async () => {
     if (!institucion) return
+    const limpiados = grados
+      .filter(g => g.numero !== '' && g.nombre.trim() !== '')
+      .sort((a, b) => a.numero - b.numero)
+    const usados = new Set()
+    for (const g of limpiados) {
+      if (usados.has(g.numero)) {
+        setError(`El grado ${g.numero} está repetido. Revisa la lista antes de guardar.`)
+        return
+      }
+      usados.add(g.numero)
+    }
     setGuardandoGrados(true)
     setError('')
     setExito('')
     try {
-      const limpiados = grados
-        .filter(g => g.numero !== '' && g.nombre.trim() !== '')
-        .sort((a, b) => a.numero - b.numero)
       await api.put(`/instituciones/${institucion._id}`, {
         configuracion: { ...(configuracion || {}), grados: limpiados }
       })
-      setGrados(limpiados)
-      setExito('Grados guardados')
+      await cargar()
+      notificar('Grados guardados', 'success')
     } catch (e) {
       setError(e.response?.data?.message || 'Error al guardar grados')
     } finally {
@@ -126,21 +122,29 @@ export default function Configuracion() {
     }
   }
 
-  const agregarGrado = () => {
-    if (!nuevoNombre.trim()) return
-    setGrados(prev => {
-      const numero = Math.max(0, ...prev.map(g => (typeof g.numero === 'number' ? g.numero : Number(g.numero) || 0))) + 1
-      return [...prev, { numero, nombre: nuevoNombre.trim() }]
-    })
-    setNuevoNombre('')
+  const editarGrado = (numero, campo, valor) => {
+    setGrados(prev => prev.map(g => String(g.numero) === String(numero) ? { ...g, [campo]: valor } : g))
   }
 
-  const alternarGradoEstandar = (estandar) => {
+  const quitarGrado = (numero) => {
+    setGrados(prev => prev.filter(g => String(g.numero) !== String(numero)))
+  }
+
+  const agregarGradosEstandar = () => {
     setGrados(prev => {
-      const existe = prev.some(g => String(g.numero) === String(estandar.numero))
-      if (existe) return prev.filter(g => String(g.numero) !== String(estandar.numero))
-      return [...prev, { numero: estandar.numero, nombre: estandar.nombre }].sort((a, b) => a.numero - b.numero)
+      const faltantes = GRADOS_ESTANDAR
+        .filter(e => !prev.some(g => String(g.numero) === String(e.numero)))
+        .map(e => ({ numero: e.numero, nombre: e.nombre }))
+      if (!faltantes.length) return prev
+      return [...prev, ...faltantes].sort((a, b) => a.numero - b.numero)
     })
+  }
+
+  const agregarGrado = () => {
+    const usados = new Set(grados.map(g => Number(g.numero) || 0))
+    let numero = 0
+    while (usados.has(numero)) numero++
+    setGrados(prev => [...prev, { numero, nombre: '' }])
   }
 
   const guardarSiee = async () => {
@@ -255,56 +259,60 @@ export default function Configuracion() {
             <h2 className="text-lg font-bold text-gray-900 mb-1 flex items-center gap-2">
               <GraduationCap className="w-5 h-5 text-primary-600" /> Grados del colegio
             </h2>
-            <p className="text-xs text-gray-500 mb-4">Marca los grados que ofrece el colegio. Aparecerán como filtro en Carnets y en el sistema.</p>
+            <p className="text-xs text-gray-500 mb-4">
+              Lista los grados que ofrece el colegio. Edita los nombres, quita los que no usas o agrega grados personalizados.
+            </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {GRADOS_ESTANDAR.map(g => {
-                const activo = grados.some(x => String(x.numero) === String(g.numero))
-                return (
-                  <label key={g.numero}
-                    className={`flex items-center gap-3 border rounded-lg px-3 py-2 cursor-pointer transition-colors ${activo ? 'border-primary-500 bg-primary-50' : 'border-gray-200 bg-gray-50 hover:border-gray-300'}`}>
-                    <Checkbox checked={activo} onChange={() => alternarGradoEstandar(g)} size="small" color="primary" />
-                    <span className={`text-sm font-medium ${activo ? 'text-primary-700' : 'text-gray-600'}`}>
-                      {g.nombre} <span className="text-xs opacity-70">· Grado {g.numero}</span>
-                    </span>
-                  </label>
-                )
-              })}
+            <div className="space-y-2 mb-4">
+              {grados
+                .slice()
+                .sort((a, b) => a.numero - b.numero)
+                .map((g) => (
+                  <div key={`${g.numero}`} className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                    <span className="text-sm font-semibold text-gray-400 w-14 shrink-0">Grado {g.numero}</span>
+                    <TextField
+                      value={g.nombre}
+                      onChange={(e) => editarGrado(g.numero, 'nombre', e.target.value)}
+                      size="small"
+                      fullWidth
+                      placeholder="Nombre del grado"
+                    />
+                    <IconButton onClick={() => quitarGrado(g.numero)} size="small" className="!text-red-500 hover:!bg-red-50" title="Quitar grado">
+                      <Trash2 className="w-4 h-4" />
+                    </IconButton>
+                  </div>
+                ))}
+              {grados.length === 0 && (
+                <p className="text-sm text-gray-500">Aún no has agregado grados. Usa el botón de abajo para añadir los grados estándar (Preescolar a Once).</p>
+              )}
             </div>
 
-            {grados.filter(g => !GRADOS_ESTANDAR.some(e => String(e.numero) === String(g.numero))).length > 0 && (
-              <div className="mt-4">
-                <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Grados personalizados</h3>
-                <div className="space-y-2">
-                  {grados.filter(g => !GRADOS_ESTANDAR.some(e => String(e.numero) === String(g.numero))).map(g => (
-                    <div key={g.numero} className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
-                      <span className="text-sm font-semibold text-gray-700 w-24">Grado {g.numero}</span>
-                      <span className="text-sm text-gray-600 flex-1">{g.nombre}</span>
-                      <IconButton onClick={() => setGrados(prev => prev.filter(x => String(x.numero) !== String(g.numero)))}
-                        size="small" className="!text-red-500 hover:!bg-red-50" title="Quitar">
-                        <Trash2 className="w-4 h-4" />
-                      </IconButton>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="mt-4">
-              <div className="flex gap-2">
-                <TextField value={nuevoNombre}
-                  onChange={e => setNuevoNombre(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); agregarGrado() } }}
-                  placeholder="Ej: Aceleración, Transición..."
-                  label="Agregar grado personalizado" size="small" className="flex-1" />
-                <Button variant="outlined" color="primary" onClick={agregarGrado} startIcon={<Plus className="w-4 h-4" />}>
-                  Agregar
-                </Button>
-              </div>
+            <div className="flex flex-wrap gap-2 mb-4">
+              <Button
+                variant="outlined"
+                color="primary"
+                size="small"
+                onClick={agregarGradosEstandar}
+                disabled={GRADOS_ESTANDAR.every(e => grados.some(g => String(g.numero) === String(e.numero)))}
+                startIcon={<Plus className="w-4 h-4" />}
+                className="!normal-case"
+              >
+                Añadir grados estándar (Preescolar a Once)
+              </Button>
+              <Button
+                variant="outlined"
+                color="primary"
+                size="small"
+                onClick={agregarGrado}
+                startIcon={<Plus className="w-4 h-4" />}
+                className="!normal-case"
+              >
+                Agregar grado
+              </Button>
             </div>
 
             <Button variant="contained" color="primary" onClick={guardarGrados} disabled={guardandoGrados}
-              className="mt-4" startIcon={<Save className="w-4 h-4" />}>
+              className="mt-1" startIcon={<Save className="w-4 h-4" />}>
               {guardandoGrados ? 'Guardando...' : 'Guardar grados'}
             </Button>
           </div>

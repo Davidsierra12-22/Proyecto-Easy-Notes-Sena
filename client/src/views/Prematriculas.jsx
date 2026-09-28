@@ -7,6 +7,8 @@ import {
 import { RefreshCw, CheckCircle2, XCircle, Eye, X } from 'lucide-react'
 import api from '../services/api.service'
 import { useAuth } from '../store/Auth'
+import { notificar } from '../store/notificacionStore'
+import PromptDialog from '../components/PromptDialog'
 
 const estadoBadge = (estado) => {
   const map = {
@@ -27,6 +29,8 @@ export default function Prematriculas() {
   const [filtro, setFiltro] = useState('')
   const [error, setError] = useState('')
   const [detalle, setDetalle] = useState(null)
+  const [decision, setDecision] = useState(null)
+  const [procesando, setProcesando] = useState(false)
 
   const cargar = async () => {
     setLoading(true)
@@ -45,27 +49,20 @@ export default function Prematriculas() {
 
   useEffect(() => { cargar() }, [filtro])
 
-  const aprobar = async (p) => {
-    const obs = window.prompt(`Aprobar solicitud de ${p.estudiante?.nombres} ${p.estudiante?.apellidos}?\nObservaciones (opcional):`)
-    if (obs === null) return
+  const ejecutarDecision = async (obs) => {
+    const p = decision
+    if (!p) return
+    setProcesando(true)
     try {
-      const r = await api.put(`/prematriculas/${p._id}/aprobar`, { observaciones: obs || undefined })
-      alert(r.data.message)
+      const r = await api.put(`/prematriculas/${p._id}/${decision.accion}`, { observaciones: obs || undefined })
+      notificar(r.data.message, 'success')
+      setDecision(null)
       await cargar()
     } catch (e) {
-      alert(e.response?.data?.message || 'Error al aprobar')
-    }
-  }
-
-  const rechazar = async (p) => {
-    const obs = window.prompt(`Rechazar solicitud de ${p.estudiante?.nombres} ${p.estudiante?.apellidos}?\nMotivo:`)
-    if (obs === null) return
-    try {
-      const r = await api.put(`/prematriculas/${p._id}/rechazar`, { observaciones: obs || undefined })
-      alert(r.data.message)
-      await cargar()
-    } catch (e) {
-      alert(e.response?.data?.message || 'Error al rechazar')
+      setDecision(null)
+      notificar(e.response?.data?.message || 'Error al procesar', 'error')
+    } finally {
+      setProcesando(false)
     }
   }
 
@@ -141,11 +138,11 @@ export default function Prematriculas() {
                       </Button>
                       {puedeAprobar && p.estado === 'pendiente' && (
                         <>
-                          <Button onClick={() => aprobar(p)} className="!text-emerald-600 hover:!text-emerald-800 !normal-case text-sm font-medium mr-3" size="small"
+                          <Button onClick={() => { setDecision({ ...p, accion: 'aprobar' }) }} className="!text-emerald-600 hover:!text-emerald-800 !normal-case text-sm font-medium mr-3" size="small"
                             startIcon={<CheckCircle2 className="w-4 h-4" />}>
                             Aprobar
                           </Button>
-                          <Button onClick={() => rechazar(p)} className="!text-red-600 hover:!text-red-800 !normal-case text-sm font-medium" size="small"
+                          <Button onClick={() => { setDecision({ ...p, accion: 'rechazar' }) }} className="!text-red-600 hover:!text-red-800 !normal-case text-sm font-medium" size="small"
                             startIcon={<XCircle className="w-4 h-4" />}>
                             Rechazar
                           </Button>
@@ -203,6 +200,23 @@ export default function Prematriculas() {
           </DialogContent>
         </Dialog>
       )}
+
+      <PromptDialog
+        open={!!decision}
+        title={decision?.accion === 'rechazar' ? 'Rechazar solicitud' : 'Aprobar solicitud'}
+        message={decision?.estudiante?.nombres
+          ? `${decision.accion === 'rechazar' ? 'Rechazar solicitud de' : 'Aprobar solicitud de'} ${decision.estudiante.nombres} ${decision.estudiante.apellidos}?`
+          : ''}
+        label={decision?.accion === 'rechazar' ? 'Motivo' : 'Observaciones (opcional)'}
+        confirmText={decision?.accion === 'rechazar' ? 'Rechazar' : 'Aprobar'}
+        cancelText="Cancelar"
+        color={decision?.accion === 'rechazar' ? 'error' : 'primary'}
+        required={decision?.accion === 'rechazar'}
+        placeholder={decision?.accion === 'rechazar' ? 'Motivo' : 'Observaciones (opcional)'}
+        loading={procesando}
+        onCancel={() => setDecision(null)}
+        onConfirm={ejecutarDecision}
+      />
     </div>
   )
 }

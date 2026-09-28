@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Users, X } from 'lucide-react'
+import { Users, X, FileUp } from 'lucide-react'
+import { Button } from '@mui/material'
 import CrudTable from '../components/Tables/CrudTable'
+import CargaMasivaDialog from '../components/CargaMasivaDialog'
 import api from '../services/api.service'
 import { useAuth } from '../store/Auth'
 import { useSede } from '../store/General'
+import { GRADOS_ESTANDAR, gradoLabel } from '../constants/grados'
 import {
   CircularProgress, Dialog, DialogTitle, IconButton,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow
@@ -16,19 +19,23 @@ const JORNADAS = [
   { value: 'continua', label: 'Continua' }
 ]
 
-const GRADOS_DEFAULT = Array.from({ length: 12 }, (_, i) => ({ value: i, label: `Grado ${i}` }))
+const GRADOS_DEFAULT = GRADOS_ESTANDAR.map(g => ({ value: g.numero, label: g.nombre }))
 
 export default function Grupos() {
   const { usuario } = useAuth()
   const { sedes, sedeId } = useSede()
   const [anios, setAnios] = useState([])
   const [grados, setGrados] = useState(GRADOS_DEFAULT)
+  const [gradosCfg, setGradosCfg] = useState([])
   const [estModal, setEstModal] = useState(null)
   const [estLista, setEstLista] = useState(null)
   const [estLoading, setEstLoading] = useState(false)
   const [estError, setEstError] = useState('')
   const puedeGestionar = ['super_admin', 'admin', 'secretaria'].includes(usuario?.tipoPerfil)
   const puedeControl = ['super_admin', 'admin'].includes(usuario?.tipoPerfil)
+  const esSuperAdmin = usuario?.tipoPerfil === 'super_admin'
+  const [cargaMasivaAbierta, setCargaMasivaAbierta] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   const verEstudiantes = async (g) => {
     setEstModal(g)
@@ -71,14 +78,15 @@ export default function Grupos() {
         setGrados(config
           .slice()
           .sort((a, b) => a.numero - b.numero)
-          .map(g => ({ value: g.numero, label: `${g.nombre} · Grado ${g.numero}` })))
+          .map(g => ({ value: g.numero, label: g.nombre })))
+        setGradosCfg(config)
       }
     }).catch(() => {})
   }, [usuario?.institucionId])
 
   const columnas = [
     { key: 'nombre', label: 'Grupo', render: (g) => <span className="font-medium text-gray-900">{g.nombre}</span> },
-    { key: 'grado', label: 'Grado', render: (g) => `Grado ${g.grado}` },
+    { key: 'grado', label: 'Grado', render: (g) => gradoLabel(g.grado, gradosCfg) },
     {
       key: 'sedeId', label: 'Sede',
       render: (g) => {
@@ -114,6 +122,15 @@ export default function Grupos() {
     { name: 'especialidad', label: 'Especialidad', type: 'select', options: [{ value: '', label: 'Ninguna' }, { value: 'tecnica', label: 'Técnica' }, { value: 'comercial', label: 'Comercial' }, { value: 'industrial', label: 'Industrial' }, { value: 'pedagogica', label: 'Pedagógica' }, { value: 'otra', label: 'Otra' }] }
   ]
 
+  const validar = (form) => {
+    const e = {}
+    if (!form.nombre?.trim()) e.nombre = 'El nombre del grupo es obligatorio'
+    if (!form.anioAcademicoId) e.anioAcademicoId = 'Debe seleccionar un año académico'
+    if (!form.grado) e.grado = 'Debe seleccionar un grado'
+    if (!form.jornada) e.jornada = 'Debe seleccionar una jornada'
+    return e
+  }
+
   return (
     <>
       <CrudTable
@@ -121,9 +138,22 @@ export default function Grupos() {
         baseURL="/grupos"
         columnas={columnas}
         campos={campos}
+        validate={validar}
         parametrosForzados={sedeId ? { sedeId } : {}}
         puedeGestionar={puedeGestionar}
         puedeDesactivar={puedeControl}
+        refreshKey={refreshKey}
+        extraBotones={puedeGestionar && !esSuperAdmin && (
+          <Button
+            onClick={() => setCargaMasivaAbierta(true)}
+            variant="outlined"
+            color="primary"
+            className="!normal-case !text-primary-700 !border-primary-300 hover:!bg-primary-50"
+            startIcon={<FileUp className="w-4 h-4" />}
+          >
+            Carga masiva
+          </Button>
+        )}
         renderAcciones={(g) => (
           <IconButton
             onClick={() => verEstudiantes(g)}
@@ -189,6 +219,19 @@ export default function Grupos() {
           ) : null}
         </div>
       </Dialog>
+
+      <CargaMasivaDialog
+        open={cargaMasivaAbierta}
+        onClose={() => setCargaMasivaAbierta(false)}
+        titulo="Carga masiva de grupos"
+        entidad="grupos"
+        endpoint="/carga-masiva/grupos"
+        camposExtra={[
+          { name: 'anioAcademicoId', label: 'Año Académico', options: anios, required: true },
+          { name: 'sedeId', label: 'Sede', options: sedes.map(s => ({ value: s._id, label: s.nombre })) }
+        ]}
+        onCompletado={() => setRefreshKey(k => k + 1)}
+      />
     </>
   )
 }

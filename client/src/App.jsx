@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import Rutas from './router'
+import NotificacionesGlobal from './components/NotificacionesGlobal'
 
 export default function App() {
   return (
@@ -9,6 +10,7 @@ export default function App() {
       </div>
     }>
       <Rutas />
+      <NotificacionesGlobal />
     </Suspense>
   )
 }
