@@ -1,0 +1,171 @@
+================================================================
+DIAGRAMA DE ISHIKAWA (ESPINA DE PESCADO) - CAUSA Y EFECTO
+Proyecto: EasyNotes v2 - Sistema de gestión educativa
+================================================================
+
+PROBLEMA / EFECTO (cabeza del pescado):
+---------------------------------------
+"Baja adopción del sistema por parte de los colegios"
+
+DESCRIPCIÓN DEL PROYECTO (contexto para la IA):
+-----------------------------------------------
+EasyNotes v2 es un sistema web de gestión académica que incluye:
+matrículas, calificaciones, recuperaciones/habilitaciones, boletines
+en PDF, promoción, contabilidad escolar (pensiones) y comunicación.
+- Frontend: React + Vite + Material UI
+- Backend: Node.js + Express + MongoDB
+- Roles de usuario: Administrador, Docente, Estudiante, Acudiente
+
+----------------------------------------------------------------
+1. CATEGORÍA: MÉTODO / PROCESO
+----------------------------------------------------------------
+- La transición de un proceso manual (libros, planillas) al sistema
+  digital resulta incómoda para el personal administrativo.
+- El flujo de matrícula es demasiado largo (muchos pasos).
+- Las reglas de negocio de recuperaciones y habilitaciones son
+  difíciles de entender por los docentes (la recuperación solo
+  aplica a notas < 3.0, la habilitación solo a notas de 2.0 a 2.9).
+- No existe automatización de recordatorios de pago de pensiones.
+- El cierre de período bloquea modificaciones, pero no hay avisos
+  de anticipación a los docentes.
+
+----------------------------------------------------------------
+2. CATEGORÍA: TECNOLOGÍA
+----------------------------------------------------------------
+- La aplicación es solo web, no tiene versión móvil.
+- Depende de internet y, en su versión local, de una base de datos
+  MongoDB instalada en el colegio (no en la nube).
+- Posibles bugs en el módulo de cálculo de calificaciones
+  (reglas RN-CAL-01 a RN-CAL-05 del documento LOGICA_NEGOCIO.md).
+- La generación de reportes PDF usa Puppeteer, lo que consume
+  muchos recursos y puede ser lento.
+- No hay plantillas de boletines personalizables por el colegio
+  (logo, firma del rector) sin intervención de un técnico.
+
+----------------------------------------------------------------
+3. CATEGORÍA: PERSONAS
+----------------------------------------------------------------
+- Docentes con poca competencia digital.
+- Rector o directivos resistentes al cambio de sistema.
+- Falta de capacitación y de manuales de uso.
+- No hay personal de soporte al cliente para resolver dudas.
+- La contraseña inicial por defecto (igual al número de documento)
+  genera confusión en el primer ingreso.
+
+----------------------------------------------------------------
+4. CATEGORÍA: MEDICIÓN
+----------------------------------------------------------------
+- No hay métricas de uso: no se sabe qué pantallas visitan los
+  usuarios ni en qué momento abandonan el sistema.
+- No se valida el cálculo de notas contra la normativa del
+  Ministerio de Educación.
+- No se aprovechan los registros de la bitácora (auditoría) para
+  detectar errores.
+- No se recopila feedback de usuarios (docentes, acudientes).
+
+----------------------------------------------------------------
+5. CATEGORÍA: DATOS / MATERIALES
+----------------------------------------------------------------
+- Datos de estudiantes duplicados o sin validar.
+- La migración de datos del sistema anterior (basado en stored
+  procedures) está inconclusa: varias secciones del documento
+  LOGICA_NEGOCIO.md están marcadas como "Pendiente".
+- No hay herramientas de importación desde Excel/CSV para cargar
+  estudiantes, docentes y notas masivamente (solo se está
+  valorando con la librería xlsx).
+- No existen plantillas estándar para el cargue de datos.
+
+----------------------------------------------------------------
+6. CATEGORÍA: ENTORNO
+----------------------------------------------------------------
+- Colegios con conexión a internet lenta y computadores antiguos.
+- Normativa y cambios del Ministerio de Educación que obligan a
+  ajustar el sistema constantemente.
+- La secretaría o dirección de la institución no aprueba
+  presupuesto para licencias ni hardware.
+- Competencia con otros sistemas de gestión académica ya
+  instalados en los colegios.
+
+----------------------------------------------------------------
+CAUSAS RAÍZ PRIORITARIAS (las que se deben atacar primero):
+----------------------------------------------------------------
+1. Migración de datos inconclusa -> sin los datos del colegio,
+   el sistema no se adopta.
+2. Falta de métricas de uso -> no se sabe dónde se pierden usuarios.
+3. Sin versión móvil -> docentes y acudientes usan el celular.
+4. Sin capacitación ni soporte -> el software fracasa aunque sea bueno.
+5. Sin importación desde Excel -> el colegio no carga datos
+   masivamente y abandona.
+
+----------------------------------------------------------------
+----------------------------------------------------------------
+CÓDIGO MERMAID (FISHBONE) PARA PEGAR EN UNA IA DE DIAGRAMAS
+(p. ej. mermaid.live, o copiar este bloque al chat de la IA)
+----------------------------------------------------------------
+
+```mermaid
+fishbone
+    title: Baja adopción de EasyNotes v2 por los colegios
+    Método
+        Transición proceso manual a digital incómoda
+        Flujo de matrícula demasiado largo
+        Reglas de recuperación/habilitación difíciles de entender
+        Sin recordatorios automáticos de pago de pensiones
+        Sin avisos antes del cierre de período
+    Tecnología
+        App solo web, sin versión móvil
+        Depende de internet y MongoDB local en el colegio
+        Posibles errores en cálculo de calificaciones
+        Generación de PDF lenta (Puppeteer)
+        Boletines sin personalizar por el colegio
+    Personas
+        Docentes con poca competencia digital
+        Rector resistente al cambio
+        Falta de capacitación y manuales
+        Sin soporte al cliente
+        Confusión con la contraseña inicial
+    Medición
+        Sin métricas de uso del sistema
+        Notas no validadas contra normativa del MEN
+        Bitácora de auditoría no aprovechada
+        Sin feedback de usuarios
+    Datos
+        Datos de estudiantes duplicados o sin validar
+        Migración de datos del sistema anterior inconclusa
+        Sin importación desde Excel/CSV
+        Sin plantillas estándar de cargue de datos
+    Entorno
+        Internet lento y computadores antiguos en los colegios
+        Cambios en la normativa del Ministerio de Educación
+        Sin presupuesto aprobado para licencias
+        Competencia con otros sistemas ya instalados
+```
+
+----------------------------------------------------------------
+VERSIÓN ASCII SIMPLE (alternativa legible para cualquier IA)
+----------------------------------------------------------------
+
+                       Método / Proceso          Tecnología
+     • Proceso manual->digital incómoda      • Solo web, sin app móvil
+     • Matrícula larga                       • Depende de internet
+     • Reglas recuperación difíciles         • Bugs en cálculo de notas
+     • Sin recordatorios de pago             • PDF lento (Puppeteer)
+                       \                       /
+                        \                     /
+    Datos/Materiales ---  \                   /  --- Medición
+     • Datos duplicados     \                 /   • Sin métricas de uso
+     • Migración inconclusa  »---► [ BAJA   ---►  • Notas sin validar MEN
+     • Sin importar Excel      +--- [+ADOPCIÓN]   • Bitácora no usada
+     • Sin plantillas           /                 • Sin feedback
+                        /                     \
+    Entorno -----------  /                     \  ----- Personas
+     • Internet lento     \                     /
+     • Normativa MEN     ──▶ [ EFECTO ]        ──▶ • Docentes sin
+     • Sin presupuesto                          soporte digital
+     • Competencia                              • Rector resistente
+                                                • Sin capacitación
+                                                • Sin soporte al cliente
+
+================================================================
+FIN DEL DOCUMENTO
+================================================================
