@@ -9,11 +9,23 @@ const Matricula = require('../models/Matricula');
 const contextoDocumento = async ({ estudianteId, anioAcademicoId, institucionId }) => {
   const [estudiante, institucion, anio, matricula] = await Promise.all([
     Usuario.findById(estudianteId).select('nombres apellidos documento'),
-    Institucion.findById(institucionId).select('nombre direccion dane icfes logo'),
+    Institucion.findById(institucionId).select('nombre direccion dane icfes logo rectorId secretariaId'),
     AnioAcademico.findById(anioAcademicoId),
     Matricula.findOne({ estudianteId, anioAcademicoId, institucionId, estado: 'activa' }).populate('grupoId', 'nombre')
   ]);
-  return { estudiante, institucion, anio, grado: matricula?.grupoId?.nombre || '' };
+
+  const [rector, secretaria] = await Promise.all([
+    institucion?.rectorId
+      ? Usuario.findById(institucion.rectorId).select('nombres apellidos firma')
+      : Usuario.findOne({ institucionId, tipoPerfil: 'rector', estado: 'activo' }).select('nombres apellidos firma'),
+    institucion?.secretariaId
+      ? Usuario.findById(institucion.secretariaId).select('nombres apellidos firma')
+      : Usuario.findOne({ institucionId, tipoPerfil: 'secretaria', estado: 'activo' }).select('nombres apellidos firma')
+  ]);
+  const formatear = (u) => (u ? { nombre: `${u.nombres} ${u.apellidos}`, firma: u.firma || null } : { nombre: '', firma: null });
+  const firmantes = { rector: formatear(rector), secretaria: formatear(secretaria) };
+
+  return { estudiante, institucion, anio, grado: matricula?.grupoId?.nombre || '', firmantes };
 };
 
 const generarBoletinDato = async (tipo, params) => {
@@ -46,7 +58,8 @@ const generarPdf = async (req, res, { tipo, periodo }) => {
       estudiante: ctx.estudiante,
       anio: ctx.anio,
       institucion: ctx.institucion,
-      grado: ctx.grado
+      grado: ctx.grado,
+      firmantes: ctx.firmantes
     });
 
     const pdf = await PDFService.renderPdf(html);

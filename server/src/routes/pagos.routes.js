@@ -11,13 +11,14 @@ const {
   getCartera,
 } = require("../controllers/pagos.controller");
 
-const { protect, authorize } = require("../middleware/auth");
+const { protect, authorize, requiereColegioPrivado } = require("../middleware/auth");
 const { PERMISOS } = require("../config/constants");
 const { reglas, validar } = require("../middleware/validar");
 const { registrarAccion } = require("../middleware/auditoria");
 const { writeLimiter, deleteLimiter } = require("../middleware/security");
 
 router.use(protect);
+router.use(requiereColegioPrivado);
 
 router.get("/", authorize(...PERMISOS.FINANCIERO), getAll);
 router.get("/cartera", authorize(...PERMISOS.FINANCIERO), getCartera);

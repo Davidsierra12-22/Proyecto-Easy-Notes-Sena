@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const Usuario = require('../models/Usuario');
+const Institucion = require('../models/Institucion');
 const { MENSAJES } = require('../config/constants');
 const { restringirSuperAdmin } = require('./nucleoScope');
 
@@ -77,6 +78,23 @@ const authorize = (...roles) => {
   };
 };
 
+/**
+ * Bloquea módulos financieros (pagos, cartera, conceptos contables)
+ * cuando la institución es de carácter público.
+ */
+const requiereColegioPrivado = async (req, res, next) => {
+  try {
+    if (!req.usuario?.institucionId) return next();
+    const institucion = await Institucion.findById(req.usuario.institucionId).select('tipo');
+    if (institucion && institucion.tipo === 'publico') {
+      return res.status(403).json({ ok: false, message: 'Los módulos de pagos están desactivados para colegios públicos' });
+    }
+    next();
+  } catch (error) {
+    res.status(500).json({ ok: false, message: 'Error al validar el colegio', error: error.message });
+  }
+};
+
 const generarToken = (usuarioId, tipoPerfil) => {
   const payload = { id: usuarioId };
   if (tipoPerfil) payload.tipoPerfil = tipoPerfil;
@@ -137,4 +155,4 @@ const autorizarAccesoEstudiante = () => {
   };
 };
 
-module.exports = { protect, authorize, generarToken, autorizarAccesoEstudiante };
+module.exports = { protect, authorize, requiereColegioPrivado, generarToken, autorizarAccesoEstudiante };

@@ -134,6 +134,9 @@ const guardarNotas = async (req, res) => {
       const update = { ...item, institucionId };
       if (anioAcademicoId) update.anioAcademicoId = anioAcademicoId;
       if (req.usuario.tipoPerfil === 'docente') update.docenteId = req.usuario._id;
+      // Si vienen celdas de plantilla, el indicador se recalcula desde cero
+      // (evita reutilizar una nota de indicador desactualizada).
+      if (item.actividades && Array.isArray(item.actividades)) update.indicadores = [];
 
       const registro = await Calificacion.findOneAndUpdate(
         query,
@@ -217,6 +220,7 @@ const getByGrupoAsignaturaPeriodo = async (req, res) => {
     const data = await Calificacion.find(filter)
       .populate('estudianteId', 'nombres apellidos documento')
       .populate('asignaturaId', 'nombre abreviatura')
+      .populate('actividades.actividadId', 'titulo tipo porcentaje')
       .sort({ 'estudianteId.apellidos': 1 });
     res.json({ ok: true, data, message: 'Listado obtenido' });
   } catch (error) {

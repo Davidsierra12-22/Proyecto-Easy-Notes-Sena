@@ -2,6 +2,7 @@ const router = require('express').Router();
 
 // Yorman - Infraestructura y Setup
 router.use('/auth', require('./auth.routes'));
+router.use('/carga-masiva', require('./cargaMasiva.routes'));
 router.use('/usuarios', require('./usuario.routes'));
 router.use('/bitacora', require('./bitacora.routes'));
 router.use('/notificaciones', require('./notificacion.routes'));
@@ -23,6 +24,7 @@ router.use('/actividades', require('./actividad.routes'));
 router.use('/calificaciones', require('./calificacion.routes'));
 router.use('/boletines', require('./boletines.routes'));
 router.use('/certificados', require('./certificados.routes'));
+router.use('/informacion', require('./informacion.routes'));
 
 // Santiago - Modulo Academico
 router.use('/anios-academicos', require('./anioAcademico.routes'));

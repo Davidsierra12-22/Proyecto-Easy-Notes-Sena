@@ -1,15 +1,38 @@
 const Institucion = require('../models/Institucion');
 const Usuario = require('../models/Usuario');
-const path = require('path');
-const fs = require('fs');
 const { PERMISOS } = require('../config/constants');
 
-const UPLOAD_DIR = path.join(__dirname, '..', '..', 'uploads', 'logos');
-const FOTO_DIR = path.join(__dirname, '..', '..', 'uploads', 'fotos');
+const MAX_TAMANO_BASE64 = 2.5 * 1024 * 1024;
 
 const puedeGestionarFoto = (req) =>
   PERMISOS.DIRECCION.includes(req.usuario?.tipoPerfil) ||
   (req.usuario && req.params.id && req.usuario._id.toString() === req.params.id);
+
+const archivoADataUri = (file) => {
+  const mime = file.mimetype || 'image/jpeg';
+  return `data:${mime};base64,${file.buffer.toString('base64')}`;
+};
+
+const validarImagen = (file) => {
+  const mime = file.mimetype || '';
+  if (!mime.startsWith('image/')) {
+    const err = new Error('El archivo debe ser una imagen');
+    err.status = 400;
+    throw err;
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    const err = new Error('La imagen supera el tamaño máximo permitido (2MB)');
+    err.status = 400;
+    throw err;
+  }
+  const dataUri = archivoADataUri(file);
+  if (dataUri.length > MAX_TAMANO_BASE64) {
+    const err = new Error('La imagen supera el tamaño máximo permitido (2MB)');
+    err.status = 400;
+    throw err;
+  }
+  return dataUri;
+};
 
 const subirFotoUsuario = async (req, res) => {
   try {
@@ -25,20 +48,13 @@ const subirFotoUsuario = async (req, res) => {
       return res.status(404).json({ ok: false, message: 'Usuario no encontrado' });
     }
 
-    if (usuario.foto?.startsWith('/uploads/fotos/')) {
-      const anterior = path.join(FOTO_DIR, path.basename(usuario.foto));
-      if (fs.existsSync(anterior)) {
-        fs.unlinkSync(anterior);
-      }
-    }
-
-    const rutaRelativa = `/uploads/fotos/${req.file.filename}`;
-    usuario.foto = rutaRelativa;
+    const foto = validarImagen(req.file);
+    usuario.foto = foto;
     await usuario.save();
 
-    res.json({ ok: true, data: { foto: rutaRelativa }, message: 'Foto actualizada correctamente' });
+    res.json({ ok: true, data: { foto }, message: 'Foto actualizada correctamente' });
   } catch (error) {
-    res.status(500).json({ ok: false, message: 'Error al subir foto', error: error.message });
+    res.status(error.status || 500).json({ ok: false, message: error.message || 'Error al subir foto' });
   }
 };
 
@@ -51,13 +67,6 @@ const quitarFotoUsuario = async (req, res) => {
     const usuario = await Usuario.findById(req.params.id);
     if (!usuario) {
       return res.status(404).json({ ok: false, message: 'Usuario no encontrado' });
-    }
-
-    if (usuario.foto?.startsWith('/uploads/fotos/')) {
-      const anterior = path.join(FOTO_DIR, path.basename(usuario.foto));
-      if (fs.existsSync(anterior)) {
-        fs.unlinkSync(anterior);
-      }
     }
 
     usuario.foto = null;
@@ -85,25 +94,17 @@ const subirLogo = async (req, res) => {
       return res.status(404).json({ ok: false, message: 'Institución no encontrada' });
     }
 
-    // Eliminar logo anterior si existe
-    if (institucion.logo) {
-      const logoAnterior = path.join(UPLOAD_DIR, path.basename(institucion.logo));
-      if (fs.existsSync(logoAnterior)) {
-        fs.unlinkSync(logoAnterior);
-      }
-    }
-
-    const rutaRelativa = `/uploads/logos/${req.file.filename}`;
-    institucion.logo = rutaRelativa;
+    const logo = validarImagen(req.file);
+    institucion.logo = logo;
     await institucion.save();
 
     res.json({
       ok: true,
-      data: { logo: rutaRelativa },
+      data: { logo },
       message: 'Logo subido correctamente'
     });
   } catch (error) {
-    res.status(500).json({ ok: false, message: 'Error al subir logo', error: error.message });
+    res.status(error.status || 500).json({ ok: false, message: error.message || 'Error al subir logo' });
   }
 };
 
@@ -123,26 +124,62 @@ const subirFirmaRector = async (req, res) => {
       return res.status(404).json({ ok: false, message: 'Institución no encontrada' });
     }
 
-    // Eliminar firma anterior si existe
-    if (institucion.certificadoEncabezado) {
-      const firmaAnterior = path.join(UPLOAD_DIR, path.basename(institucion.certificadoEncabezado));
-      if (fs.existsSync(firmaAnterior)) {
-        fs.unlinkSync(firmaAnterior);
-      }
-    }
-
-    const rutaRelativa = `/uploads/logos/${req.file.filename}`;
-    institucion.certificadoEncabezado = rutaRelativa;
+    const firma = validarImagen(req.file);
+    institucion.certificadoEncabezado = firma;
     await institucion.save();
 
     res.json({
       ok: true,
-      data: { certificadoEncabezado: rutaRelativa },
+      data: { certificadoEncabezado: firma },
       message: 'Firma del rector subida correctamente'
     });
   } catch (error) {
-    res.status(500).json({ ok: false, message: 'Error al subir firma', error: error.message });
+    res.status(error.status || 500).json({ ok: false, message: error.message || 'Error al subir firma' });
   }
 };
 
-module.exports = { subirLogo, subirFirmaRector, subirFotoUsuario, quitarFotoUsuario };
+const subirFirmaUsuario = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ ok: false, message: 'No se envió ningún archivo' });
+    }
+    if (!puedeGestionarFoto(req)) {
+      return res.status(403).json({ ok: false, message: 'No tienes permisos para esta acción' });
+    }
+
+    const usuario = await Usuario.findById(req.params.id);
+    if (!usuario) {
+      return res.status(404).json({ ok: false, message: 'Usuario no encontrado' });
+    }
+
+    const firma = validarImagen(req.file);
+    usuario.firma = firma;
+    await usuario.save();
+
+    res.json({ ok: true, data: { firma }, message: 'Firma actualizada correctamente' });
+  } catch (error) {
+    res.status(error.status || 500).json({ ok: false, message: error.message || 'Error al subir firma' });
+  }
+};
+
+const quitarFirmaUsuario = async (req, res) => {
+  try {
+    if (!puedeGestionarFoto(req)) {
+      return res.status(403).json({ ok: false, message: 'No tienes permisos para esta acción' });
+    }
+
+    const usuario = await Usuario.findById(req.params.id);
+    if (!usuario) {
+      return res.status(404).json({ ok: false, message: 'Usuario no encontrado' });
+    }
+
+    usuario.firma = null;
+    await usuario.save();
+
+    res.json({ ok: true, message: 'Firma eliminada correctamente' });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: 'Error al quitar firma', error: error.message });
+  }
+};
+
+module.exports = { subirLogo, subirFirmaRector, subirFotoUsuario, quitarFotoUsuario, subirFirmaUsuario, quitarFirmaUsuario };

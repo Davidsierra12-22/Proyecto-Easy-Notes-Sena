@@ -1,6 +1,13 @@
 const Institucion = require('../models/Institucion');
 const Sede = require('../models/Sede');
 const { paginarQuery } = require('../utils/paginacion');
+const { sanearFoto } = require('../utils/archivos');
+
+const sanearInstitucion = (i) => ({
+  ...i,
+  logo: sanearFoto(i.logo),
+  certificadoEncabezado: sanearFoto(i.certificadoEncabezado)
+});
 
 const getAll = async (req, res) => {
   try {
@@ -32,6 +39,8 @@ const getAll = async (req, res) => {
       conteoSedes.forEach(s => { sedesPorInstitucion[s._id] = s.count; });
       const resultado = data.map(i => ({
         ...i.toObject(),
+        logo: sanearFoto(i.logo),
+        certificadoEncabezado: sanearFoto(i.certificadoEncabezado),
         sedesCount: sedesPorInstitucion[i._id] || 0
       }));
       return res.json({
@@ -51,6 +60,8 @@ const getAll = async (req, res) => {
     conteoSedes.forEach(s => { sedesPorInstitucion[s._id] = s.count; });
     const resultado = data.map(i => ({
       ...i.toObject(),
+      logo: sanearFoto(i.logo),
+      certificadoEncabezado: sanearFoto(i.certificadoEncabezado),
       sedesCount: sedesPorInstitucion[i._id] || 0
     }));
     res.json({ ok: true, data: resultado, message: 'Listado obtenido' });

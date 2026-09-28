@@ -3,6 +3,7 @@ const { ROLES } = require('../config/constants');
 const crypto = require('crypto');
 const mailService = require('../services/mailService');
 const { paginarQuery } = require('../utils/paginacion');
+const { sanearFoto } = require('../utils/archivos');
 
 const CAMPOS_OCULTOS = '-credenciales.passwordHash -credenciales.tokenRecuperacion -credenciales.tokenRecuperacionExpira';
 
@@ -30,16 +31,18 @@ const getAll = async (req, res) => {
         query.skip(pg.skip).limit(pg.limite),
         Usuario.countDocuments(filter)
       ]);
+      const resultado = data.map(u => ({ ...u.toObject(), foto: sanearFoto(u.foto) }));
       return res.json({
         ok: true,
-        data,
+        data: resultado,
         paginacion: { pagina: pg.pagina, limite: pg.limite, total, totalPaginas: Math.ceil(total / pg.limite) },
         message: 'Listado obtenido'
       });
     }
 
     const data = await query;
-    res.json({ ok: true, data, message: 'Listado obtenido' });
+    const resultado = data.map(u => ({ ...u.toObject(), foto: sanearFoto(u.foto) }));
+    res.json({ ok: true, data: resultado, message: 'Listado obtenido' });
   } catch (error) {
     res.status(500).json({ ok: false, message: 'Error al listar', error: error.message });
   }
@@ -49,7 +52,8 @@ const getById = async (req, res) => {
   try {
     const data = await Usuario.findById(req.params.id).select(CAMPOS_OCULTOS);
     if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
-    res.json({ ok: true, data });
+    const resultado = { ...data.toObject(), foto: sanearFoto(data.foto) };
+    res.json({ ok: true, data: resultado });
   } catch (error) {
     res.status(500).json({ ok: false, message: 'Error al obtener', error: error.message });
   }
@@ -132,7 +136,8 @@ const update = async (req, res) => {
     const data = await Usuario.findByIdAndUpdate(req.params.id, body, { new: true, runValidators: true })
       .select(CAMPOS_OCULTOS);
     if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
-    res.json({ ok: true, data, message: 'Actualizado correctamente' });
+    const resultado = { ...data.toObject(), foto: sanearFoto(data.foto) };
+    res.json({ ok: true, data: resultado, message: 'Actualizado correctamente' });
   } catch (error) {
     res.status(400).json({ ok: false, message: 'Error al actualizar', error: error.message });
   }
@@ -183,7 +188,8 @@ const buscarPorDocumento = async (req, res) => {
 
     const data = await Usuario.findOne(filter).select(CAMPOS_OCULTOS);
     if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
-    res.json({ ok: true, data });
+    const resultado = { ...data.toObject(), foto: sanearFoto(data.foto) };
+    res.json({ ok: true, data: resultado });
   } catch (error) {
     res.status(500).json({ ok: false, message: 'Error al buscar', error: error.message });
   }

@@ -1,4 +1,5 @@
 const Actividad = require('../models/Actividad');
+const Indicador = require('../models/Indicador');
 
 const getAll = async (req, res) => {
   try {
@@ -39,6 +40,33 @@ const create = async (req, res) => {
   try {
     const body = { ...req.body, institucionId: req.usuario.institucionId };
     if (!body.docenteId) body.docenteId = req.usuario._id;
+
+    // Plantilla: si no se indica indicador, se crea/reutiliza el indicador "Actividades"
+    // con peso 100 para la asignatura + período. Así la Nota = promedio ponderado de las celdas.
+    if (!body.indicadorId) {
+      let indicador = await Indicador.findOne({
+        institucionId: req.usuario.institucionId,
+        anioAcademicoId: body.anioAcademicoId,
+        asignaturaId: body.asignaturaId,
+        periodo: body.periodo,
+        descripcion: 'Actividades',
+        estado: 'activo'
+      });
+      if (!indicador) {
+        indicador = await Indicador.create({
+          institucionId: req.usuario.institucionId,
+          anioAcademicoId: body.anioAcademicoId,
+          asignaturaId: body.asignaturaId,
+          periodo: body.periodo,
+          descripcion: 'Actividades',
+          peso: 100,
+          orden: 0,
+          estado: 'activo'
+        });
+      }
+      body.indicadorId = indicador._id;
+    }
+
     const data = await Actividad.create(body);
     res.status(201).json({ ok: true, data, message: 'Actividad creada correctamente' });
   } catch (error) {

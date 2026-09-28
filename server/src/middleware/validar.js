@@ -21,6 +21,8 @@ const reglas = {
   estudianteId: param('estudianteId').isMongoId().withMessage('Estudiante invalido'),
   anioAcademicoId: param('anioAcademicoId').isMongoId().withMessage('Año academico invalido'),
   periodo: param('periodo').isInt({ min: 1, max: 5 }).withMessage('Periodo entre 1 y 5'),
+  periodoQuery: query('periodo').isInt({ min: 1, max: 5 }).withMessage('Periodo entre 1 y 5'),
+  anioAcademicoIdQuery: query('anioAcademicoId').isMongoId().withMessage('Año academico invalido'),
   tipoBoletin: param('tipo').isIn(['acumulativo', 'corto', 'descriptivo', 'final', 'preescolar']).withMessage('Tipo de boletin invalido'),
   pagina: query('page').optional().isInt({ min: 1 }).withMessage('Pagina debe ser entero positivo'),
   busqueda: query('q').optional().isLength({ max: 50 }).withMessage('Busqueda maximo 50 caracteres'),

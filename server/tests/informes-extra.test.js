@@ -53,6 +53,9 @@ describe('Certificados de estudio', () => {
   it('admin del mismo colegio genera certificado (200) con datos de la institucion', async () => {
     const inst = await crearInstitucion('123456789', '987654321');
     const admin = await crearUsuario('admin', inst._id);
+    const rector = await crearUsuario('rector', inst._id);
+    rector.firma = 'data:image/png;base64,rectorfirma';
+    await rector.save();
     const est = await crearUsuario('estudiante', inst._id);
     const token = await loginYToken(admin);
     const anio = await AnioAcademico.create({ institucionId: inst._id, anio: 2026, estado: 'activo' });
@@ -62,6 +65,9 @@ describe('Certificados de estudio', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.estudiante.documento).toBe(est.documento);
     expect(res.body.data.institucion.dane).toBe('123456789');
+    expect(res.body.data.firmantes).toBeDefined();
+    expect(res.body.data.firmantes.rector.nombre).toBe('Usuario Test');
+    expect(res.body.data.firmantes.rector.firma).toBe('data:image/png;base64,rectorfirma');
   });
 
   it('admin de otro colegio NO genera certificado (403)', async () => {

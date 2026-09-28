@@ -2,6 +2,9 @@ const Calificacion = require('../models/Calificacion');
 const Indicador = require('../models/Indicador');
 const AnioAcademico = require('../models/AnioAcademico');
 const Institucion = require('../models/Institucion');
+const Grupo = require('../models/Grupo');
+const Matricula = require('../models/Matricula');
+const Usuario = require('../models/Usuario');
 const CalificacionService = require('./calificacionService');
 const PromocionService = require('./promocionService');
 
@@ -339,6 +342,92 @@ class ReporteService {
       escalaCualitativa,
       totalAsignaturas: resultado.length
     };
+  }
+/**
+   * Cuadro de honor/información: mejores estudiantes por curso según promedio del período
+   * @param {Object} params - { anioAcademicoId, institucionId, periodo, topN }
+   * @returns {Promise<Array>} [{ gradoNumero, gradoNombre, grupos: [{ grupoNombre, estudiantes: [{ puesto, nombres, apellidos, documento, promedio }] }] }]
+   */
+  static async generarCuadroHonor({ anioAcademicoId, institucionId, periodo, topN = 3 }) {
+    const [institucion, matriculas, calificaciones] = await Promise.all([
+      Institucion.findById(institucionId).select('configuracion').lean(),
+      Matricula.find({
+        institucionId,
+        anioAcademicoId,
+        estado: 'activa'
+      }).select('estudianteId grupoId').populate('grupoId', 'nombre grado').populate('estudianteId', 'nombres apellidos documento').lean(),
+      Calificacion.find({
+        institucionId,
+        anioAcademicoId,
+        periodo
+      }).select('estudianteId nota recuperacion habilitacion').lean()
+    ]);
+
+    // Promedio por estudiante para el período (misma regla que el boletín corto)
+    const porEstudiante = {};
+    for (const cal of calificaciones) {
+      const id = cal.estudianteId?.toString();
+      if (!id) continue;
+      const notaVigente = cal.recuperacion ?? (cal.habilitacion ?? cal.nota);
+      if (notaVigente == null) continue;
+      if (!porEstudiante[id]) porEstudiante[id] = { suma: 0, conteo: 0 };
+      porEstudiante[id].suma += notaVigente;
+      porEstudiante[id].conteo += 1;
+    }
+
+    // Agrupar matriculados por grupo con su promedio
+    const gruposMap = {};
+    for (const m of matriculas) {
+      const grupo = m.grupoId;
+      const estudiante = m.estudianteId;
+      if (!grupo || !estudiante) continue;
+      const idEstudiante = estudiante._id.toString();
+      const acu = porEstudiante[idEstudiante];
+      if (!acu || acu.conteo === 0) continue;
+
+      const clave = grupo._id.toString();
+      if (!gruposMap[clave]) {
+        gruposMap[clave] = { grupoId: grupo._id, gradoNumero: grupo.grado, grupoNombre: grupo.nombre, estudiantes: [] };
+      }
+
+      const nombreGrado = (institucion?.configuracion?.grados || [])
+        .find(g => Number(g.numero) === Number(grupo.grado))?.nombre;
+
+      gruposMap[clave].estudiantes.push({
+        estudianteId: idEstudiante,
+        nombres: estudiante.nombres || '',
+        apellidos: estudiante.apellidos || '',
+        documento: estudiante.documento || '',
+        gradoNombre: nombreGrado || `Grado ${grupo.grado}`,
+        promedio: Math.round((acu.suma / acu.conteo) * 100) / 100
+      });
+    }
+
+    // Ordenar por promedio desc, asignar puesto y recortar al topN
+    const grupos = Object.values(gruposMap).map(g => {
+      g.estudiantes.sort((a, b) => b.promedio - a.promedio || String(a.apellidos).localeCompare(String(b.apellidos)));
+      g.estudiantes = g.estudiantes.slice(0, Math.max(1, Math.min(Number(topN) || 3, 100)))
+        .map((e, i) => ({ puesto: i + 1, ...e }));
+      return g;
+    }).sort((a, b) => a.gradoNumero - b.gradoNumero || String(a.grupoNombre).localeCompare(String(b.grupoNombre)));
+
+    // Agrupar por grado
+    const porGrado = {};
+    for (const g of grupos) {
+      const clave = String(g.gradoNumero);
+      if (!porGrado[clave]) {
+        porGrado[clave] = {
+          gradoNumero: g.gradoNumero,
+          gradoNombre: g.estudiantes?.[0]?.gradoNombre || `Grado ${g.gradoNumero}`,
+          grupos: []
+        };
+      }
+      porGrado[clave].grupos.push({ grupoNombre: g.grupoNombre, estudiantes: g.estudiantes });
+    }
+
+    return Object.keys(porGrado)
+      .sort((a, b) => Number(a) - Number(b))
+      .map(k => porGrado[k]);
   }
 }
 

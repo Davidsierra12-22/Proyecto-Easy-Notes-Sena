@@ -4,7 +4,6 @@ const { paginarQuery } = require('../utils/paginacion');
 const getAll = async (req, res) => {
     try {
         const filter = req.usuario?.institucionId ? { institucionId: req.usuario.institucionId } : {};
-        if (req.query.sedeId) filter.sedeId = req.query.sedeId;
 
         const pg = paginarQuery(req, 50);
         let query = Model.find(filter).sort({ nombre: 1 });

@@ -4,7 +4,6 @@ const { paginarQuery } = require('../utils/paginacion');
 const getAll = async (req, res) => {
     try {
         const filter = req.usuario?.institucionId ? { institucionId: req.usuario.institucionId } : {};
-        if (req.query.sedeId) filter.sedeId = req.query.sedeId;
 
         const pg = paginarQuery(req, 50);
         let query = Model.find(filter).sort({ nombre: 1 });
@@ -69,7 +68,6 @@ const remove = async (req, res) => {
 const getByArea = async (req, res) => {
     try {
         const filter = { areaId: req.params.areaId };
-        if (req.query.sedeId) filter.sedeId = req.query.sedeId;
         const data = await Model.find(filter);
         res.json({ ok: true, data, message: 'Asignaturas obtenidas por área' });
     } catch (error) {

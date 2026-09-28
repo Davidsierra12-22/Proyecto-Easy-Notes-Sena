@@ -1,7 +1,7 @@
 const { Router } = require('express');
 const router = Router();
 const controller = require('../controllers/usuario.controller');
-const { subirFotoUsuario, quitarFotoUsuario } = require('../controllers/upload.controller');
+const { subirFotoUsuario, quitarFotoUsuario, subirFirmaUsuario, quitarFirmaUsuario } = require('../controllers/upload.controller');
 const { protect, authorize } = require('../middleware/auth');
 const { PERMISOS } = require('../config/constants');
 const { reglas, validar } = require('../middleware/validar');
@@ -27,6 +27,8 @@ const multerFotoUsuario = (req, res, next) =>
 
 router.post('/:id/foto', protect, reglas.idMongo, validar, writeLimiter, multerFotoUsuario, registrarAccion('subir_foto_perfil', 'Usuarios'), subirFotoUsuario);
 router.delete('/:id/foto', protect, reglas.idMongo, validar, deleteLimiter, registrarAccion('quitar_foto_perfil', 'Usuarios'), quitarFotoUsuario);
+router.post('/:id/firma', protect, reglas.idMongo, validar, writeLimiter, multerFotoUsuario, registrarAccion('subir_firma', 'Usuarios'), subirFirmaUsuario);
+router.delete('/:id/firma', protect, reglas.idMongo, validar, deleteLimiter, registrarAccion('quitar_firma', 'Usuarios'), quitarFirmaUsuario);
 router.post('/:id/notificar-credenciales', protect, reglas.idMongo, validar, writeLimiter, authorize(...PERMISOS.DIRECCION), registrarAccion('notificar_credenciales', 'Usuarios'), controller.enviarCredenciales);
 
 module.exports = router;

@@ -14,6 +14,7 @@ const escapar = (valor) => String(valor ?? '').replace(/[&<>"']/g, (c) => ({
 
 const logoBase64 = (logo) => {
   if (!logo) return '';
+  if (String(logo).startsWith('data:image/')) return logo;
   try {
     const ruta = logo.startsWith('/')
       ? path.join(__dirname, '..', '..', logo)
@@ -117,16 +118,48 @@ const tablaBoletin = (boletin) => {
     <tbody>${filas}</tbody></table>`;
 };
 
-const firmaRector = () => `
+const firmaFirmante = ({ nombre, firma, cargo }) => {
+  const img = firma ? `<img class="img-firma" src="${firma}" alt="Firma" />` : '<div class="linea-firma"></div>';
+  return `
+  <div class="firma">
+    ${img}
+    <div>${escapar(nombre || '')}</div>
+    <div class="cargo">${escapar(cargo || '')}</div>
+  </div>`;
+};
+
+const firmaRector = (firmantes) => {
+  if (firmantes?.rector?.firma) {
+    return `
+    <div class="firmas">
+      <div class="firma">
+        <img class="img-firma" src="${firmantes.rector.firma}" alt="Firma del rector" />
+        <div>${escapar(firmantes.rector.nombre || '')}</div>
+        <div class="cargo">Rector(a)</div>
+      </div>
+    </div>`;
+  }
+  return `
   <div class="firma">
     <div class="linea-firma"></div>
     <div>Rector(a)</div>
   </div>`;
+};
+
+const firmasCertificado = (firmantes) => {
+  const rector = firmantes?.rector;
+  const secretaria = firmantes?.secretaria;
+  return `
+  <div class="firmas">
+    ${firmaFirmante({ nombre: rector?.nombre, firma: rector?.firma, cargo: 'Rector(a)' })}
+    ${firmaFirmante({ nombre: secretaria?.nombre, firma: secretaria?.firma, cargo: 'Secretaría Académica' })}
+  </div>`;
+};
 
 /**
  * HTML del boletín para PDF.
  */
-const htmlBoletin = ({ boletin, estudiante, anio, institucion, grado }) => `
+const htmlBoletin = ({ boletin, estudiante, anio, institucion, grado, firmantes }) => `
   <!DOCTYPE html>
   <html>
     <head>
@@ -156,6 +189,8 @@ const htmlBoletin = ({ boletin, estudiante, anio, institucion, grado }) => `
         .nota * { vertical-align: top; font-size: 10px; color: #555; margin-top: 6px; }
         .firma { width: 220px; margin: 44px auto 0; text-align: center; font-size: 11px; }
         .linea-firma { border-top: 1px solid #333; margin-bottom: 4px; }
+        .firma .img-firma { max-height: 70px; max-width: 200px; margin-bottom: 2px; }
+        .firma .cargo { margin-top: 2px; }
       </style>
     </head>
     <body>
@@ -185,7 +220,7 @@ const htmlBoletin = ({ boletin, estudiante, anio, institucion, grado }) => `
           )}
         </div>` : ''}
       <div class="nota">* Nota recuperada o habilitada</div>
-      ${firmaRector()}
+      ${firmaRector(firmantes)}
     </body>
   </html>`;
 
@@ -212,8 +247,11 @@ const htmlCertificado = ({ certificado, institucion }) => {
         .resumen { width: 100%; border-collapse: collapse; margin-top: 16px; }
         .resumen td, .resumen th { border: 1px solid #999; padding: 5px 8px; text-align: center; font-size: 12px; }
         .resumen th { background: #ecf0f1; }
-        .firma { width: 220px; margin: 60px auto 0; text-align: center; font-size: 12px; }
+        .firmas { display: flex; justify-content: space-between; gap: 24px; margin-top: 64px; }
+        .firma { flex: 1; text-align: center; font-size: 12px; }
         .linea-firma { border-top: 1px solid #333; margin-bottom: 4px; }
+        .firma .img-firma { max-height: 70px; max-width: 200px; margin-bottom: 2px; }
+        .firma .cargo { margin-top: 6px; font-size: 11px; color: #333; }
       </style>
     </head>
     <body>
@@ -236,7 +274,7 @@ const htmlCertificado = ({ certificado, institucion }) => {
           <td>${c.promovido == null ? '—' : c.promovido ? 'Promovido' : 'No promovido'}</td>
         </tr>
       </table>
-      ${firmaRector()}
+      ${firmasCertificado(c.firmantes)}
     </body>
   </html>`;
 };

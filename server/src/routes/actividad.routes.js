@@ -13,6 +13,6 @@ router.get('/grupo/:grupoId/periodo/:periodo', protect, controller.getByGrupoPer
 router.get('/:id', protect, reglas.idMongo, validar, controller.getById);
 router.post('/', protect, verificarPeriodoAbierto, writeLimiter, authorize(...PERMISOS.DOCENTE), registrarAccion('crear_actividad', 'Actividades'), controller.create);
 router.put('/:id', protect, reglas.idMongo, validar, verificarPeriodoAbierto, writeLimiter, authorize(...PERMISOS.DOCENTE), registrarAccion('editar_actividad', 'Actividades'), controller.update);
-router.delete('/:id', protect, reglas.idMongo, validar, deleteLimiter, authorize(...PERMISOS.INSTITUCIONAL), registrarAccion('eliminar_actividad', 'Actividades'), controller.remove);
+router.delete('/:id', protect, reglas.idMongo, validar, deleteLimiter, authorize(...PERMISOS.DOCENTE), registrarAccion('eliminar_actividad', 'Actividades'), controller.remove);
 
 module.exports = router;

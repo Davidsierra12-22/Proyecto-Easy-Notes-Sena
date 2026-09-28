@@ -4,6 +4,7 @@ const Institucion = require('../models/Institucion');
 const Bitacora = require('../models/Bitacora');
 const { generarToken } = require('../middleware/auth');
 const { enviarRecuperacion, configurado: smtpConfigurado } = require('../services/mailService');
+const { sanearFoto } = require('../utils/archivos');
 
 const construirUsuario = (user, tipoPerfil) => ({
   id: user._id,
@@ -21,12 +22,14 @@ const construirUsuario = (user, tipoPerfil) => ({
     ? {
         id: user.institucionId._id || user.institucionId,
         nombre: user.institucionId.nombre,
-        logo: user.institucionId.logo
+        logo: sanearFoto(user.institucionId.logo),
+        tipo: user.institucionId.tipo
       }
     : null,
   nucleoId: user.nucleoId,
   debeCambiarPassword: user.credenciales.debeCambiarPassword,
-  foto: user.foto
+  foto: sanearFoto(user.foto),
+  firma: sanearFoto(user.firma)
 });
 
 const login = async (req, res) => {
@@ -40,7 +43,7 @@ const login = async (req, res) => {
       { 'credenciales.usuario': usuario },
       { documento: usuario }
     ] };
-    const user = await Usuario.findOne(criterio).populate('institucionId', 'nombre logo');
+    const user = await Usuario.findOne(criterio).populate('institucionId', 'nombre logo tipo');
     if (!user) {
       Bitacora.create({ accion: 'login_fallido', coleccion: 'Usuarios', detalle: `Usuario no encontrado: ${usuario}`, direccionIp: req.ip, metodo: 'POST', ruta: req.originalUrl }).catch(() => {});
       return res.status(401).json({ ok: false, message: 'Credenciales invalidas' });
@@ -91,7 +94,7 @@ const cambiarPerfil = async (req, res) => {
       return res.status(400).json({ ok: false, message: 'Selecciona un perfil' });
     }
 
-    const user = await Usuario.findById(req.usuario._id).populate('institucionId', 'nombre logo');
+    const user = await Usuario.findById(req.usuario._id).populate('institucionId', 'nombre logo tipo');
     const perfiles = user.roles && user.roles.length ? user.roles : [user.tipoPerfil];
     if (!perfiles.includes(perfil)) {
       return res.status(403).json({ ok: false, message: 'El perfil no está asignado a este usuario' });

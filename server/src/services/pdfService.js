@@ -1,18 +1,10 @@
 const fs = require('fs');
 
-let puppeteer = null;
-let browserPromise = null;
-
 const CANDIDATOS = [
   '/home/lenovot440/.cache/puppeteer/chrome/linux-149.0.7827.22/chrome-linux64/chrome'
 ];
 
-const obtenerPuppeteer = () => {
-  if (!puppeteer) {
-    puppeteer = require('puppeteer');
-  }
-  return puppeteer;
-};
+let browserPromise = null;
 
 const encontrarChrome = () => {
   if (process.env.PUPPETEER_EXECUTABLE_PATH) return process.env.PUPPETEER_EXECUTABLE_PATH;
@@ -24,10 +16,28 @@ const encontrarChrome = () => {
 
 const obtenerBrowser = async () => {
   if (!browserPromise) {
-    browserPromise = obtenerPuppeteer().launch({
+    let executablePath = encontrarChrome();
+    let args = ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'];
+
+    const mod = await import('puppeteer-core');
+    const puppeteerCore = mod.default || mod;
+
+    if (!executablePath) {
+      try {
+        const chromiumMod = await import('@sparticuz/chromium');
+        const Chromium = chromiumMod.default || chromiumMod;
+        executablePath = await Chromium.executablePath();
+        const cromiumArgs = Chromium.args || [];
+        if (cromiumArgs.length) args = cromiumArgs;
+      } catch (e) {
+        console.warn('No se pudo cargar @sparticuz/chromium:', e.message);
+      }
+    }
+
+    browserPromise = puppeteerCore.launch({
       headless: true,
-      executablePath: encontrarChrome(),
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+      executablePath,
+      args
     });
     browserPromise.catch(() => { browserPromise = null; });
   }

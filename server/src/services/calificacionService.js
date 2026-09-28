@@ -76,8 +76,26 @@ class CalificacionService {
           .filter(n => n != null);
 
         if (notasActividades.length > 0) {
-          // RN-CAL-03: Promedio aritmético simple
-          notaIndicador = notasActividades.reduce((a, b) => a + b, 0) / notasActividades.length;
+          // RN-CAL-03/POND: Promedio ponderado por porcentaje si las actividades tienen %
+          const porcentajesPorActividad = {};
+          for (const a of actividadesDelIndicador) {
+            porcentajesPorActividad[a._id.toString()] = a.porcentaje;
+          }
+          let sumaPonderada = 0;
+          let sumaPorcentajes = 0;
+          for (const calAct of actividadesEnCalificacion) {
+            const actId = calAct.actividadId ? calAct.actividadId.toString() : '';
+            if (!actividadIds.includes(actId) || calAct.nota == null) continue;
+            const pct = porcentajesPorActividad[actId] || 0;
+            sumaPonderada += calAct.nota * pct;
+            sumaPorcentajes += pct;
+          }
+          if (sumaPorcentajes > 0) {
+            notaIndicador = sumaPonderada / sumaPorcentajes;
+          } else {
+            // Sin porcentajes: promedio aritmético simple
+            notaIndicador = notasActividades.reduce((a, b) => a + b, 0) / notasActividades.length;
+          }
         }
       }
 
