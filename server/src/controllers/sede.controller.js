@@ -1,11 +1,10 @@
 const Sede = require('../models/Sede');
 const { paginarQuery } = require('../utils/paginacion');
+const { conAlcance, conAlcanceListado, sinCamposDeAlcance } = require('../utils/alcance');
 
 const getAll = async (req, res) => {
   try {
-    const filter = {};
-    if (req.usuario.institucionId) filter.institucionId = req.usuario.institucionId;
-    if (req.query.institucionId) filter.institucionId = req.query.institucionId;
+    const filter = conAlcanceListado(req.usuario, {}, req.query);
     if (req.query.estado) filter.estado = req.query.estado;
 
     const pg = paginarQuery(req);
@@ -30,7 +29,8 @@ const getAll = async (req, res) => {
 
 const getById = async (req, res) => {
   try {
-    const data = await Sede.findById(req.params.id).populate('institucionId', 'nombre nit');
+    const data = await Sede.findOne(conAlcance(req.usuario, { _id: req.params.id }))
+      .populate('institucionId', 'nombre nit');
     if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
     res.json({ ok: true, data });
   } catch (error) {
@@ -40,8 +40,8 @@ const getById = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    const body = { ...req.body };
-    if (!body.institucionId && req.usuario.institucionId) body.institucionId = req.usuario.institucionId;
+    const body = sinCamposDeAlcance(req.body);
+    if (req.usuario.institucionId) body.institucionId = req.usuario.institucionId;
     const data = await Sede.create(body);
     res.status(201).json({ ok: true, data, message: 'Sede creada correctamente' });
   } catch (error) {
@@ -51,7 +51,11 @@ const create = async (req, res) => {
 
 const update = async (req, res) => {
   try {
-    const data = await Sede.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const data = await Sede.findOneAndUpdate(
+      conAlcance(req.usuario, { _id: req.params.id }),
+      sinCamposDeAlcance(req.body),
+      { new: true, runValidators: true }
+    );
     if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
     res.json({ ok: true, data, message: 'Actualizado correctamente' });
   } catch (error) {
@@ -61,7 +65,7 @@ const update = async (req, res) => {
 
 const remove = async (req, res) => {
   try {
-    const data = await Sede.findByIdAndDelete(req.params.id);
+    const data = await Sede.findOneAndDelete(conAlcance(req.usuario, { _id: req.params.id }));
     if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
     res.json({ ok: true, message: 'Eliminado correctamente' });
   } catch (error) {

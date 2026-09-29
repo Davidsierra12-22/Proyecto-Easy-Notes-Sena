@@ -1,5 +1,6 @@
 const Model = require('../models/Grupo');
 const { paginarQuery } = require('../utils/paginacion');
+const { conAlcance, sinCamposDeAlcance } = require('../utils/alcance');
 
 const getAll = async (req, res) => {
     try {
@@ -26,7 +27,7 @@ const getAll = async (req, res) => {
 
 const getById = async (req, res) => {
     try {
-        const data = await Model.findById(req.params.id);
+        const data = await Model.findOne(conAlcance(req.usuario, { _id: req.params.id }));
         if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
         res.json({ ok: true, data });
     } catch (error) {
@@ -36,7 +37,7 @@ const getById = async (req, res) => {
 
 const create = async (req, res) => {
     try {
-        const body = { ...req.body };
+        const body = sinCamposDeAlcance(req.body);
         if (req.usuario?.institucionId) body.institucionId = req.usuario.institucionId;
         const data = await Model.create(body);
         res.status(201).json({ ok: true, data, message: 'Creado correctamente' });
@@ -47,7 +48,11 @@ const create = async (req, res) => {
 
 const update = async (req, res) => {
     try {
-        const data = await Model.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+        const data = await Model.findOneAndUpdate(
+            conAlcance(req.usuario, { _id: req.params.id }),
+            sinCamposDeAlcance(req.body),
+            { new: true, runValidators: true }
+        );
         if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
         res.json({ ok: true, data, message: 'Actualizado correctamente' });
     } catch (error) {
@@ -57,7 +62,7 @@ const update = async (req, res) => {
 
 const remove = async (req, res) => {
     try {
-        const data = await Model.findByIdAndDelete(req.params.id);
+        const data = await Model.findOneAndDelete(conAlcance(req.usuario, { _id: req.params.id }));
         if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
         res.json({ ok: true, message: 'Eliminado correctamente' });
     } catch (error) {

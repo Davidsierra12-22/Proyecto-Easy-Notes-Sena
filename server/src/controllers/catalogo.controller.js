@@ -1,10 +1,9 @@
 const Catalogo = require('../models/Catalogo');
+const { conAlcance, conAlcanceListado, sinCamposDeAlcance } = require('../utils/alcance');
 
 const getAll = async (req, res) => {
   try {
-    const filter = {};
-    if (req.usuario.institucionId) filter.institucionId = req.usuario.institucionId;
-    if (req.query.institucionId) filter.institucionId = req.query.institucionId;
+    const filter = conAlcanceListado(req.usuario, {}, req.query);
     if (req.query.tipo) filter.tipo = req.query.tipo;
     if (req.query.activo !== undefined) filter.activo = req.query.activo === 'true';
 
@@ -17,7 +16,7 @@ const getAll = async (req, res) => {
 
 const getById = async (req, res) => {
   try {
-    const data = await Catalogo.findById(req.params.id);
+    const data = await Catalogo.findOne(conAlcance(req.usuario, { _id: req.params.id }));
     if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
     res.json({ ok: true, data });
   } catch (error) {
@@ -27,8 +26,8 @@ const getById = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    const body = { ...req.body };
-    if (!body.institucionId && req.usuario.institucionId) body.institucionId = req.usuario.institucionId;
+    const body = sinCamposDeAlcance(req.body);
+    if (req.usuario.institucionId) body.institucionId = req.usuario.institucionId;
     const data = await Catalogo.create(body);
     res.status(201).json({ ok: true, data, message: 'Catalogo creado correctamente' });
   } catch (error) {
@@ -41,7 +40,11 @@ const create = async (req, res) => {
 
 const update = async (req, res) => {
   try {
-    const data = await Catalogo.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const data = await Catalogo.findOneAndUpdate(
+      conAlcance(req.usuario, { _id: req.params.id }),
+      sinCamposDeAlcance(req.body),
+      { new: true, runValidators: true }
+    );
     if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
     res.json({ ok: true, data, message: 'Actualizado correctamente' });
   } catch (error) {
@@ -51,7 +54,7 @@ const update = async (req, res) => {
 
 const remove = async (req, res) => {
   try {
-    const data = await Catalogo.findByIdAndDelete(req.params.id);
+    const data = await Catalogo.findOneAndDelete(conAlcance(req.usuario, { _id: req.params.id }));
     if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
     res.json({ ok: true, message: 'Eliminado correctamente' });
   } catch (error) {
@@ -61,8 +64,7 @@ const remove = async (req, res) => {
 
 const getByTipo = async (req, res) => {
   try {
-    const filter = { tipo: req.params.tipo, activo: true };
-    if (req.usuario.institucionId) filter.institucionId = req.usuario.institucionId;
+    const filter = conAlcance(req.usuario, { tipo: req.params.tipo, activo: true });
 
     const data = await Catalogo.find(filter).sort({ orden: 1 });
     res.json({ ok: true, data, message: 'Listado obtenido' });
