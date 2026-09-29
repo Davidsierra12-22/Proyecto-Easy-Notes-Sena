@@ -1,11 +1,10 @@
 const EventoElectoral = require("../models/EventoElectoral");
+const { conAlcance, sinCamposDeAlcance } = require("../utils/alcance");
 
 // Obtener todos los eventos
 const getAll = async (req, res) => {
   try {
-    const filtro = req.usuario?.institucionId
-      ? { institucionId: req.usuario.institucionId }
-      : {};
+    const filtro = conAlcance(req.usuario);
 
     const data = await EventoElectoral.find(filtro).sort({
       createdAt: -1,
@@ -28,7 +27,7 @@ const getAll = async (req, res) => {
 // Obtener un evento por ID
 const getById = async (req, res) => {
   try {
-    const data = await EventoElectoral.findById(req.params.id);
+    const data = await EventoElectoral.findOne(conAlcance(req.usuario, { _id: req.params.id }));
 
     if (!data) {
       return res.status(404).json({
@@ -53,7 +52,7 @@ const getById = async (req, res) => {
 // Crear evento
 const create = async (req, res) => {
   try {
-    const body = { ...req.body };
+    const body = sinCamposDeAlcance(req.body);
 
     if (req.usuario?.institucionId) {
       body.institucionId = req.usuario.institucionId;
@@ -78,9 +77,9 @@ const create = async (req, res) => {
 // Actualizar evento
 const update = async (req, res) => {
   try {
-    const data = await EventoElectoral.findByIdAndUpdate(
-      req.params.id,
-      req.body,
+    const data = await EventoElectoral.findOneAndUpdate(
+      conAlcance(req.usuario, { _id: req.params.id }),
+      sinCamposDeAlcance(req.body),
       {
         new: true,
         runValidators: true,
@@ -111,7 +110,7 @@ const update = async (req, res) => {
 // Eliminar evento
 const remove = async (req, res) => {
   try {
-    const data = await EventoElectoral.findByIdAndDelete(req.params.id);
+    const data = await EventoElectoral.findOneAndDelete(conAlcance(req.usuario, { _id: req.params.id }));
 
     if (!data) {
       return res.status(404).json({

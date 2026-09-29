@@ -30,7 +30,7 @@ describe('Aislamiento del modulo academico entre colegios', () => {
   let tokenAdmin; let tokenSecretaria; let tokenDocente;
   let anioA; let anioB;
   let grupoA; let grupoB;
-  let asignaturaA; let asignaturaB;
+  let asignaturaA; let asignaturaA2; let asignaturaB;
   let estudianteA; let estudianteB;
 
   const crearAnio = (institucionId) =>

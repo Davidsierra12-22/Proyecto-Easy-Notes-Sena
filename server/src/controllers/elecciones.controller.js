@@ -1,11 +1,10 @@
 const Elecciones = require("../models/Elecciones");
+const { conAlcance, sinCamposDeAlcance } = require("../utils/alcance");
 
 // Obtener todas
 const getAll = async (req, res) => {
   try {
-    const filtro = req.usuario?.institucionId
-      ? { institucionId: req.usuario.institucionId }
-      : {};
+    const filtro = conAlcance(req.usuario);
 
     const data = await Elecciones.find(filtro).sort({ createdAt: -1 });
 
@@ -26,7 +25,7 @@ const getAll = async (req, res) => {
 // Obtener por ID
 const getById = async (req, res) => {
   try {
-    const data = await Elecciones.findById(req.params.id);
+    const data = await Elecciones.findOne(conAlcance(req.usuario, { _id: req.params.id }));
 
     if (!data) {
       return res.status(404).json({
@@ -51,7 +50,7 @@ const getById = async (req, res) => {
 // Crear
 const create = async (req, res) => {
   try {
-    const body = { ...req.body };
+    const body = sinCamposDeAlcance(req.body);
 
     if (req.usuario?.institucionId) {
       body.institucionId = req.usuario.institucionId;
@@ -76,9 +75,9 @@ const create = async (req, res) => {
 // Actualizar
 const update = async (req, res) => {
   try {
-    const data = await Elecciones.findByIdAndUpdate(
-      req.params.id,
-      req.body,
+    const data = await Elecciones.findOneAndUpdate(
+      conAlcance(req.usuario, { _id: req.params.id }),
+      sinCamposDeAlcance(req.body),
       {
         new: true,
         runValidators: true,
@@ -109,7 +108,7 @@ const update = async (req, res) => {
 // Eliminar
 const remove = async (req, res) => {
   try {
-    const data = await Elecciones.findByIdAndDelete(req.params.id);
+    const data = await Elecciones.findOneAndDelete(conAlcance(req.usuario, { _id: req.params.id }));
 
     if (!data) {
       return res.status(404).json({
@@ -134,7 +133,7 @@ const remove = async (req, res) => {
 // Abrir elección
 const abrir = async (req, res) => {
   try {
-    const eleccion = await Elecciones.findById(req.params.id);
+    const eleccion = await Elecciones.findOne(conAlcance(req.usuario, { _id: req.params.id }));
 
     if (!eleccion) {
       return res.status(404).json({
@@ -164,7 +163,7 @@ const abrir = async (req, res) => {
 // Cerrar elección
 const cerrar = async (req, res) => {
   try {
-    const eleccion = await Elecciones.findById(req.params.id);
+    const eleccion = await Elecciones.findOne(conAlcance(req.usuario, { _id: req.params.id }));
 
     if (!eleccion) {
       return res.status(404).json({
@@ -194,7 +193,7 @@ const cerrar = async (req, res) => {
 // Votar
 const votar = async (req, res) => {
   try {
-    const eleccion = await Elecciones.findById(req.params.id);
+    const eleccion = await Elecciones.findOne(conAlcance(req.usuario, { _id: req.params.id }));
 
     if (!eleccion) {
       return res.status(404).json({
@@ -244,7 +243,7 @@ const votar = async (req, res) => {
 // Resultados
 const resultados = async (req, res) => {
   try {
-    const eleccion = await Elecciones.findById(req.params.id);
+    const eleccion = await Elecciones.findOne(conAlcance(req.usuario, { _id: req.params.id }));
 
     if (!eleccion) {
       return res.status(404).json({

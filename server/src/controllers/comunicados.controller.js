@@ -1,12 +1,11 @@
 const Comunicados = require("../models/Comunicados");
 const { paginarQuery } = require("../utils/paginacion");
+const { conAlcance, sinCamposDeAlcance } = require("../utils/alcance");
 
 // Obtener todos
 const getAll = async (req, res) => {
   try {
-    const filtro = req.usuario?.institucionId
-      ? { institucionId: req.usuario.institucionId }
-      : {};
+    const filtro = conAlcance(req.usuario);
 
     const pg = paginarQuery(req);
     const query = Comunicados.find(filtro)
@@ -45,7 +44,9 @@ const getAll = async (req, res) => {
 // Obtener por id
 const getById = async (req, res) => {
   try {
-    const data = await Comunicados.findById(req.params.id)
+    const data = await Comunicados.findOne(
+      conAlcance(req.usuario, { _id: req.params.id })
+    )
       .populate("remitenteId", "nombres apellidos")
       .populate("destinatarios.usuarioId", "nombres apellidos");
 
@@ -72,7 +73,7 @@ const getById = async (req, res) => {
 // Crear
 const create = async (req, res) => {
   try {
-    const body = { ...req.body };
+    const body = sinCamposDeAlcance(req.body);
 
     if (req.usuario?.institucionId) {
       body.institucionId = req.usuario.institucionId;
@@ -101,9 +102,9 @@ const create = async (req, res) => {
 // Actualizar
 const update = async (req, res) => {
   try {
-    const data = await Comunicados.findByIdAndUpdate(
-      req.params.id,
-      req.body,
+    const data = await Comunicados.findOneAndUpdate(
+      conAlcance(req.usuario, { _id: req.params.id }),
+      sinCamposDeAlcance(req.body),
       {
         new: true,
         runValidators: true,
@@ -134,7 +135,7 @@ const update = async (req, res) => {
 // Eliminar
 const remove = async (req, res) => {
   try {
-    const data = await Comunicados.findByIdAndDelete(req.params.id);
+    const data = await Comunicados.findOneAndDelete(conAlcance(req.usuario, { _id: req.params.id }));
 
     if (!data) {
       return res.status(404).json({
@@ -159,7 +160,11 @@ const remove = async (req, res) => {
 // Marcar como leído
 const marcarLeido = async (req, res) => {
   try {
-    const comunicado = await Comunicados.findById(req.params.id);
+    // findById + save escribia por _id sin mirar la institucion: un
+    // comunicado ajeno quedaba marcado como leido dentro de su propio array.
+    const comunicado = await Comunicados.findOne(
+      conAlcance(req.usuario, { _id: req.params.id })
+    );
 
     if (!comunicado) {
       return res.status(404).json({

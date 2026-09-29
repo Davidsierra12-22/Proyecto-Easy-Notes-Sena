@@ -1,11 +1,10 @@
 const ConceptosContables = require("../models/ConceptosContables");
+const { conAlcance, sinCamposDeAlcance } = require("../utils/alcance");
 
 // Obtener todos
 const getAll = async (req, res) => {
   try {
-    const filtro = req.usuario?.institucionId
-      ? { institucionId: req.usuario.institucionId }
-      : {};
+    const filtro = conAlcance(req.usuario);
 
     const data = await ConceptosContables.find(filtro).sort({ createdAt: -1 });
 
@@ -26,7 +25,7 @@ const getAll = async (req, res) => {
 // Obtener por ID
 const getById = async (req, res) => {
   try {
-    const data = await ConceptosContables.findById(req.params.id);
+    const data = await ConceptosContables.findOne(conAlcance(req.usuario, { _id: req.params.id }));
 
     if (!data) {
       return res.status(404).json({
@@ -51,7 +50,7 @@ const getById = async (req, res) => {
 // Crear
 const create = async (req, res) => {
   try {
-    const body = { ...req.body };
+    const body = sinCamposDeAlcance(req.body);
 
     if (req.usuario?.institucionId) {
       body.institucionId = req.usuario.institucionId;
@@ -76,9 +75,9 @@ const create = async (req, res) => {
 // Actualizar
 const update = async (req, res) => {
   try {
-    const data = await ConceptosContables.findByIdAndUpdate(
-      req.params.id,
-      req.body,
+    const data = await ConceptosContables.findOneAndUpdate(
+      conAlcance(req.usuario, { _id: req.params.id }),
+      sinCamposDeAlcance(req.body),
       {
         new: true,
         runValidators: true,
@@ -109,7 +108,7 @@ const update = async (req, res) => {
 // Eliminar
 const remove = async (req, res) => {
   try {
-    const data = await ConceptosContables.findByIdAndDelete(req.params.id);
+    const data = await ConceptosContables.findOneAndDelete(conAlcance(req.usuario, { _id: req.params.id }));
 
     if (!data) {
       return res.status(404).json({

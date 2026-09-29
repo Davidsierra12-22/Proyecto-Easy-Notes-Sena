@@ -54,4 +54,37 @@ const sinCamposDeAlcance = (body) => {
   return copia;
 };
 
-module.exports = { conAlcance, conAlcanceListado, sinCamposDeAlcance };
+/**
+ * Filtro para documentos que NO guardan institucionId, sino una referencia
+ * a otro documento que si la guarda.
+ *
+ * Voto es el caso: solo guarda eventoId, y es EventoElectoral quien tiene la
+ * institucion. Filtrar por institucionId aqui no daria ningun resultado
+ * (Mongoose lo descartaria), asi que se resuelve primero el conjunto de
+ * documentos padre que si son del colegio del usuario y se filtra por ese
+ * conjunto.
+ *
+ * Si el usuario no tiene institucion (super_admin) no se recorta nada, igual
+ * que en conAlcance.
+ */
+const conAlcancePorRelacion = async (usuario, filtro, { modelo, campo }) => {
+  const f = { ...filtro };
+  if (usuario?.institucionId) {
+    const permitidos = await modelo
+      .find({ institucionId: usuario.institucionId })
+      .select("_id")
+      .lean();
+    // Un conjunto vacio debe dejar el filtro en "sin resultados", no en
+    // "sin condicion": con { $in: [] } Mongoose no encuentra nada, que es
+    // justo lo que corresponde a un colegio sin eventos.
+    f[campo] = { $in: permitidos.map((d) => d._id) };
+  }
+  return f;
+};
+
+module.exports = {
+  conAlcance,
+  conAlcanceListado,
+  sinCamposDeAlcance,
+  conAlcancePorRelacion,
+};

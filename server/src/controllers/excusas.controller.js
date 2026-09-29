@@ -1,11 +1,10 @@
 const Excusas = require("../models/Excusas");
+const { conAlcance, sinCamposDeAlcance } = require("../utils/alcance");
 
 // Obtener todas
 const getAll = async (req, res) => {
   try {
-    const filtro = req.usuario?.institucionId
-      ? { institucionId: req.usuario.institucionId }
-      : {};
+    const filtro = conAlcance(req.usuario);
 
     if (req.usuario?.tipoPerfil === 'estudiante') {
       filtro.estudianteId = req.usuario._id;
@@ -33,7 +32,7 @@ const getAll = async (req, res) => {
 // Obtener por ID
 const getById = async (req, res) => {
   try {
-    const data = await Excusas.findById(req.params.id)
+    const data = await Excusas.findOne(conAlcance(req.usuario, { _id: req.params.id }))
       .populate("estudianteId", "nombre apellido")
       .populate("aprobadoPor", "nombre apellido");
 
@@ -60,7 +59,7 @@ const getById = async (req, res) => {
 // Crear
 const create = async (req, res) => {
   try {
-    const body = { ...req.body };
+    const body = sinCamposDeAlcance(req.body);
 
     if (req.usuario?.institucionId) {
       body.institucionId = req.usuario.institucionId;
@@ -89,9 +88,9 @@ const create = async (req, res) => {
 // Actualizar
 const update = async (req, res) => {
   try {
-    const data = await Excusas.findByIdAndUpdate(
-      req.params.id,
-      req.body,
+    const data = await Excusas.findOneAndUpdate(
+      conAlcance(req.usuario, { _id: req.params.id }),
+      sinCamposDeAlcance(req.body),
       {
         new: true,
         runValidators: true,
@@ -122,7 +121,7 @@ const update = async (req, res) => {
 // Aprobar
 const aprobar = async (req, res) => {
   try {
-    const data = await Excusas.findById(req.params.id);
+    const data = await Excusas.findOne(conAlcance(req.usuario, { _id: req.params.id }));
 
     if (!data) {
       return res.status(404).json({
@@ -154,7 +153,7 @@ const aprobar = async (req, res) => {
 // Rechazar
 const rechazar = async (req, res) => {
   try {
-    const data = await Excusas.findById(req.params.id);
+    const data = await Excusas.findOne(conAlcance(req.usuario, { _id: req.params.id }));
 
     if (!data) {
       return res.status(404).json({

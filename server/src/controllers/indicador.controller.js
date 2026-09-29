@@ -1,8 +1,9 @@
 const Indicador = require('../models/Indicador');
+const { conAlcance, sinCamposDeAlcance } = require('../utils/alcance');
 
 const getAll = async (req, res) => {
   try {
-    const filter = { institucionId: req.usuario.institucionId };
+    const filter = conAlcance(req.usuario);
     if (req.query.anioAcademicoId) filter.anioAcademicoId = req.query.anioAcademicoId;
     if (req.query.asignaturaId) filter.asignaturaId = req.query.asignaturaId;
     if (req.query.periodo) filter.periodo = req.query.periodo;
@@ -18,7 +19,7 @@ const getAll = async (req, res) => {
 
 const getById = async (req, res) => {
   try {
-    const data = await Indicador.findById(req.params.id).populate('asignaturaId', 'nombre abreviatura');
+    const data = await Indicador.findOne(conAlcance(req.usuario, { _id: req.params.id })).populate('asignaturaId', 'nombre abreviatura');
     if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
     res.json({ ok: true, data });
   } catch (error) {
@@ -38,7 +39,9 @@ const create = async (req, res) => {
 
 const update = async (req, res) => {
   try {
-    const data = await Indicador.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const data = await Indicador.findOneAndUpdate(
+      conAlcance(req.usuario, { _id: req.params.id }),
+      sinCamposDeAlcance(req.body), { new: true, runValidators: true });
     if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
     res.json({ ok: true, data, message: 'Actualizado correctamente' });
   } catch (error) {
@@ -48,7 +51,7 @@ const update = async (req, res) => {
 
 const remove = async (req, res) => {
   try {
-    const data = await Indicador.findByIdAndDelete(req.params.id);
+    const data = await Indicador.findOneAndDelete(conAlcance(req.usuario, { _id: req.params.id }));
     if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
     res.json({ ok: true, message: 'Eliminado correctamente' });
   } catch (error) {

@@ -1,12 +1,11 @@
 const Pagos = require("../models/Pagos");
+const { conAlcance, sinCamposDeAlcance } = require("../utils/alcance");
 const { paginarQuery } = require("../utils/paginacion");
 
 // Obtener todos
 const getAll = async (req, res) => {
   try {
-    const filtro = req.usuario?.institucionId
-      ? { institucionId: req.usuario.institucionId }
-      : {};
+    const filtro = conAlcance(req.usuario);
 
     const pg = paginarQuery(req);
     const query = Pagos.find(filtro)
@@ -45,7 +44,7 @@ const getAll = async (req, res) => {
 // Obtener por ID
 const getById = async (req, res) => {
   try {
-    const data = await Pagos.findById(req.params.id)
+    const data = await Pagos.findOne(conAlcance(req.usuario, { _id: req.params.id }))
       .populate("estudianteId", "nombres apellidos documento")
       .populate("conceptoId", "nombre valor");
 
@@ -72,7 +71,7 @@ const getById = async (req, res) => {
 // Crear
 const create = async (req, res) => {
   try {
-    const body = { ...req.body };
+    const body = sinCamposDeAlcance(req.body);
 
     if (req.usuario?.institucionId) {
       body.institucionId = req.usuario.institucionId;
@@ -97,9 +96,9 @@ const create = async (req, res) => {
 // Actualizar
 const update = async (req, res) => {
   try {
-    const data = await Pagos.findByIdAndUpdate(
-      req.params.id,
-      req.body,
+    const data = await Pagos.findOneAndUpdate(
+      conAlcance(req.usuario, { _id: req.params.id }),
+      sinCamposDeAlcance(req.body),
       {
         new: true,
         runValidators: true,
@@ -130,7 +129,7 @@ const update = async (req, res) => {
 // Eliminar
 const remove = async (req, res) => {
   try {
-    const data = await Pagos.findByIdAndDelete(req.params.id);
+    const data = await Pagos.findOneAndDelete(conAlcance(req.usuario, { _id: req.params.id }));
 
     if (!data) {
       return res.status(404).json({
@@ -155,7 +154,7 @@ const remove = async (req, res) => {
 // Registrar pago
 const registrarPago = async (req, res) => {
   try {
-    const pago = await Pagos.findById(req.params.id);
+    const pago = await Pagos.findOne(conAlcance(req.usuario, { _id: req.params.id }));
 
     if (!pago) {
       return res.status(404).json({
@@ -195,9 +194,12 @@ await pago.save();
 // Obtener pagos por estudiante
 const getByEstudiante = async (req, res) => {
   try {
-    const data = await Pagos.find({
-      estudianteId: req.params.id,
-    })
+    // Sin institucionId en el filtro, cualquier usuario autenticado obtenia
+    // el historial de pagos de un estudiante de cualquier colegio con solo
+    // su id: datos financieros de terceros.
+    const data = await Pagos.find(
+      conAlcance(req.usuario, { estudianteId: req.params.id })
+    )
       .populate("conceptoId", "nombre valor")
       .sort({ createdAt: -1 });
 
@@ -220,9 +222,7 @@ const getCartera = async (req, res) => {
     const filtro = {
       estado: { $in: ["pendiente", "vencido"] },
     };
-    if (req.usuario?.institucionId) {
-      filtro.institucionId = req.usuario.institucionId;
-    }
+    Object.assign(filtro, conAlcance(req.usuario));
 
     const pagos = await Pagos.find(filtro)
       .populate("estudianteId", "nombres apellidos documento")

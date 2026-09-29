@@ -1,11 +1,10 @@
 const Observador = require("../models/Observador");
+const { conAlcance, sinCamposDeAlcance } = require("../utils/alcance");
 
 // Obtener todos
 const getAll = async (req, res) => {
   try {
-    const filtro = req.usuario?.institucionId
-      ? { institucionId: req.usuario.institucionId }
-      : {};
+    const filtro = conAlcance(req.usuario);
 
     const data = await Observador.find(filtro)
       .populate("estudianteId", "nombre apellido")
@@ -29,7 +28,7 @@ const getAll = async (req, res) => {
 // Obtener por ID
 const getById = async (req, res) => {
   try {
-    const data = await Observador.findById(req.params.id)
+    const data = await Observador.findOne(conAlcance(req.usuario, { _id: req.params.id }))
       .populate("estudianteId", "nombre apellido")
       .populate("docenteId", "nombre apellido");
 
@@ -56,7 +55,7 @@ const getById = async (req, res) => {
 // Crear
 const create = async (req, res) => {
   try {
-    const body = { ...req.body };
+    const body = sinCamposDeAlcance(req.body);
 
     if (req.usuario?.institucionId) {
       body.institucionId = req.usuario.institucionId;
@@ -85,9 +84,9 @@ const create = async (req, res) => {
 // Actualizar
 const update = async (req, res) => {
   try {
-    const data = await Observador.findByIdAndUpdate(
-      req.params.id,
-      req.body,
+    const data = await Observador.findOneAndUpdate(
+      conAlcance(req.usuario, { _id: req.params.id }),
+      sinCamposDeAlcance(req.body),
       {
         new: true,
         runValidators: true,
@@ -118,7 +117,7 @@ const update = async (req, res) => {
 // Eliminar
 const remove = async (req, res) => {
   try {
-    const data = await Observador.findByIdAndDelete(req.params.id);
+    const data = await Observador.findOneAndDelete(conAlcance(req.usuario, { _id: req.params.id }));
 
     if (!data) {
       return res.status(404).json({
@@ -143,7 +142,7 @@ const remove = async (req, res) => {
 // Agregar seguimiento
 const agregarSeguimiento = async (req, res) => {
   try {
-    const observacion = await Observador.findById(req.params.id);
+    const observacion = await Observador.findOne(conAlcance(req.usuario, { _id: req.params.id }));
 
     if (!observacion) {
       return res.status(404).json({
@@ -177,9 +176,12 @@ observacion.seguimiento.push({
 // Obtener observaciones por estudiante
 const getByEstudiante = async (req, res) => {
   try {
-    const data = await Observador.find({
-      estudianteId: req.params.id,
-    })
+    // El filtro solo traia estudianteId: cualquier usuario con permiso
+    // institucional leia el historial disciplinario de un alumno de otro
+    // colegio con solo su id.
+    const data = await Observador.find(
+      conAlcance(req.usuario, { estudianteId: req.params.id })
+    )
       .populate("docenteId", "nombre apellido")
       .sort({ createdAt: -1 });
 

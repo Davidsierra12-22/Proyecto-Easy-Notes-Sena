@@ -1,4 +1,5 @@
 const Prematricula = require('../models/Prematricula');
+const { conAlcance, sinCamposDeAlcance } = require('../utils/alcance');
 const Matricula = require('../models/Matricula');
 const Usuario = require('../models/Usuario');
 const Grupo = require('../models/Grupo');
@@ -6,7 +7,7 @@ const AnioAcademico = require('../models/AnioAcademico');
 
 const getAll = async (req, res) => {
   try {
-    const filter = { institucionId: req.usuario.institucionId };
+    const filter = conAlcance(req.usuario);
     if (req.query.estado) filter.estado = req.query.estado;
     if (req.query.anioAcademicoId) filter.anioAcademicoId = req.query.anioAcademicoId;
 
@@ -19,7 +20,7 @@ const getAll = async (req, res) => {
 
 const getById = async (req, res) => {
   try {
-    const data = await Prematricula.findById(req.params.id);
+    const data = await Prematricula.findOne(conAlcance(req.usuario, { _id: req.params.id }));
     if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
     res.json({ ok: true, data });
   } catch (error) {
@@ -39,12 +40,14 @@ const create = async (req, res) => {
 
 const update = async (req, res) => {
   try {
-    const prem = await Prematricula.findById(req.params.id);
+    const prem = await Prematricula.findOne(conAlcance(req.usuario, { _id: req.params.id }));
     if (!prem) return res.status(404).json({ ok: false, message: 'No encontrado' });
     if (prem.estado !== 'pendiente') {
       return res.status(400).json({ ok: false, message: 'Solo se puede editar una prematricula pendiente' });
     }
-    const data = await Prematricula.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const data = await Prematricula.findOneAndUpdate(
+      conAlcance(req.usuario, { _id: req.params.id }),
+      sinCamposDeAlcance(req.body), { new: true, runValidators: true });
     res.json({ ok: true, data, message: 'Actualizado correctamente' });
   } catch (error) {
     res.status(400).json({ ok: false, message: 'Error al actualizar', error: error.message });
@@ -53,7 +56,7 @@ const update = async (req, res) => {
 
 const remove = async (req, res) => {
   try {
-    const data = await Prematricula.findByIdAndDelete(req.params.id);
+    const data = await Prematricula.findOneAndDelete(conAlcance(req.usuario, { _id: req.params.id }));
     if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
     res.json({ ok: true, message: 'Eliminado correctamente' });
   } catch (error) {
@@ -63,13 +66,17 @@ const remove = async (req, res) => {
 
 const aprobar = async (req, res) => {
   try {
-    const prem = await Prematricula.findById(req.params.id);
+    const prem = await Prematricula.findOne(conAlcance(req.usuario, { _id: req.params.id }));
     if (!prem) return res.status(404).json({ ok: false, message: 'Prematricula no encontrada' });
     if (prem.estado !== 'pendiente') {
       return res.status(400).json({ ok: false, message: `La prematricula ya esta ${prem.estado}` });
     }
 
-    const anio = await AnioAcademico.findById(prem.anioAcademicoId);
+    // Tambien acotado: si la prematrícula llegara a apuntar a un año de otro
+    // colegio, la matricula se daria de alta contra ese año.
+    const anio = await AnioAcademico.findOne(
+      conAlcance(req.usuario, { _id: prem.anioAcademicoId })
+    );
     if (!anio) return res.status(400).json({ ok: false, message: 'Año academico no encontrado' });
 
     const documento = String(prem.estudiante.documento);
@@ -134,7 +141,7 @@ const aprobar = async (req, res) => {
 
 const rechazar = async (req, res) => {
     try {
-    const prem = await Prematricula.findById(req.params.id);
+    const prem = await Prematricula.findOne(conAlcance(req.usuario, { _id: req.params.id }));
     if (!prem) return res.status(404).json({ ok: false, message: 'Prematricula no encontrada' });
     if (prem.estado !== 'pendiente') {
       return res.status(400).json({ ok: false, message: `La prematricula ya esta ${prem.estado}` });

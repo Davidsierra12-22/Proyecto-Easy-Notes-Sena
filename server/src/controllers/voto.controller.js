@@ -1,9 +1,20 @@
 const Voto = require("../models/Voto");
+const EventoElectoral = require("../models/EventoElectoral");
+const { conAlcancePorRelacion } = require("../utils/alcance");
+
+// Voto no guarda institucionId: se acota por los eventos del colegio.
+const porEventoDeMiColegio = (req, filtro = {}) =>
+  conAlcancePorRelacion(req.usuario, filtro, {
+    modelo: EventoElectoral,
+    campo: "eventoId",
+  });
 
 // Obtener todos los votos
 const getAll = async (req, res) => {
   try {
-    const data = await Voto.find()
+    // Sin este filtro, Voto.find() devolvia el Padrón de votos de todos los
+    // colegios del sistema a cualquier rector o coordinador.
+    const data = await Voto.find(await porEventoDeMiColegio(req))
       .populate("eventoId", "titulo")
       .populate("estudianteId", "nombre apellido")
       .sort({ createdAt: -1 });
@@ -25,7 +36,9 @@ const getAll = async (req, res) => {
 // Obtener voto por ID
 const getById = async (req, res) => {
   try {
-    const data = await Voto.findById(req.params.id)
+    const data = await Voto.findOne(
+      await porEventoDeMiColegio(req, { _id: req.params.id })
+    )
       .populate("eventoId", "titulo")
       .populate("estudianteId", "nombre apellido");
 
@@ -52,6 +65,21 @@ const getById = async (req, res) => {
 // Registrar voto
 const create = async (req, res) => {
   try {
+    // El evento debe ser del colegio del votante. Sin esta comprobacion un
+    // estudiante emitia su voto en una eleccion de otro colegio.
+    const evento = await EventoElectoral.findOne({
+      _id: req.body.eventoId,
+      ...(req.usuario?.institucionId
+        ? { institucionId: req.usuario.institucionId }
+        : {}),
+    });
+    if (!evento) {
+      return res.status(404).json({
+        ok: false,
+        message: "Evento electoral no encontrado",
+      });
+    }
+
     const existe = await Voto.findOne({
       eventoId: req.body.eventoId,
       estudianteId: req.usuario._id,
@@ -89,7 +117,9 @@ const create = async (req, res) => {
 // Eliminar voto
 const remove = async (req, res) => {
   try {
-    const voto = await Voto.findByIdAndDelete(req.params.id);
+    const voto = await Voto.findOneAndDelete(
+      await porEventoDeMiColegio(req, { _id: req.params.id })
+    );
 
     if (!voto) {
       return res.status(404).json({
@@ -114,9 +144,9 @@ const remove = async (req, res) => {
 // Obtener votos por evento
 const getByEvento = async (req, res) => {
   try {
-    const data = await Voto.find({
-      eventoId: req.params.eventoId,
-    }).populate("estudianteId", "nombre apellido");
+    const data = await Voto.find(
+      await porEventoDeMiColegio(req, { eventoId: req.params.eventoId })
+    ).populate("estudianteId", "nombre apellido");
 
     res.json({
       ok: true,
@@ -134,9 +164,9 @@ const getByEvento = async (req, res) => {
 // Obtener votos por candidato
 const getByCandidato = async (req, res) => {
   try {
-    const data = await Voto.find({
-      candidatoId: req.params.candidatoId,
-    });
+    const data = await Voto.find(
+      await porEventoDeMiColegio(req, { candidatoId: req.params.candidatoId })
+    );
 
     res.json({
       ok: true,
