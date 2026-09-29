@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { REGEX_NIT } = require('../utils/nit');
 
 const institucionSchema = new mongoose.Schema({
   nombre: {
@@ -10,7 +11,13 @@ const institucionSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
-    trim: true
+    trim: true,
+    // El NIT es un identificador, no una cantidad: se guarda siempre como
+    // cadena para no perder el digito de control. El match cierra tambien la
+    // ruta de creacion del admin, que pasa el cuerpo crudo al modelo. La
+    // expresion sale de utils/nit.js para que no pueda divergir de la que usa
+    // el controlador.
+    match: REGEX_NIT
   },
   /**
    * Identificador publico para los enlaces de prematrícula.

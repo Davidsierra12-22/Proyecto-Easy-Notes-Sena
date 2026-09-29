@@ -11,7 +11,7 @@ const numero = () => Math.floor(Math.random() * 89999999) + 10000000;
 const crearInstitucion = async (dane, icfes) => {
   return Institucion.create({
     nombre: 'Colegio Doc',
-    nit: `900${Math.floor(Math.random() * 999999)}`,
+    nit: `900${String(Math.floor(Math.random() * 999999)).padStart(6, '0')}`,
 
     // Slug unico por institucion: el nombre de prueba se repite dentro de la
     // misma suite y el indice unique sobre slug rechazaria el segundo create.

@@ -13,7 +13,7 @@ const asignaturaId = new mongoose.Types.ObjectId();
 const crearBase = async () => {
   const institucion = await Institucion.create({
     nombre: 'Colegio Test Plantilla',
-    nit: `800${Math.floor(Math.random() * 999999)}`,
+    nit: `800${String(Math.floor(Math.random() * 999999)).padStart(6, '0')}`,
     direccion: 'Calle 1 #2-3',
     estado: 'activo'
   });

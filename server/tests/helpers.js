@@ -6,7 +6,7 @@ const Institucion = require('../src/models/Institucion');
 const crearInstitucion = async (datos = {}) => {
   return Institucion.create({
     nombre: 'Colegio Test',
-    nit: `900${Math.floor(Math.random() * 999999)}`,
+    nit: `900${String(Math.floor(Math.random() * 999999)).padStart(6, '0')}`,
     direccion: 'Calle 1 #2-3',
     estado: 'activo',
     ...datos,

@@ -11,7 +11,7 @@ const numero = () => Math.floor(Math.random() * 89999999) + 10000000;
 
 const crearColegio = async (nucleoId = null) => Institucion.create({
   nombre: `Colegio ${numero()}`,
-  nit: `900${Math.floor(Math.random() * 999999)}`,
+  nit: `900${String(Math.floor(Math.random() * 999999)).padStart(6, '0')}`,
   estado: 'activo',
   nucleoId
 });
@@ -281,7 +281,7 @@ describe('Solicitud de registro publica', () => {
       .send({
         nucleoId: String(nucleo._id),
         nombre: 'Solicitante Externo',
-        nit: `900${Math.floor(Math.random() * 999999)}`,
+        nit: `900${String(Math.floor(Math.random() * 999999)).padStart(6, '0')}`,
         contacto: { nombre: 'Externo', email: 'externo@test.com' },
         estado: 'aprobada',
         procesadoPor: '000000000000000000000000'

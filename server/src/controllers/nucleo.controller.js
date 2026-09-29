@@ -6,6 +6,7 @@ const Matricula = require('../models/Matricula');
 const Pago = require('../models/Pagos');
 const { ROLES } = require('../config/constants');
 const { paginarQuery } = require('../utils/paginacion');
+const { normalizarNit, esNitValido, MENSAJE_NIT } = require('../utils/nit');
 
 const aIds = (instituciones) =>
   instituciones.map(i => i._id);
@@ -137,14 +138,22 @@ const crearInstitucion = async (req, res) => {
       return res.status(400).json({ ok: false, message: 'Nombre y NIT son obligatorios' });
     }
 
-    const existente = await Institucion.findOne({ nit });
+    // El NIT se guarda como cadena, tal cual vino, pero solo si tiene el
+    // formato. Sin esto se aceptaba "ABC123" o "900.123.456" y quedaba una
+    // institucion con un identificador que no existe en ningun registro.
+    const nitLimpio = normalizarNit(nit);
+    if (!esNitValido(nitLimpio)) {
+      return res.status(400).json({ ok: false, message: MENSAJE_NIT, campo: 'nit' });
+    }
+
+    const existente = await Institucion.findOne({ nit: nitLimpio });
     if (existente) {
-      return res.status(400).json({ ok: false, message: 'Ya existe un colegio con ese NIT' });
+      return res.status(400).json({ ok: false, message: 'Ya existe un colegio con ese NIT', campo: 'nit' });
     }
 
     const data = await Institucion.create({
       nombre,
-      nit,
+      nit: nitLimpio,
       dane: dane || undefined,
       icfes: icfes || undefined,
       tipo: tipo || 'privado',

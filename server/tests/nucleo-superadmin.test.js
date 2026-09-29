@@ -11,6 +11,11 @@ const { loginYToken } = require('./helpers');
 
 const numero = () => Math.floor(Math.random() * 89999999) + 10000000;
 
+// NIT de 9 digitos, que es lo que exige el formato. numero() puede devolver
+// uno de 8, y "900" + un numero corto daba identificadores de 4 a 8 digitos
+// que el modelo ya no acepta.
+const nitValido = () => `900${String(Math.floor(Math.random() * 999999)).padStart(6, '0')}`;
+
 const crearSuperAdmin = async () => {
   return Usuario.create({
     tipoDocumento: 'CC',
@@ -28,7 +33,7 @@ const crearSuperAdmin = async () => {
 const crearColegio = async () => {
   return Institucion.create({
     nombre: 'Colegio Nucleo',
-    nit: `900${Math.floor(Math.random() * 999999)}`,
+    nit: `900${String(Math.floor(Math.random() * 999999)).padStart(6, '0')}`,
 
     // Slug unico por institucion: el nombre de prueba se repite dentro de la
     // misma suite y el indice unique sobre slug rechazaria el segundo create.
@@ -87,7 +92,7 @@ describe('Dirección de Núcleo (super_admin)', () => {
       const crear = await request(app)
         .post('/api/nucleo/instituciones')
         .set('Authorization', `Bearer ${token}`)
-        .send({ nombre: 'IES Nuevo Amanecer', nit: `900${numero() % 100000}` });
+        .send({ nombre: 'IES Nuevo Amanecer', nit: nitValido() });
 
       expect(crear.status).toBe(201);
       const instId = crear.body.data._id;
@@ -114,7 +119,7 @@ describe('Dirección de Núcleo (super_admin)', () => {
     });
 
     it('rechaza NIT duplicado', async () => {
-      const nit = `900${numero() % 100000}`;
+      const nit = nitValido();
       await request(app)
         .post('/api/nucleo/instituciones')
         .set('Authorization', `Bearer ${token}`)

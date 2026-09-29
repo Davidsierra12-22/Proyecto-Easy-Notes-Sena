@@ -27,6 +27,29 @@ const TIPOS_DOC = [
   { value: 'PAS', label: 'Pasaporte' }
 ]
 
+// El NIT se maneja como texto, nunca como numero. Nueve digitos y, si se
+// quiere, el digito de control separado por guion: 900123456-7. El mismo
+// criterio que aplica el servidor en utils/nit.js.
+const REGEX_NIT = /^(?:\d{9}|\d{9}-\d|\d{10})$/
+const MENSAJE_NIT = 'Formato inválido. Son 9 dígitos y, opcionalmente, el dígito de control: 900123456-7'
+
+/**
+ * Deja escribir el NIT sin que entren letras.
+ *
+ * Descarta todo lo que no puede ser un NIT y conserva el guion solo si está
+ * en su sitio, que es después del noveno dígito. No completa el valor ni
+ * inventa el guion: devuelve lo que se escribió, limpio.
+ */
+const limpiarNit = (valor) => {
+  const texto = String(valor ?? '')
+  const digitos = texto.replace(/\D/g, '')
+  const guionEnSuSitio = texto.replace(/[^\d-]/g, '').indexOf('-') === 9
+  if (!guionEnSuSitio) return digitos.slice(0, 10)
+  return `${digitos.slice(0, 9)}-${digitos.slice(9, 10)}`
+}
+
+const esNitValido = (valor) => REGEX_NIT.test(String(valor ?? '').trim())
+
 const columnas = [
   {
     key: 'nombre', label: 'Colegio',
@@ -56,7 +79,7 @@ const columnas = [
 
 const campos = [
   { name: 'nombre', label: 'Nombre del Colegio', required: true },
-  { name: 'nit', label: 'NIT', required: true },
+  { name: 'nit', label: 'NIT', required: true, inputMode: 'numeric', maxLength: 11, placeholder: 'Ej: 900123456-7' },
   { name: 'dane', label: 'Código DANE' },
   { name: 'tipo', label: 'Tipo', type: 'select', options: TIPOS, default: 'privado' },
   { name: 'email', label: 'Email' },
@@ -91,6 +114,8 @@ function VistaNucleo() {
     const e = {}
     if (!form.nombre?.trim()) e.nombre = 'El nombre del colegio es obligatorio'
     if (!form.nucleoId) e.nucleoId = 'Debe seleccionar un núcleo'
+    if (!form.nit?.trim()) e.nit = 'El NIT es obligatorio'
+    else if (!esNitValido(form.nit)) e.nit = MENSAJE_NIT
     return e
   }
 
@@ -224,6 +249,12 @@ function VistaNucleo() {
     setFormAdmin({ ...formAdmin, [k]: e.target.value })
     setFieldErrors(prev => ({ ...prev, [k]: undefined }))
   }
+  // El NIT se limpia mientras se escribe para que las letras nunca lleguen al
+  // formulario, pero el error recien se muestra al intentar guardar.
+  const setNit = (e) => {
+    setFormColegio({ ...formColegio, nit: limpiarNit(e.target.value) })
+    setFieldErrors(prev => ({ ...prev, nit: undefined }))
+  }
 
   return (
     <>
@@ -346,8 +377,12 @@ function VistaNucleo() {
                 <TextField
                   label="NIT"
                   value={formColegio.nit || ''}
-                  onChange={setC('nit')}
-                  placeholder="Ej: 900123456"
+                  onChange={setNit}
+                  placeholder="Ej: 900123456-7"
+                  error={Boolean(fieldErrors.nit)}
+                  helperText={fieldErrors.nit || '9 dígitos, más el dígito de control si lo tiene'}
+                  inputMode="numeric"
+                  maxLength={11}
                   fullWidth
                 />
                 <TextField
@@ -567,6 +602,7 @@ export default function Instituciones() {
     const e = {}
     if (!form.nombre?.trim()) e.nombre = 'El nombre del colegio es obligatorio'
     if (!form.nit?.trim()) e.nit = 'El NIT es obligatorio'
+    else if (!esNitValido(form.nit)) e.nit = MENSAJE_NIT
     return e
   }
 
