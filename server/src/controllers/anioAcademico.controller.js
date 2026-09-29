@@ -1,8 +1,9 @@
 const Model = require('../models/AnioAcademico');
 const PromocionService = require('../services/promocionService');
+const { conAlcance, sinCamposDeAlcance } = require('../utils/alcance');
 const getAll = async (req, res) => {
     try {
-        const filter = req.usuario?.institucionId ? { institucionId: req.usuario.institucionId } : {};
+        const filter = conAlcance(req.usuario, {});
         const data = await Model.find(filter);
         res.json({ ok: true, data, message: 'Listado obtenido' });
     } catch (error) {
@@ -12,7 +13,7 @@ const getAll = async (req, res) => {
 
 const getById = async (req, res) => {
     try {
-        const data = await Model.findById(req.params.id);
+        const data = await Model.findOne(conAlcance(req.usuario, { _id: req.params.id }));
         if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
         res.json({ ok: true, data });
     } catch (error) {
@@ -33,7 +34,11 @@ const create = async (req, res) => {
 
 const update = async (req, res) => {
     try {
-        const data = await Model.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+        const data = await Model.findOneAndUpdate(
+            conAlcance(req.usuario, { _id: req.params.id }),
+            sinCamposDeAlcance(req.body),
+            { new: true, runValidators: true }
+        );
         if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
         res.json({ ok: true, data, message: 'Actualizado correctamente' });
     } catch (error) {
@@ -43,7 +48,7 @@ const update = async (req, res) => {
 
 const remove = async (req, res) => {
     try {
-        const data = await Model.findByIdAndDelete(req.params.id);
+        const data = await Model.findOneAndDelete(conAlcance(req.usuario, { _id: req.params.id }));
         if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
         res.json({ ok: true, message: 'Eliminado correctamente' });
     } catch (error) {
@@ -53,9 +58,23 @@ const remove = async (req, res) => {
 
 const activar = async (req, res) => {
     try {
+        // Se resuelve primero el anio de destino. Antes, el updateMany de
+        // abajo corria antes de comprobar el alcance: un intento sobre un
+        // anio ajeno fallaba, pero dejaba mientras tanto cerrados los anos
+        // del propio colegio.
+        const data = await Model.findOneAndUpdate(
+            conAlcance(req.usuario, { _id: req.params.id }),
+            { estado: 'activo' },
+            { new: true }
+        );
+        // findOneAndUpdate devuelve null cuando el filtro no encuentra nada.
+        // Sin esta comprobacion, el alcance hacia su trabajo pero la peticion
+        // respondia 200 con data vacia, dando a entender que si se actualizo.
+        if (!data) return res.status(404).json({ ok: false, message: 'Año académico no encontrado' });
+
         const institucionId = req.usuario?.institucionId;
-        await Model.updateMany({ institucionId }, { estado: 'cerrado' });
-        const data = await Model.findByIdAndUpdate(req.params.id, { estado: 'activo' }, { new: true });
+        await Model.updateMany({ institucionId, _id: { $ne: data._id } }, { estado: 'cerrado' });
+
         res.json({ ok: true, data, message: 'Año académico activado. Los demás han sido desactivados.' });
     } catch (error) {
         res.status(500).json({ ok: false, message: 'Error al activar', error: error.message });
@@ -64,7 +83,8 @@ const activar = async (req, res) => {
 
 const cerrar = async (req, res) => {
     try {
-        const data = await Model.findByIdAndUpdate(req.params.id, { estado: 'cerrado' }, { new: true });
+        const data = await Model.findOneAndUpdate(conAlcance(req.usuario, { _id: req.params.id }), { estado: 'cerrado' }, { new: true });
+        if (!data) return res.status(404).json({ ok: false, message: 'Año académico no encontrado' });
         res.json({ ok: true, data, message: 'Año académico cerrado' });
     } catch (error) {
         res.status(500).json({ ok: false, message: 'Error al cerrar', error: error.message });
@@ -82,7 +102,7 @@ const cerrarConMigracion = async (req, res) => {
 
         const institucionId = req.usuario?.institucionId;
 
-        const anioOrigen = await Model.findById(anioOrigenId);
+        const anioOrigen = await Model.findOne(conAlcance(req.usuario, { _id: anioOrigenId }));
         if (!anioOrigen) {
             return res.status(404).json({ ok: false, message: 'Año origen no encontrado' });
         }
@@ -90,7 +110,9 @@ const cerrarConMigracion = async (req, res) => {
             return res.status(400).json({ ok: false, message: 'El año origen debe estar activo para cerrar con migración' });
         }
 
-        const anioDestino = await Model.findById(anioDestinoId);
+        // El destino tambien se acota: si no, se migrarian matriculas
+        // hacia el año de otro colegio.
+        const anioDestino = await Model.findOne(conAlcance(req.usuario, { _id: anioDestinoId }));
         if (!anioDestino) {
             return res.status(404).json({ ok: false, message: 'Año destino no encontrado' });
         }
@@ -101,7 +123,7 @@ const cerrarConMigracion = async (req, res) => {
             institucionId
         });
 
-        await Model.findByIdAndUpdate(anioOrigenId, { estado: 'cerrado' });
+        await Model.findOneAndUpdate(conAlcance(req.usuario, { _id: anioOrigenId }), { estado: 'cerrado' });
 
         res.json({
             ok: true,
@@ -136,7 +158,7 @@ const reabrirPeriodo = async (req, res) => {
             });
         }
 
-        const anio = await Model.findById(req.params.id);
+        const anio = await Model.findOne(conAlcance(req.usuario, { _id: req.params.id }));
         if (!anio) {
             return res.status(404).json({ ok: false, message: 'Año académico no encontrado' });
         }
@@ -200,7 +222,7 @@ const cerrarReapertura = async (req, res) => {
             return res.status(400).json({ ok: false, message: 'periodo (número) es requerido' });
         }
 
-        const anio = await Model.findById(req.params.id);
+        const anio = await Model.findOne(conAlcance(req.usuario, { _id: req.params.id }));
         if (!anio) {
             return res.status(404).json({ ok: false, message: 'Año académico no encontrado' });
         }

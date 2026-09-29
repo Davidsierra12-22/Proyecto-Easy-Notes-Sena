@@ -4,10 +4,11 @@ const Calificacion = require('../models/Calificacion');
 const Grupo = require('../models/Grupo');
 const Comunicados = require('../models/Comunicados');
 const { paginarQuery } = require('../utils/paginacion');
+const { conAlcance, sinCamposDeAlcance } = require('../utils/alcance');
 
 const getAll = async (req, res) => {
   try {
-    const filter = { institucionId: req.usuario.institucionId };
+    const filter = conAlcance(req.usuario, {});
     if (req.query.estado) filter.estado = req.query.estado;
     if (req.query.anioAcademicoId) filter.anioAcademicoId = req.query.anioAcademicoId;
     if (req.query.grupoId) filter.grupoId = req.query.grupoId;
@@ -44,7 +45,7 @@ const getAll = async (req, res) => {
 
 const getById = async (req, res) => {
   try {
-    const data = await Matricula.findById(req.params.id)
+    const data = await Matricula.findOne(conAlcance(req.usuario, { _id: req.params.id }))
       .populate('estudianteId', 'nombres apellidos documento tipoDocumento')
       .populate('grupoId', 'nombre grado jornada');
     if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
@@ -56,7 +57,7 @@ const getById = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    const body = { ...req.body, institucionId: req.usuario.institucionId };
+    const body = { ...sinCamposDeAlcance(req.body), institucionId: req.usuario.institucionId };
     const data = await Matricula.create(body);
     res.status(201).json({ ok: true, data, message: 'Matricula creada correctamente' });
   } catch (error) {
@@ -66,7 +67,11 @@ const create = async (req, res) => {
 
 const update = async (req, res) => {
   try {
-    const data = await Matricula.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const data = await Matricula.findOneAndUpdate(
+        conAlcance(req.usuario, { _id: req.params.id }),
+        sinCamposDeAlcance(req.body),
+        { new: true, runValidators: true }
+    );
     if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
     res.json({ ok: true, data, message: 'Actualizado correctamente' });
   } catch (error) {
@@ -76,7 +81,7 @@ const update = async (req, res) => {
 
 const remove = async (req, res) => {
   try {
-    const data = await Matricula.findByIdAndDelete(req.params.id);
+    const data = await Matricula.findOneAndDelete(conAlcance(req.usuario, { _id: req.params.id }));
     if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
     res.json({ ok: true, message: 'Eliminado correctamente' });
   } catch (error) {
@@ -86,7 +91,7 @@ const remove = async (req, res) => {
 
 const retirar = async (req, res) => {
   try {
-    const data = await Matricula.findById(req.params.id);
+    const data = await Matricula.findOne(conAlcance(req.usuario, { _id: req.params.id }));
     if (!data) return res.status(404).json({ ok: false, message: 'Matricula no encontrada' });
     if (data.estado !== 'activa') {
       return res.status(400).json({ ok: false, message: `La matricula ya esta ${data.estado}` });
@@ -102,7 +107,7 @@ const retirar = async (req, res) => {
 
 const promover = async (req, res) => {
   try {
-    const matricula = await Matricula.findById(req.params.id);
+    const matricula = await Matricula.findOne(conAlcance(req.usuario, { _id: req.params.id }));
     if (!matricula) return res.status(404).json({ ok: false, message: 'Matricula no encontrada' });
 
     const { promovido, observaciones } = req.body;

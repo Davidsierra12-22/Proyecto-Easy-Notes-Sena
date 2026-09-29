@@ -1,4 +1,5 @@
 const AnioAcademico = require('../models/AnioAcademico');
+const { conAlcance } = require('../utils/alcance');
 const Calificacion = require('../models/Calificacion');
 const Actividad = require('../models/Actividad');
 
@@ -30,13 +31,13 @@ const forzarCambioPassword = (req, res, next) => {
  */
 const verificarPeriodoAbierto = async (req, res, next) => {
   try {
-    const { anioAcademicoId, periodo } = req.body || req.params;
+    const { anioAcademicoId, periodo } = { ...req.params, ...req.body };
 
     if (!anioAcademicoId || !periodo) {
       return next();
     }
 
-    const anio = await AnioAcademico.findById(anioAcademicoId);
+    const anio = await AnioAcademico.findOne(conAlcance(req.usuario, { _id: anioAcademicoId }));
     if (!anio) {
       return next();
     }
@@ -95,13 +96,13 @@ const verificarPeriodoAbierto = async (req, res, next) => {
  */
 const verificarVentanaRecuperacion = async (req, res, next) => {
   try {
-    const { anioAcademicoId, periodo } = req.body || req.params;
+    const { anioAcademicoId, periodo } = { ...req.params, ...req.body };
 
     if (!anioAcademicoId || !periodo) {
       return next();
     }
 
-    const anio = await AnioAcademico.findById(anioAcademicoId);
+    const anio = await AnioAcademico.findOne(conAlcance(req.usuario, { _id: anioAcademicoId }));
     if (!anio) {
       return next();
     }
@@ -162,7 +163,7 @@ const verificarAnioActivo = async (req, res, next) => {
       return next();
     }
 
-    const anio = await AnioAcademico.findById(anioAcademicoId);
+    const anio = await AnioAcademico.findOne(conAlcance(req.usuario, { _id: anioAcademicoId }));
     if (!anio) {
       return next();
     }

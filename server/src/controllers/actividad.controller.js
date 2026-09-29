@@ -1,5 +1,6 @@
 const Actividad = require('../models/Actividad');
 const Indicador = require('../models/Indicador');
+const { conAlcance, sinCamposDeAlcance } = require('../utils/alcance');
 
 const getAll = async (req, res) => {
   try {
@@ -24,7 +25,7 @@ const getAll = async (req, res) => {
 
 const getById = async (req, res) => {
   try {
-    const data = await Actividad.findById(req.params.id)
+    const data = await Actividad.findOne(conAlcance(req.usuario, { _id: req.params.id }))
       .populate('indicadorId', 'codigo descripcion')
       .populate('asignaturaId', 'nombre abreviatura')
       .populate('grupoId', 'nombre grado')
@@ -76,7 +77,11 @@ const create = async (req, res) => {
 
 const update = async (req, res) => {
   try {
-    const data = await Actividad.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const data = await Actividad.findOneAndUpdate(
+        conAlcance(req.usuario, { _id: req.params.id }),
+        sinCamposDeAlcance(req.body),
+        { new: true, runValidators: true }
+    );
     if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
     res.json({ ok: true, data, message: 'Actualizado correctamente' });
   } catch (error) {
@@ -86,7 +91,7 @@ const update = async (req, res) => {
 
 const remove = async (req, res) => {
   try {
-    const data = await Actividad.findByIdAndDelete(req.params.id);
+    const data = await Actividad.findOneAndDelete(conAlcance(req.usuario, { _id: req.params.id }));
     if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
     res.json({ ok: true, message: 'Eliminado correctamente' });
   } catch (error) {

@@ -3,10 +3,13 @@ const CalificacionService = require('../services/calificacionService');
 const Grupo = require('../models/Grupo');
 const Institucion = require('../models/Institucion');
 const { paginarQuery } = require('../utils/paginacion');
+const { conAlcance, sinCamposDeAlcance } = require('../utils/alcance');
+const CargaAcademica = require('../models/CargaAcademica');
+const { ROLES } = require('../config/constants');
 
 const getAll = async (req, res) => {
   try {
-    const filter = { institucionId: req.usuario.institucionId };
+    const filter = conAlcance(req.usuario, {});
     if (req.query.anioAcademicoId) filter.anioAcademicoId = req.query.anioAcademicoId;
     if (req.query.grupoId) filter.grupoId = req.query.grupoId;
     if (req.query.sedeId) {
@@ -47,7 +50,7 @@ const getAll = async (req, res) => {
 
 const getById = async (req, res) => {
   try {
-    const data = await Calificacion.findById(req.params.id)
+    const data = await Calificacion.findOne(conAlcance(req.usuario, { _id: req.params.id }))
       .populate('estudianteId', 'nombres apellidos documento')
       .populate('asignaturaId', 'nombre abreviatura')
       .populate('grupoId', 'nombre grado')
@@ -63,7 +66,7 @@ const getById = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    const body = { ...req.body, institucionId: req.usuario.institucionId };
+    const body = { ...sinCamposDeAlcance(req.body), institucionId: req.usuario.institucionId };
     if (!body.docenteId && req.usuario.tipoPerfil === 'docente') body.docenteId = req.usuario._id;
     const data = await Calificacion.create(body);
     res.status(201).json({ ok: true, data, message: 'Calificacion creada correctamente' });
@@ -74,7 +77,11 @@ const create = async (req, res) => {
 
 const update = async (req, res) => {
   try {
-    const data = await Calificacion.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const data = await Calificacion.findOneAndUpdate(
+        conAlcance(req.usuario, { _id: req.params.id }),
+        sinCamposDeAlcance(req.body),
+        { new: true, runValidators: true }
+    );
     if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
     res.json({ ok: true, data, message: 'Actualizado correctamente' });
   } catch (error) {
@@ -84,7 +91,7 @@ const update = async (req, res) => {
 
 const remove = async (req, res) => {
   try {
-    const data = await Calificacion.findByIdAndDelete(req.params.id);
+    const data = await Calificacion.findOneAndDelete(conAlcance(req.usuario, { _id: req.params.id }));
     if (!data) return res.status(404).json({ ok: false, message: 'No encontrado' });
     res.json({ ok: true, message: 'Eliminado correctamente' });
   } catch (error) {
@@ -107,6 +114,46 @@ const guardarNotas = async (req, res) => {
     const institucionId = req.usuario.institucionId;
     const actualizadas = [];
     const errores = [];
+
+    // El docente solo puede calificar los grupos que tiene asignados en
+    // carga academica. La carga la crea el admin o la secretaria, asi que
+    // un 403 aqui casi siempre significa "no te asignaron este grupo", y
+    // el mensaje lo dice explicitamente para no dejar a soporte adivinando.
+    // Los roles institucionales (admin, rector, coordinador) conservan el
+    // alcance por colegio.
+    if (req.usuario.tipoPerfil === ROLES.DOCENTE) {
+      const carga = await CargaAcademica.findOne({
+        docenteId: req.usuario._id,
+        grupoId,
+        asignaturaId,
+        anioAcademicoId,
+        puedeCalificar: true
+      });
+
+      if (!carga) {
+        const existeEnElColegio = await CargaAcademica.findOne({
+          institucionId, grupoId, asignaturaId, anioAcademicoId
+        });
+        return res.status(403).json({
+          ok: false,
+          message: existeEnElColegio
+            ? 'No tienes asignada esta carga académica. Pide a la secretaria que te la asigne.'
+            : 'Ese grupo y asignatura no tienen carga académica en tu colegio. Pide a la secretaria que la registre.'
+        });
+      }
+    }
+
+    // Solo se escribe lo que el docente debe poder cambiar. Antes el objeto
+    // del cuerpo llegaba casi crudo al documento, lo que permitía colar
+    // campos ajenos al propósito de la nota.
+    const CAMPOS_EDITABLES = ['nota', 'recuperacion', 'habilitacion', 'estado', 'actividades'];
+    const sanearItem = (item) => {
+      const limpio = {};
+      for (const campo of CAMPOS_EDITABLES) {
+        if (item[campo] !== undefined) limpio[campo] = item[campo];
+      }
+      return limpio;
+    };
 
     for (const item of calificaciones) {
       const { estudianteId, nota, recuperacion, habilitacion } = item;
@@ -131,9 +178,9 @@ const guardarNotas = async (req, res) => {
         grupoId,
         periodo: parseInt(periodo, 10)
       };
-      const update = { ...item, institucionId };
+      const update = { ...sanearItem(item), institucionId };
       if (anioAcademicoId) update.anioAcademicoId = anioAcademicoId;
-      if (req.usuario.tipoPerfil === 'docente') update.docenteId = req.usuario._id;
+      if (req.usuario.tipoPerfil === ROLES.DOCENTE) update.docenteId = req.usuario._id;
       // Si vienen celdas de plantilla, el indicador se recalcula desde cero
       // (evita reutilizar una nota de indicador desactualizada).
       if (item.actividades && Array.isArray(item.actividades)) update.indicadores = [];
