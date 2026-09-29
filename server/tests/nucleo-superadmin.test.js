@@ -29,6 +29,10 @@ const crearColegio = async () => {
   return Institucion.create({
     nombre: 'Colegio Nucleo',
     nit: `900${Math.floor(Math.random() * 999999)}`,
+
+    // Slug unico por institucion: el nombre de prueba se repite dentro de la
+    // misma suite y el indice unique sobre slug rechazaria el segundo create.
+    slug: `test-${Math.floor(Math.random() * 999999999)}`,
     estado: 'activo'
   });
 };

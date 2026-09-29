@@ -4,6 +4,36 @@ const Matricula = require('../models/Matricula');
 const Usuario = require('../models/Usuario');
 const Grupo = require('../models/Grupo');
 const AnioAcademico = require('../models/AnioAcademico');
+const Institucion = require('../models/Institucion');
+
+/**
+ * Resuelve el colegio de una peticion publica.
+ *
+ * Estas tres rutas no tienen sesion, asi que no hay institucionId del actor de
+ * donde sacarlo: lo dice el propio padre, en el enlace que publica el colegio.
+ * Antes se hacia al reves, con una busqueda de "el anio con prematrícula
+ * abierta" sin filtro de institucion, que devolvia el de cualquier colegio.
+ */
+const colegioPublico = async (req) => {
+  const slug = String(req.query?.colegio || req.body?.colegio || '').trim().toLowerCase();
+  if (!slug) return null;
+  return Institucion.findOne({ slug, estado: 'activo' }).select('_id nombre slug');
+};
+
+/** Anio con prematrícula abierta, acotado a UN colegio. */
+const anioConPrematriculaAbierta = (institucionId) =>
+  AnioAcademico.findOne({
+    institucionId,
+    'cronograma.prematricula.estado': 'abierta'
+  }).sort({ anio: -1 });
+
+/** El cronograma decide si la ventana sigue vigente, no solo la bandera. */
+const dentroDeVentana = (cron) => {
+  const ahora = new Date();
+  if (cron.inicio && ahora < new Date(cron.inicio)) return false;
+  if (cron.fin && ahora > new Date(cron.fin)) return false;
+  return true;
+};
 
 const getAll = async (req, res) => {
   try {
@@ -158,15 +188,20 @@ const rechazar = async (req, res) => {
 // MT-003-2 / MT-003-3: Verificar si hay un período de prematrícula abierto según el cronograma
 const periodoAbierto = async (req, res) => {
   try {
-    const anio = await AnioAcademico.findOne({ 'cronograma.prematricula.estado': 'abierta' }).sort({ anio: -1 });
+    const colegio = await colegioPublico(req);
+    if (!colegio) {
+      return res.status(400).json({
+        ok: false,
+        message: 'Falta el identificador del colegio (parametro "colegio"). Usa el enlace de prematrícula que publica tu institución.'
+      });
+    }
+
+    const anio = await anioConPrematriculaAbierta(colegio._id);
     if (!anio) {
       return res.json({ ok: true, data: { abierta: false, mensaje: 'Prematrícula cerrada' } });
     }
     const cron = anio.cronograma.prematricula;
-    const ahora = new Date();
-    let vigente = true;
-    if (cron.inicio && ahora < cron.inicio) vigente = false;
-    if (cron.fin && ahora > cron.fin) vigente = false;
+    const vigente = dentroDeVentana(cron);
     res.json({
       ok: true,
       data: {
@@ -174,6 +209,7 @@ const periodoAbierto = async (req, res) => {
         anio: anio.anio,
         anioAcademicoId: anio._id,
         institucionId: anio.institucionId,
+        colegio: colegio.nombre,
         inicio: cron.inicio,
         fin: cron.fin,
         mensaje: vigente ? 'Prematrícula abierta' : 'Prematrícula cerrada'
@@ -198,21 +234,28 @@ const solicitarPublico = async (req, res) => {
       return res.status(400).json({ ok: false, message: 'Grado solicitado es requerido' });
     }
 
-    const anio = await AnioAcademico.findOne({ 'cronograma.prematricula.estado': 'abierta' }).sort({ anio: -1 });
+    const colegio = await colegioPublico(req);
+    if (!colegio) {
+      return res.status(400).json({
+        ok: false,
+        message: 'Falta el identificador del colegio (campo "colegio"). Usa el enlace de prematrícula que publica tu institución.'
+      });
+    }
+
+    const anio = await anioConPrematriculaAbierta(colegio._id);
     if (!anio) {
       return res.status(400).json({ ok: false, message: 'Prematrícula cerrada' });
     }
-    const cron = anio.cronograma.prematricula;
-    const ahora = new Date();
-    if (cron.inicio && ahora < cron.inicio) {
-      return res.status(400).json({ ok: false, message: 'Prematrícula cerrada' });
-    }
-    if (cron.fin && ahora > cron.fin) {
+    if (!dentroDeVentana(anio.cronograma.prematricula)) {
       return res.status(400).json({ ok: false, message: 'Prematrícula cerrada' });
     }
 
     const documento = String(estudiante.documento).trim();
+    // El duplicado se busca DENTRO del colegio. Con el filtro global, un
+    // niño que ya se postuló al Colegio A quedaba bloqueado para el Colegio
+    // B, y ademas la respuesta confirmaba que ese documento ya existía.
     const duplicado = await Prematricula.findOne({
+      institucionId: colegio._id,
       'estudiante.documento': documento,
       'estado': { $in: ['pendiente', 'aprobada', 'matriculada'] }
     });
@@ -246,7 +289,21 @@ const consultarEstadoPublico = async (req, res) => {
     const documento = String(req.params.documento || '').trim();
     if (!documento) return res.status(400).json({ ok: false, message: 'Documento requerido' });
 
-    const prem = await Prematricula.findOne({ 'estudiante.documento': documento })
+    const colegio = await colegioPublico(req);
+    if (!colegio) {
+      return res.status(400).json({
+        ok: false,
+        message: 'Falta el identificador del colegio (parametro "colegio"). Usa el enlace de prematrícula que publica tu institución.'
+      });
+    }
+
+    // Acotado al colegio Y a una sola respuesta. Antes, sin filtro de
+    // institucion, cualquier persona sin login metia el documento de un niño
+    // y obtenia el estado de su solicitud en todos los colegios del sistema.
+    const prem = await Prematricula.findOne({
+      institucionId: colegio._id,
+      'estudiante.documento': documento
+    })
       .sort({ createdAt: -1 })
       .populate('anioAcademicoId', 'anio');
 

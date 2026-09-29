@@ -9,7 +9,12 @@ const crearInstitucion = async (datos = {}) => {
     nit: `900${Math.floor(Math.random() * 999999)}`,
     direccion: 'Calle 1 #2-3',
     estado: 'activo',
-    ...datos
+    ...datos,
+    // El slug es unique y se deriva del nombre, asi que dos "Colegio Test"
+    // en la misma suite chocarian. Se deriva del NIT, que ya es unico, para
+    // que crear varias instituciones con el mismo nombre de prueba siga
+    // funcionando.
+    slug: datos.slug ?? `colegio-test-${datos.nit ?? Math.floor(Math.random() * 999999)}`
   });
 };
 
